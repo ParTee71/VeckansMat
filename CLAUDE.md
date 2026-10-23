@@ -35,7 +35,8 @@ gränssnitt, `docs/`, commit-meddelanden, issues och PR:er.
 
 - **Issue först.** Varje uppgift planeras i ett GitHub-issue innan den
   byggs (vad, varför, hur det provas), utom väldigt små och enkla saker.
-- En sak per PR. Tester skrivs i samma PR som koden.
+- En sak per PR. Tester skrivs i samma PR som koden. Ändras appen höjs versionen
+  och `CHANGELOG.md` får en rad (`/release`). Skarp drift bara vid release.
 - Komponenter från `@m3e/web`, registrerade i `src/lib/m3e.ts`.
 - `/refine-issue` planerar, `/implement-issue` genomför, `/mockup` före ny GUI.
   Före push: `/simplify`, agenten `granskare`, `/code-review`. Allt: `.claude/README.md`.

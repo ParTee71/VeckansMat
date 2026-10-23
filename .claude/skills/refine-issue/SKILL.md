@@ -32,6 +32,7 @@ begäran är entydig.
 - **Claude i appen:** nytt anrop eller ändrad prompt → modell, kostnad, mock i tester, eval.
 - **Publikt repo:** behövs testdata? Den är påhittad.
 - **Tester:** vilka finns, vilka nivåer berörs (Vitest, Playwright)?
+- **Version:** ändras appen? Vilken höjning (`/release`)?
 
 ## Steg 4 – Mockup (bara ny GUI)
 

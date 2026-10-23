@@ -6,17 +6,18 @@ och [0010](../docs/beslut/0010-skills-och-agenter.md). Ett prov
 
 ## Skills
 
-| Skill                       | När                                                 | Källa                      |
-| --------------------------- | --------------------------------------------------- | -------------------------- |
-| `refine-issue`              | Idé eller bugg till ett planerat issue              | Egen, efter claude-android |
-| `implement-issue`           | Planerat issue till PR                              | Egen, efter claude-android |
-| `adr`                       | Nytt beslut i `docs/beslut/`                        | Egen                       |
-| `mockup`                    | Före ny eller ändrad GUI                            | Egen, efter claude-android |
-| `ux-granskning`             | Granska en vy, mockup eller UX-text                 | Egen, efter claude-android |
-| `svelte-core-bestpractices` | Svelte 5: runes, reaktivitet, händelser             | Svelte, oförändrad         |
-| `svelte-code-writer`        | Svelte-dokumentation och `svelte-autofixer` via CLI | Svelte, oförändrad         |
-| `wrangler`                  | wrangler: lokalt, D1, R2, deploy                    | Cloudflare, oförändrad     |
-| `workers-best-practices`    | Skriva och granska Workers-kod                      | Cloudflare, oförändrad     |
+| Skill                       | När                                                  | Källa                      |
+| --------------------------- | ---------------------------------------------------- | -------------------------- |
+| `refine-issue`              | Idé eller bugg till ett planerat issue               | Egen, efter claude-android |
+| `implement-issue`           | Planerat issue till PR                               | Egen, efter claude-android |
+| `release`                   | Versionshöjning i PR:en och release till skarp drift | Egen, efter claude-android |
+| `adr`                       | Nytt beslut i `docs/beslut/`                         | Egen                       |
+| `mockup`                    | Före ny eller ändrad GUI                             | Egen, efter claude-android |
+| `ux-granskning`             | Granska en vy, mockup eller UX-text                  | Egen, efter claude-android |
+| `svelte-core-bestpractices` | Svelte 5: runes, reaktivitet, händelser              | Svelte, oförändrad         |
+| `svelte-code-writer`        | Svelte-dokumentation och `svelte-autofixer` via CLI  | Svelte, oförändrad         |
+| `wrangler`                  | wrangler: lokalt, D1, R2, deploy                     | Cloudflare, oförändrad     |
+| `workers-best-practices`    | Skriva och granska Workers-kod                       | Cloudflare, oförändrad     |
 
 ## Agenter
 
