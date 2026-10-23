@@ -27,8 +27,15 @@ huvudet, annars används den inte. Det betyder:
   en själv.
 - Appen ska fungera med de recept som finns, även ofullständiga.
 
-Hur den personen planerar i dag (utifrån erbjudanden, vad som finns hemma eller
-favoriter) är en öppen fråga som styr förslagslogiken. Se *Öppna frågor*.
+I dag hittar hon på menyn ur erfarenhet och skriver den på en lapp. Det ger två
+krav till:
+
+- **Erfarenheten finns redan på papper.** De fotograferade handskrivna menyerna
+  är just den erfarenheten, och de är det viktigaste underlaget för förslagen:
+  vilka rätter som återkommer, hur ofta och hur en vecka brukar se ut.
+- **Appen ska kännas som lappen.** Veckan går att redigera som en lista: skriva
+  in en rätt med fritext (som blir ett recept med bara namn) ska gå lika fort
+  som att skriva på papper.
 
 ## Stack
 
@@ -149,8 +156,6 @@ låta hushållet fotografera reklambladet.
 
 ## Öppna frågor
 
-- Hur planerar den som tycker att det är lätt i dag? Utifrån erbjudanden, vad som
-  finns hemma, eller favoriter? Styr hur förslaget byggs.
 - Vilka krav per person ska stödjas från start (allergier, ogillar, kost)?
 - Vilka menyregler behövs från start, och hur formuleras de i appen?
 - Ska inköpslistan sorteras efter butikens avdelningar?
