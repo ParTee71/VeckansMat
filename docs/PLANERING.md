@@ -116,6 +116,24 @@ hålls liten och växer när behovet visar sig:
 - Några få skills, t.ex. *från issue till PR* och *granska en ändring*.
 - CI i GitHub Actions: typkontroll, enhetstester och Playwright på varje PR.
 
+### Best practice i alla steg
+
+Branschens och Anthropics rekommendationer följs. Där ingen etablerad praxis finns
+bestäms den tillsammans med ägaren, inte på egen hand.
+
+- **`CLAUDE.md` hålls kort**: vad projektet är, invarianter, kommandon och pekare
+  vidare. Detaljer ligger i `docs/` och i skills som laddas när de behövs, så att
+  varje session inte bär allt.
+- **Beslut skrivs som ADR** (architecture decision records) i `docs/beslut/`, ett
+  beslut per fil med datum, sammanhang och följder. Det här dokumentet delas upp
+  i sådana när skelettet sätts upp.
+- **`main` är skyddad**: ändringar går via PR och kräver grön CI.
+- **Kvalitet i CI**: typkontroll (`svelte-check`), ESLint, Prettier, enhetstester
+  och Playwright.
+- **Beroenden** hålls uppdaterade med Dependabot; secret scanning och push
+  protection på (gratis i publika repon).
+- **Små PR:er**, en sak per PR.
+
 Ordning: först besluten (det här dokumentet), sedan AI-verktygen och
 ramverkets skelett för det vi vet, sedan funktionerna.
 
@@ -155,6 +173,10 @@ publika erbjudandesidorna en gång i veckan med respekt för `robots.txt`, eller
 låta hushållet fotografera reklambladet.
 
 ## Öppna frågor
+
+- Språk i koden: svenska som i Husjakt, eller engelska identifierare (branschpraxis,
+  och bättre stöd i bibliotek och verktyg) med svenskt gränssnitt och svenska
+  dokument?
 
 - Vilka krav per person ska stödjas från start (allergier, ogillar, kost)?
 - Vilka menyregler behövs från start, och hur formuleras de i appen?
