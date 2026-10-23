@@ -144,8 +144,8 @@ bestäms den tillsammans med ägaren, inte på egen hand.
 - **Beroenden** hålls uppdaterade med Dependabot; secret scanning och push
   protection på (gratis i publika repon).
 - **Små PR:er**, en sak per PR.
-- **Språk:** engelska i kod, identifierare, kodkommentarer och commit-meddelanden.
-  Svenska i gränssnittet, i `docs/`, issues och PR-beskrivningar.
+- **Språk:** engelska i koden (identifierare och kodkommentarer). Allt annat på
+  svenska: gränssnitt, `docs/`, commit-meddelanden, issues och PR:er.
 
 Ordning: först besluten (det här dokumentet), sedan AI-verktygen och
 ramverkets skelett för det vi vet, sedan funktionerna.
