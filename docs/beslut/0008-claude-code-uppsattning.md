@@ -1,6 +1,6 @@
 # 0008. Hur Claude Code styrs i repot
 
-- **Status:** Beslutat
+- **Status:** Beslutat. Raderna om skills och agenter är ersatta av 0010.
 - **Datum:** 2026-10-23
 
 ## Sammanhang
