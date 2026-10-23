@@ -48,6 +48,19 @@ Driftsättning sker från GitHub Actions med wrangler. Varje gren får en egen
 förhandsadress med egen testdatabas, så en ändring kan provas i telefonen innan
 den går ut skarpt.
 
+### Claude når driften
+
+Claude ska kunna läsa skarp data för att felsöka och följa upp, utan att Cloudflare
+Access öppnas för andra:
+
+- En **service token i Cloudflare Access** (gratis) släpper in Claude till API:et.
+  Den ligger som hemlighet i Claude-miljön, aldrig i repot.
+- För databasen direkt: en **Cloudflare API-token** begränsad till D1 och
+  Workers-loggar, också som hemlighet i miljön.
+- **Läsa fritt, skriva bara på begäran.** Claude ändrar aldrig skarp data utan att
+  någon bett om just den ändringen, och kör aldrig en migrering skarpt innan den
+  körts lokalt.
+
 ### Användare
 
 Ett hushåll. Ingen uppdelning i flera hushåll i datamodellen från start, men
@@ -117,6 +130,12 @@ Vägar in:
 
 Tolkningen är ett förslag som går att rätta innan det sparas. Misslyckas den
 sparas det som gick att läsa, minst namnet.
+
+**Gamla menyer** – hushållet har foton av handskrivna veckomenyer. De läses in
+med kameran eller som bilder, och Claude plockar ut rätterna. Okända rätter blir
+recept med bara namn, och menyerna sparas som historik: de visar vad hushållet
+faktiskt äter och hur en vecka brukar se ut, vilket gör förslagen bättre från
+dag ett.
 
 **Nya recept** föreslås av Claude utifrån favoriter och regler, med webbsökning
 när någon ber om det.
