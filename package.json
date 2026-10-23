@@ -12,15 +12,13 @@
 		"build": "vite build",
 		"preview": "wrangler dev .svelte-kit/cloudflare/_worker.js --port 4173",
 		"prepare": "npm run types && svelte-kit sync || echo ''",
-		"check": "npm run types && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
 		"lint": "prettier --check . && eslint . --max-warnings 0",
 		"format": "prettier --write .",
 		"test": "vitest --run",
-		"test:watch": "vitest",
 		"test:e2e": "playwright test",
 		"verify": "npm run check && npm run lint && npm run test",
-		"types": "node -e \"require('fs').rmSync('.svelte-kit/cloudflare',{recursive:true,force:true})\" && wrangler types"
+		"types": "wrangler types"
 	},
 	"dependencies": {
 		"@m3e/web": "^2.10.2"
@@ -47,7 +45,6 @@
 		"wrangler": "^4.97.0"
 	},
 	"imports": {
-		"#lib": "./src/lib/index.js",
 		"#lib/*": "./src/lib/*"
 	},
 	"allowScripts": {

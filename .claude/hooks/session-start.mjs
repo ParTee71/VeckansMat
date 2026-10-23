@@ -3,31 +3,21 @@
 // Locally it does nothing, since a developer machine is already set up.
 
 import { spawnSync } from 'node:child_process';
-import { appendFileSync, existsSync, readdirSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 if (process.env.CLAUDE_CODE_REMOTE !== 'true') process.exit(0);
 
 const root = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
+const run = (command, args) =>
+	spawnSync(command, args, { cwd: root, stdio: 'ignore' }).status === 0;
 
-if (!existsSync(path.join(root, 'node_modules'))) {
-	const install = spawnSync('npm', ['ci'], { cwd: root, stdio: 'ignore' });
-	if (install.status !== 0) {
-		console.log('npm ci failed; run it by hand before testing.');
-	}
+if (!existsSync(path.join(root, 'node_modules')) && !run('npm', ['ci'])) {
+	console.log('npm ci failed; run it by hand before testing.');
 }
 
-// Cloud images ship a Chromium that may be older than the Playwright version in
-// package.json. playwright.config.ts uses it when CHROMIUM_PATH is set.
-const browsers = process.env.PLAYWRIGHT_BROWSERS_PATH;
-const envFile = process.env.CLAUDE_ENV_FILE;
-if (browsers && envFile && existsSync(browsers)) {
-	const chromium = readdirSync(browsers)
-		.filter((name) => /^chromium-\d+$/.test(name))
-		.sort()
-		.at(-1);
-	const executable = chromium && path.join(browsers, chromium, 'chrome-linux', 'chrome');
-	if (executable && existsSync(executable)) {
-		appendFileSync(envFile, `export CHROMIUM_PATH=${executable}\n`);
-	}
+// The image's preinstalled Chromium may be older than the Playwright version in
+// package.json, so fetch the matching one, as CI does.
+if (!run('npx', ['playwright', 'install', 'chromium'])) {
+	console.log('playwright install chromium failed; e2e tests will not start.');
 }

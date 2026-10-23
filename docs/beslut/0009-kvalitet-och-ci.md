@@ -22,7 +22,9 @@ kontrolleras av verktyg, både lokalt och innan något når `main`.
 - Secret scanning och push protection är på.
 - Node 24 (LTS) i CI enligt `.nvmrc`; `engines` tillåter 22.13 och senare.
 - Paket som får köra installationsskript listas i `allowScripts` i
-  `package.json` (i dag `esbuild` och `workerd`).
+  `package.json` (i dag `esbuild` och `workerd`). npm 10 och 11 läser inte
+  listan än; den är förberedd för npm 12, som stoppar skript som inte står
+  där.
 
 ## Följder
 

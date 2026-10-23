@@ -18,9 +18,10 @@ lägga till. Kod, issues och CI stannar på GitHub.
 
 ## Följder
 
-- Typerna för Cloudflare-bindningarna genereras med `npm run types` och
-  checkas inte in, eftersom wrangler lägger in byggets utdata i filen när ett
-  bygge finns.
+- Typerna för Cloudflare-bindningarna genereras med `npm run types` (körs av
+  `npm ci`) och checkas inte in, eftersom wrangler lägger in byggets utdata i
+  filen när ett bygge finns. `checkJs` är avslaget så att bygget inte
+  typkontrolleras.
 - Playwright provar mot ett riktigt bygge i lokal workerd (`npm run preview`).
 - D1, R2 och driftsättningen läggs till när ägarens Cloudflare-konto är
   uppsatt; skelettet har inga bindningar än.

@@ -8,11 +8,6 @@ declare global {
 			caches: CacheStorage;
 			cf?: IncomingRequestCfProperties;
 		}
-
-		// interface Error {}
-		// interface Locals {}
-		// interface PageData {}
-		// interface PageState {}
 	}
 }
 

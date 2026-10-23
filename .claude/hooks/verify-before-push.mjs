@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // PreToolUse hook: runs `npm run verify` before any `git push` and blocks the
 // push when it fails, so nothing reaches CI that has not passed locally.
-// Exit code 2 blocks the tool call and hands stderr back to Claude.
+// Exit code 2 blocks the tool call and hands stderr back to Claude. The `if`
+// rule in settings.json skips most commands; the regex catches forms it misses,
+// such as `cd x && git push`.
 
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
