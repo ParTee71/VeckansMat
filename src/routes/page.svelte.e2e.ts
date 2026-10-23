@@ -23,3 +23,21 @@ test('start page shows the version', async ({ page }) => {
 	await page.goto('/');
 	await expect(page.getByText(`Version ${pkg.version}`)).toBeVisible();
 });
+
+test('a new version offers a reload that loads it', async ({ page }) => {
+	await page.goto('/');
+	await expect
+		.poll(() => page.evaluate(() => customElements.get('m3e-snackbar') !== undefined))
+		.toBe(true);
+	await page.route('**/_app/version.json', (route) =>
+		route.fulfill({ json: { version: '99.0.0' } })
+	);
+
+	// SvelteKit checks for a new version when the window gains focus.
+	await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+	await expect(page.getByText('Ny version finns')).toBeVisible();
+
+	const reload = page.waitForEvent('load');
+	await page.getByRole('button', { name: 'Ladda om' }).click();
+	await reload;
+});

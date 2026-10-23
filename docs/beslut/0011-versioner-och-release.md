@@ -18,7 +18,9 @@ fungerande flöde (`release` i `ParTee71/claude-android`).
   GitHub Release, och kör `wrangler deploy` så att Cloudflare kan backa med `wrangler rollback`.
 - **Versionen syns diskret** längst ner i appen och i `/api/health` (ägaren 2026-10-23).
 - **SvelteKits `version.name` är versionen.** En öppen flik märker en ny version (SvelteKit
-  kollar varje timme och när fliken får fokus) och laddar om helt vid nästa navigering.
+  kollar varje timme och när fliken får fokus). Då visas "Ny version finns" med knappen
+  "Ladda om", som ligger kvar tills man trycker (ägaren 2026-10-23, efter mockup). Den som
+  inte trycker får den nya versionen vid nästa navigering.
 
 ## Följder
 

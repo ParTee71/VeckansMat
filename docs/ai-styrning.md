@@ -5,6 +5,17 @@ skrivs vad som provats, varför, och hur det gick. Nyast överst. Hur
 styrningen är uppbyggd just nu står i
 [beslut 0008](beslut/0008-claude-code-uppsattning.md).
 
+## 2026-10-23 – Mockup först, och vad skärmdumpen fångade
+
+**Vad:** Uppmaningen "Ny version finns" ritades först som mockup i en Design-canvas, som också
+blev mallen för kommande mockuper. Ägaren valde beteendet (ligger kvar tills man trycker)
+innan någon kod skrevs, och färgerna sparades till när det finns fler vyer.
+
+**Lärdom:** Proven var gröna, men skärmdumpen i mörkt tema visade en vit sida: `m3e-theme`
+färgar bara `<body>` när den ligger direkt under den, och SvelteKit lindar appen i en `div`.
+Ett prov som letar efter text ser inte färger – därför tas skärmdumpar i båda temana innan
+en ändring i gränssnittet pushas.
+
 ## 2026-10-23 – Versioner, och ett exempel på varför ramverkets skill behövs
 
 **Vad:** Semver, `CHANGELOG.md` och skillen `release` efter claude-android. Se

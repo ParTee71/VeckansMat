@@ -23,8 +23,8 @@ koden skrivs efter ägarens ok.
 
 Den första mockupen blir **mallen**: en Design-canvas med de m3e-komponenter appen använder
 (`src/lib/m3e.ts`) i ljust och mörkt tema, och vyernas tillstånd (laddar, tom, fel, innehåll).
-Mallens länk skrivs in i den här filen i samma PR. Det byggda är facit; mallen uppdateras när
-en ny komponent registreras.
+Mallen: <https://claude.ai/artifact/FYM5xj2F43EWByKWP5VK2z> (privat, öppnas av ägaren). Det
+byggda är facit; mallen uppdateras när en ny komponent registreras.
 
 ## Så bygger du en mockup
 
