@@ -41,6 +41,8 @@ Arbetar du i `.svelte`-filer: följ `svelte-core-bestpractices` och kör `svelte
 
 - **Bugg:** regressionstest som faller först, sedan minsta ändringen som gör det grönt.
 - **Funktion:** följ befintliga mönster; m3e-komponenter registreras i `src/lib/m3e.ts`.
+- **Version:** ändrar PR:en appen höjs versionen i samma ändring, med raden i `CHANGELOG.md`
+  (`/release`).
 - Engelska i koden, svenska i gränssnittet. Testdata påhittad. Claude mockas i tester.
 - Ett test som ibland faller är en bugg: hitta grundorsaken. Ta aldrig bort, hoppa över
   (`skip`, `fixme`) eller försvaga ett test för att få grönt.

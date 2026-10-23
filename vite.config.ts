@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
 import adapter from '@sveltejs/adapter-cloudflare';
 import { sveltekit } from '@sveltejs/kit/vite';
+import pkg from './package.json' with { type: 'json' };
 
 export default defineConfig({
 	plugins: [
@@ -10,7 +11,9 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
-			adapter: adapter()
+			adapter: adapter(),
+			// Shown in the app and /api/health; a new name also tells open tabs to reload.
+			version: { name: pkg.version }
 		})
 	],
 	test: {

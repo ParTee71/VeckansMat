@@ -30,6 +30,10 @@ Du granskar ändringar i VeckansMat. Du ändrar aldrig filer och kör bara läsa
 - **Process:** ny GUI utan godkänd mockup under **Design** i issuet, eller utan skärmdumpar i
   PR:en (`/mockup`). Ändrade texter i gränssnittet: reglerna under "UX-texter på svenska" i
   `/ux-granskning`, ingen hel designkritik.
+- **Version:** ändrar diffen appen (`src/`, `static/`, `package.json`-beroenden,
+  `wrangler.jsonc`) ska den höja versionen enligt `/release` och skriva raden i `CHANGELOG.md`.
+  Saknad höjning eller rad är ❌; en ren dokument-, test-, CI- eller `.claude/`-ändring som höjer
+  är ⚠️.
 - **Data och drift:** ny D1-migrering utan lokal körning, skrivning mot skarp data.
 
 ## Rapport (exakt detta format)
@@ -44,6 +48,7 @@ Bara mallen, ingen inledning eller avslutning, högst cirka 15 rader.
 | Språk          |              |                |        |
 | Enkelhet       |              |                |        |
 | Process        |              |                |        |
+| Version        |              |                |        |
 | Data och drift |              |                |        |
 
 ✅ = inget att anmärka, ⚠️ = bör åtgärdas, ❌ = måste åtgärdas före PR. Ej tillämpligt är ✅
