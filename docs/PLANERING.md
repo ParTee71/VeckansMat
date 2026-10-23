@@ -4,6 +4,17 @@ Beslut tagna 2026-10-23, innan någon kod skrivits. Dokumentet säger vad som ä
 bestämt och varför, och vad som medvetet lämnats till senare. Ändras ett beslut
 skrivs det om här, med datum.
 
+## Två syften
+
+1. **Appen** – veckomeny och inköpslista som hushållet faktiskt använder.
+2. **Lära sig styra AI på bästa sätt** – både Claude som utvecklare och Claude
+   inne i appen. Därför förklaras varje val av styrning (vad som står i
+   `CLAUDE.md`, varför en skill eller hook finns, hur en prompt är byggd) och
+   vad som fungerade och inte. Erfarenheterna samlas i `docs/ai-styrning.md`.
+   Promptarna i appen mäts med en liten eval (en uppsättning exempelveckor som
+   förslagen bedöms mot), så att en ändring visar om den blev bättre eller sämre
+   i stället för att gissas.
+
 ## Vad appen ska göra
 
 En PWA där hushållet får ett veckoförslag på middagar och en inköpslista ur det.
