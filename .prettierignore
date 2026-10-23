@@ -1,2 +1,9 @@
 package-lock.json
 /static/
+
+# Copied unchanged from upstream; see each SOURCE.md
+.claude/skills/svelte-code-writer/
+.claude/skills/svelte-core-bestpractices/
+.claude/skills/wrangler/
+.claude/skills/workers-best-practices/
+.claude/agents/svelte-file-editor.md
