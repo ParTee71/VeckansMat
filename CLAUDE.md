@@ -37,6 +37,6 @@ gränssnitt, `docs/`, commit-meddelanden, issues och PR:er.
   byggs (vad, varför, hur det provas), utom väldigt små och enkla saker.
 - En sak per PR. Tester skrivs i samma PR som koden.
 - Komponenter från `@m3e/web`, registrerade i `src/lib/m3e.ts`.
-- Skills: `/issue-to-pr`, `/adr`. Före push: `/simplify` (mindre kod),
-  sedan `/code-review`.
+- `/refine-issue` planerar, `/implement-issue` genomför, `/mockup` före ny GUI.
+  Före push: `/simplify`, agenten `granskare`, `/code-review`. Allt: `.claude/README.md`.
 - Lärdomar om hur Claude styrs i projektet skrivs i `docs/ai-styrning.md`.

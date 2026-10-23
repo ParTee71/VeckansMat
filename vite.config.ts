@@ -15,7 +15,7 @@ export default defineConfig({
 	],
 	test: {
 		environment: 'node',
-		include: ['src/**/*.{test,spec}.ts'],
+		include: ['src/**/*.{test,spec}.ts', 'test/**/*.spec.ts'],
 		expect: { requireAssertions: true }
 	}
 });
