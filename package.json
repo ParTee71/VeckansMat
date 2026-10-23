@@ -1,0 +1,54 @@
+{
+	"name": "veckansmat",
+	"private": true,
+	"version": "0.0.1",
+	"description": "Veckomeny och inköpslista för hushållet",
+	"type": "module",
+	"engines": {
+		"node": ">=22.13"
+	},
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "wrangler dev .svelte-kit/cloudflare/_worker.js --port 4173",
+		"prepare": "npm run types && svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
+		"lint": "prettier --check . && eslint . --max-warnings 0",
+		"format": "prettier --write .",
+		"test": "vitest --run",
+		"test:e2e": "playwright test",
+		"verify": "npm run check && npm run lint && npm run test",
+		"types": "wrangler types"
+	},
+	"dependencies": {
+		"@m3e/web": "^2.10.2"
+	},
+	"devDependencies": {
+		"@eslint/js": "^10.0.1",
+		"@playwright/test": "^1.60.0",
+		"@sveltejs/adapter-cloudflare": "^8.0.0",
+		"@sveltejs/kit": "^3.0.0",
+		"@sveltejs/vite-plugin-svelte": "^7.2.0",
+		"@types/node": "^22",
+		"eslint": "^10.4.1",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-svelte": "^3.19.0",
+		"globals": "^17.6.0",
+		"prettier": "^3.8.3",
+		"prettier-plugin-svelte": "^4.1.0",
+		"svelte": "^5.57.1",
+		"svelte-check": "^4.6.0",
+		"typescript": "^6.0.3",
+		"typescript-eslint": "^8.60.1",
+		"vite": "^8.3.0",
+		"vitest": "^4.1.8",
+		"wrangler": "^4.97.0"
+	},
+	"imports": {
+		"#lib/*": "./src/lib/*"
+	},
+	"allowScripts": {
+		"esbuild": true,
+		"workerd": true
+	}
+}

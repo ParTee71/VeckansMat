@@ -1,0 +1,11 @@
+{
+	"extends": "$app/tsconfig",
+	"compilerOptions": {
+		"strict": true,
+		// TypeScript only; otherwise the built worker referenced by
+		// worker-configuration.d.ts gets type-checked once a build exists.
+		"checkJs": false,
+		"types": ["$app/types", "node", "./worker-configuration.d.ts"]
+	},
+	"include": ["src", "vite.config.ts", "playwright.config.ts"]
+}
