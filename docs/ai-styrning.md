@@ -5,6 +5,26 @@ skrivs vad som provats, varför, och hur det gick. Nyast överst. Hur
 styrningen är uppbyggd just nu står i
 [beslut 0008](beslut/0008-claude-code-uppsattning.md).
 
+## 2026-10-23 – Issue först, och `/simplify` mot för mycket kod
+
+**Vad:** Två regler från ägaren. Varje uppgift som inte är väldigt liten
+planeras i ett issue innan den byggs. `/simplify` körs före push, före
+`/code-review`.
+
+**Varför så:**
+
+- **Ett issue är en plan som går att granska innan koden finns.** Det är
+  billigare att rätta en missuppfattning i fem rader text än i en PR på
+  femhundra. Issuet blir också minnet: nästa session läser det i stället för
+  att gissa vad som var meningen.
+- **AI skriver gärna för mycket.** Claude lägger lätt till skydd, inställningar
+  och abstraktioner som ingen bett om. `/simplify` låter fyra granskare leta
+  efter kod som kan tas bort, slås ihop eller ersättas med något som redan
+  finns. Ordningen spelar roll: förenkla först, granska sedan det som blev
+  kvar.
+- **Reglerna står där de används**: i `CLAUDE.md` (kort) och som steg i
+  `/issue-to-pr`, så att de följs även när ingen påminner.
+
 ## 2026-10-23 – Uppsättningen från start
 
 **Vad:** Kort `CLAUDE.md` (under 40 rader), beslut som ADR:er, två skills

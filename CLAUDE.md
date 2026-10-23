@@ -33,7 +33,10 @@ gränssnitt, `docs/`, commit-meddelanden, issues och PR:er.
 
 ## Arbetssätt
 
+- **Issue först.** Varje uppgift planeras i ett GitHub-issue innan den
+  byggs (vad, varför, hur det provas), utom väldigt små och enkla saker.
 - En sak per PR. Tester skrivs i samma PR som koden.
 - Komponenter från `@m3e/web`, registrerade i `src/lib/m3e.ts`.
-- Skills: `/issue-to-pr`, `/adr`. Granska med `/code-review` före push.
+- Skills: `/issue-to-pr`, `/adr`. Före push: `/simplify` (mindre kod),
+  sedan `/code-review`.
 - Lärdomar om hur Claude styrs i projektet skrivs i `docs/ai-styrning.md`.
