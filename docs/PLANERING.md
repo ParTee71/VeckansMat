@@ -144,6 +144,8 @@ bestäms den tillsammans med ägaren, inte på egen hand.
 - **Beroenden** hålls uppdaterade med Dependabot; secret scanning och push
   protection på (gratis i publika repon).
 - **Små PR:er**, en sak per PR.
+- **Språk:** engelska i kod, identifierare, kodkommentarer och commit-meddelanden.
+  Svenska i gränssnittet, i `docs/`, issues och PR-beskrivningar.
 
 Ordning: först besluten (det här dokumentet), sedan AI-verktygen och
 ramverkets skelett för det vi vet, sedan funktionerna.
@@ -185,9 +187,6 @@ låta hushållet fotografera reklambladet.
 
 ## Öppna frågor
 
-- Språk i koden: svenska som i Husjakt, eller engelska identifierare (branschpraxis,
-  och bättre stöd i bibliotek och verktyg) med svenskt gränssnitt och svenska
-  dokument?
 
 - Vilka krav per person ska stödjas från start (allergier, ogillar, kost)?
 - Vilka menyregler behövs från start, och hur formuleras de i appen?
