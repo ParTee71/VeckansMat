@@ -40,9 +40,9 @@ Agenten `granskare` kontrollerar höjningen.
 
 ## Förhandsadressen
 
-Varje grön push till `main` laddas upp som en ny Worker-version med alias `main` (jobbet
-"Förhandsadress" i `ci.yml`). Skarp drift påverkas inte. Före första releasen finns ingen Worker
-att hänga versionen på, så jobbet hoppar över uppladdningen med en notis.
+Varje grön push till `main` driftsätts till en egen Worker, `veckansmat-preview`, med egen
+databas `veckansmat-preview` (jobbet "Förhandsadress" i `ci.yml`, beslut 0012). Skarp drift och
+hushållets data påverkas inte. Den Workern behöver Cloudflare Access precis som drift.
 
 ## Stegen
 
@@ -52,7 +52,9 @@ att hänga versionen på, så jobbet hoppar över uppladdningen med en notis.
 2. Ge ägaren länken [Actions → Release](https://github.com/ParTee71/VeckansMat/actions/workflows/release.yml)
    → **Run workflow**, först med "Provkör" ikryssad (standard), sedan utan.
 3. Workflowen stoppar om taggen redan finns, om raderna saknas eller om CI inte är grön för
-   committen. Annars kör den `wrangler deploy` med versionen som tagg, skapar taggen `vX.Y.Z`
+   committen. Annars skapar den databasen om den saknas, kör migreringarna, kör
+   `wrangler deploy` med versionen som tagg, skapar taggen `vX.Y.Z`
    och en GitHub Release med raderna.
 4. **Backa:** i Cloudflare under Workers → `veckansmat` → Deployments → Rollback (länken till
-   kontot ges ägaren). Rätta sedan i en ny PR med höjd patchversion.
+   kontot ges ägaren). Rätta sedan i en ny PR med höjd patchversion. En rollback backar inte
+   databasen, därför ska varje migrering fungera även med föregående version av koden.

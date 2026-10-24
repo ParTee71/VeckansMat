@@ -16,3 +16,4 @@ med `/adr` i Claude Code.
 | [0009](0009-kvalitet-och-ci.md)          | Kvalitetskontroller och CI                      | Beslutat |
 | [0010](0010-skills-och-agenter.md)       | Officiella skills först, egna där inget finns   | Beslutat |
 | [0011](0011-versioner-och-release.md)    | Versioner och release                           | Beslutat |
+| [0012](0012-datamodell.md)               | Datamodell för recept och veckomenyer           | Beslutat |
