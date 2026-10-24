@@ -5,6 +5,52 @@ skrivs vad som provats, varför, och hur det gick. Nyast överst. Hur
 styrningen är uppbyggd just nu står i
 [beslut 0008](beslut/0008-claude-code-uppsattning.md).
 
+## 2026-10-23 – Mockup först, och vad skärmdumpen fångade
+
+**Vad:** Uppmaningen "Ny version finns" ritades först som mockup i en Design-canvas, som också
+blev mallen för kommande mockuper. Ägaren valde beteendet (ligger kvar tills man trycker)
+innan någon kod skrevs, och färgerna sparades till när det finns fler vyer.
+
+**Lärdom:** Proven var gröna, men skärmdumpen i mörkt tema visade en vit sida: `m3e-theme`
+färgar bara `<body>` när den ligger direkt under den, och SvelteKit lindar appen i en `div`.
+Ett prov som letar efter text ser inte färger – därför tas skärmdumpar i båda temana innan
+en ändring i gränssnittet pushas.
+
+## 2026-10-23 – Versioner, och ett exempel på varför ramverkets skill behövs
+
+**Vad:** Semver, `CHANGELOG.md` och skillen `release` efter claude-android. Se
+[beslut 0011](beslut/0011-versioner-och-release.md).
+
+**Lärdom:** Claude skrev `import { version } from '$app/environment'` – rätt i SvelteKit 2,
+fel i SvelteKit 3, där modulen heter `$app/env`. Typkontrollen fångade det direkt. Det är
+precis den sortens minnesfel som Svelte-teamets skills och `svelte-autofixer` finns för, och
+skälet till att `npm run verify` körs före varje push i stället för att lita på att koden
+"ser rätt ut".
+
+## 2026-10-23 – Officiella skills, och ett arbetsflöde som redan fungerat
+
+**Vad:** Svelte- och Cloudflare-teamens egna skills kopierade in oförändrade. Arbetsflödet
+(`refine-issue`, `implement-issue`, `mockup`, `granskare`, `ci-doktor`) anpassat från ägarens
+Android-plugin `claude-android`. Se [beslut 0010](beslut/0010-skills-och-agenter.md).
+
+**Varför så:**
+
+- **Den som byggt ramverket vet bäst.** Svelte-teamets `svelte-autofixer` hittar Svelte
+  4-syntax och `$effect` som borde vara `$derived` – just de misstag en modell gör när den
+  minns ett äldre Svelte. En egen skill skulle skriva av samma råd, sämre och utan underhåll.
+- **Kopior, inte pluginer.** En plugin uppdateras av sig själv, vilket låter bra men betyder
+  att styrningen ändras utan att någon sett det. En kopia med `SOURCE.md` uppdateras som en
+  vanlig PR.
+- **Läs främmande skills innan de tas in.** Playwrights healer-agent såg bra ut, men dess
+  instruktion säger att ett test den inte får grönt ska märkas `test.fixme()`. Det skulle tyst
+  stänga av tester. En skill är kod som styr Claude och granskas som kod.
+- **Agent eller skill?** En skill lägger kunskap i samma samtal. En agent får ett eget
+  samtal: `granskare` har inte sett koden skrivas och granskar därför friare, och `ci-doktor`
+  läser långa loggar utan att fylla huvudsessionen.
+- **Projekttrådar laddade inte `.claude/` alls.** Trådarna startar ovanför repot, så hooken
+  före push kördes aldrig där. Upptäckt genom att läsa hur claude-android löst samma sak;
+  löst med ett setup-skript i miljön.
+
 ## 2026-10-23 – Issue först, och `/simplify` mot för mycket kod
 
 **Vad:** Två regler från ägaren. Varje uppgift som inte är väldigt liten
