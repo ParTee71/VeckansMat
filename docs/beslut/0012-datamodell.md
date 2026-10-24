@@ -26,8 +26,11 @@ alltid, sällan veckodagar och ibland rader som inte är rätter ("Rester",
   migrering den dag det behövs.
 - Ren SQL med förberedda satser i `src/lib/server/db/`, ingen ORM.
 - Migreringar med wranglers `d1 migrations`. Release kör dem före
-  driftsättningen; förhandsadressen har en egen Worker (`veckansmat-preview`)
-  med egen databas, så prov aldrig rör hushållets data.
+  driftsättningen.
+- **Ersätter förhandsadressen i 0003 och 0011:** i stället för en
+  förhandsadress per gren, eller en version av drift-Workern med alias `main`
+  (som skulle dela drifts databas), driftsätts `main` till en egen Worker,
+  `veckansmat-preview`, med egen databas. Prov rör aldrig hushållets data.
 - `wrangler.jsonc` anger databaserna med namn, utan id. Wrangler slår upp dem,
   och CI skapar dem om de saknas.
 

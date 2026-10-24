@@ -9,7 +9,8 @@ export const GET: RequestHandler = async () => {
 	try {
 		await env.DB.prepare('SELECT 1').first();
 		return json({ status: 'ok', version, database: 'ok' });
-	} catch {
+	} catch (error) {
+		console.error('Health check: the database does not answer', error);
 		return json({ status: 'error', version, database: 'error' }, { status: 503 });
 	}
 };

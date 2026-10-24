@@ -1,20 +1,19 @@
 import { env } from 'cloudflare:workers';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import pkg from '../../../../package.json' with { type: 'json' };
-import { createTestDb } from '../../../../test/d1';
 import { GET } from './+server';
 
 type Event = Parameters<typeof GET>[0];
 
-let dispose: () => Promise<void>;
+// The real database is covered by the e2e test of the same endpoint.
+const database = (first: () => Promise<unknown>) =>
+	({ prepare: () => ({ first }) }) as unknown as D1Database;
 
-beforeAll(async () => {
-	({ db: env.DB, dispose } = await createTestDb());
-});
-afterAll(() => dispose());
+afterEach(() => vi.restoreAllMocks());
 
 describe('GET /api/health', () => {
 	it('answers ok with the package version when the database answers', async () => {
+		env.DB = database(async () => ({ 1: 1 }));
 		const response = await GET({} as Event);
 		expect(response.status).toBe(200);
 		expect(await response.json()).toEqual({
@@ -25,13 +24,9 @@ describe('GET /api/health', () => {
 	});
 
 	it('answers 503 when the database does not', async () => {
-		const db = env.DB;
-		env.DB = {
-			prepare: () => {
-				throw new Error('no database');
-			}
-		} as unknown as D1Database;
-		const response = await Promise.resolve(GET({} as Event)).finally(() => (env.DB = db));
+		vi.spyOn(console, 'error').mockImplementation(() => {});
+		env.DB = database(() => Promise.reject(new Error('no database')));
+		const response = await GET({} as Event);
 		expect(response.status).toBe(503);
 		expect(await response.json()).toMatchObject({ status: 'error', database: 'error' });
 	});

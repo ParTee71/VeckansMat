@@ -18,7 +18,8 @@ export default function setup(project: TestProject) {
 		'npx',
 		['wrangler', 'd1', 'migrations', 'apply', 'DB', '--local', '--persist-to', dir],
 		{
-			stdio: 'ignore'
+			// Piped, so a failing migration's error ends up in the thrown message.
+			stdio: 'pipe'
 		}
 	);
 	project.provide('migratedD1', dir);

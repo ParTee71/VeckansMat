@@ -37,8 +37,16 @@ describe('recipes', () => {
 		expect(nameKey('ÄRTSOPPA  och  Pannkakor')).toBe('ärtsoppa och pannkakor');
 	});
 
-	it('need a name', async () => {
-		await expect(saveMenu(db, week('2030-01-07', '   '))).rejects.toThrow();
+	it('take the first spelling of a new dish', async () => {
+		await saveMenu(db, week('2030-01-07', 'Pannbiff med lök', 'PANNBIFF MED LÖK'));
+		expect(await recipes()).toEqual([{ id: expect.any(Number), name: 'Pannbiff med lök' }]);
+	});
+
+	it('are not made from blank names', async () => {
+		await saveMenu(db, week('2030-01-07', '', '   '));
+		expect(await recipes()).toEqual([]);
+		const [menu] = await listMenus(db);
+		expect(menu.items.map((item) => item.recipeId)).toEqual([null, null]);
 	});
 });
 

@@ -1,6 +1,6 @@
 # 0011. Versioner och release
 
-- **Status:** Beslutat
+- **Status:** Beslutat, förhandsadressen ersatt av 0012
 - **Datum:** 2026-10-23
 
 ## Sammanhang
@@ -29,7 +29,6 @@ fungerande flöde (`release` i `ParTee71/claude-android`).
 ## Följder
 
 - Agenten `granskare` kontrollerar höjningen; skillen `release` har tabellen och stegen.
-- `release.yml` driftsätter skarpt; jobbet "Förhandsadress" i `ci.yml` driftsätter `main`
-  till en egen Worker, `veckansmat-preview`, med egen databas, utan att röra skarp drift
-  (beslut 0012).
+- `release.yml` driftsätter skarpt; jobbet "Förhandsadress" i `ci.yml` laddar upp `main`
+  under alias `main` utan att röra skarp drift.
 - Taggar skapas av workflowen, aldrig från en Claude-session.
