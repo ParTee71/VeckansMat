@@ -16,7 +16,7 @@ test('material components are registered in the browser', async ({ page }) => {
 test('health endpoint answers', async ({ request }) => {
 	const response = await request.get('/api/health');
 	expect(response.ok()).toBe(true);
-	expect(await response.json()).toEqual({ status: 'ok', version: pkg.version });
+	expect(await response.json()).toEqual({ status: 'ok', version: pkg.version, database: 'ok' });
 });
 
 test('start page shows the version', async ({ page }) => {

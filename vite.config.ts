@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import adapter from '@sveltejs/adapter-cloudflare';
 import { sveltekit } from '@sveltejs/kit/vite';
@@ -19,6 +20,10 @@ export default defineConfig({
 	test: {
 		environment: 'node',
 		include: ['src/**/*.{test,spec}.ts', 'test/**/*.spec.ts'],
+		alias: {
+			'cloudflare:workers': fileURLToPath(new URL('test/cloudflare-workers.ts', import.meta.url))
+		},
+		globalSetup: ['test/d1-setup.ts'],
 		expect: { requireAssertions: true }
 	}
 });

@@ -1,16 +1,17 @@
 {
 	"name": "veckansmat",
 	"private": true,
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Veckomeny och inköpslista för hushållet",
 	"type": "module",
 	"engines": {
 		"node": ">=22.13"
 	},
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "npm run db:migrate && vite dev",
 		"build": "vite build",
-		"preview": "wrangler dev .svelte-kit/cloudflare/_worker.js --port 4173",
+		"preview": "npm run db:migrate && wrangler dev .svelte-kit/cloudflare/_worker.js --port 4173",
+		"db:migrate": "wrangler d1 migrations apply DB --local",
 		"prepare": "npm run types && svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
 		"lint": "prettier --check . && eslint . --max-warnings 0",

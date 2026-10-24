@@ -9,5 +9,15 @@
 		"directory": ".svelte-kit/cloudflare"
 	},
 	"workers_dev": true,
-	"preview_urls": true
+	"preview_urls": false,
+	// No database_id: wrangler finds the database by name, so the public repo
+	// carries no account identifiers. CI creates it if it is missing.
+	"d1_databases": [{ "binding": "DB", "database_name": "veckansmat" }],
+	"env": {
+		// Its own Worker (veckansmat-preview) and database, so that trying out main
+		// never touches the household's data.
+		"preview": {
+			"d1_databases": [{ "binding": "DB", "database_name": "veckansmat-preview" }]
+		}
+	}
 }

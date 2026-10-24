@@ -1,6 +1,6 @@
 # 0011. Versioner och release
 
-- **Status:** Beslutat
+- **Status:** Beslutat, förhandsadressen ersatt av 0012
 - **Datum:** 2026-10-23
 
 ## Sammanhang

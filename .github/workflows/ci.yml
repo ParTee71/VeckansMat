@@ -46,8 +46,8 @@ jobs:
           path: test-results/
           retention-days: 7
 
-  # Every green push to main is uploaded as a new version under the preview
-  # alias "main". Production only changes through the release workflow.
+  # Every green push to main is deployed to its own Worker, veckansmat-preview,
+  # with its own database. Production only changes through the release workflow.
   preview:
     name: Förhandsadress
     needs: [verify, e2e]
@@ -62,14 +62,16 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - name: Ladda upp till förhandsadressen
+      - name: Databasen finns och är migrerad
+        run: |
+          npx wrangler d1 list --json | jq -e 'any(.[]; .name == "veckansmat-preview")' > /dev/null ||
+            npx wrangler d1 create veckansmat-preview
+          npx wrangler d1 migrations apply DB --env preview --remote
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          # A preview version needs a Worker to attach to, which the first release creates.
-          if [ -z "$(git ls-remote --tags origin 'refs/tags/v*')" ]; then
-            echo "::notice::Ingen release än. Förhandsadressen finns efter första releasen."
-            exit 0
-          fi
-          npx wrangler versions upload --preview-alias main --tag "${GITHUB_SHA::7}" --message "main ${GITHUB_SHA::7}"
+      - name: Driftsätt förhandsadressen
+        run: npx wrangler deploy --env preview --tag "${GITHUB_SHA::7}" --message "main ${GITHUB_SHA::7}"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
