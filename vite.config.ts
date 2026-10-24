@@ -23,6 +23,7 @@ export default defineConfig({
 		alias: {
 			'cloudflare:workers': fileURLToPath(new URL('test/cloudflare-workers.ts', import.meta.url))
 		},
+		globalSetup: ['test/d1-setup.ts'],
 		expect: { requireAssertions: true }
 	}
 });

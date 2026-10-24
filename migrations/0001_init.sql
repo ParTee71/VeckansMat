@@ -39,7 +39,7 @@ CREATE TABLE recipe_tag (
 CREATE TABLE menu (
 	id INTEGER PRIMARY KEY,
 	-- The Monday of the week, YYYY-MM-DD.
-	week_start TEXT CHECK (week_start IS NULL OR date(week_start, 'weekday 1') = week_start),
+	week_start TEXT CHECK (week_start IS NULL OR date(week_start, 'weekday 1') IS week_start),
 	source TEXT NOT NULL CHECK (source IN ('photo', 'app')),
 	note TEXT,
 	created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))

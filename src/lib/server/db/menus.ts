@@ -38,14 +38,18 @@ export interface Menu {
 
 /** Saves a week and creates name-only recipes for dishes not seen before, all or nothing. */
 export async function saveMenu(db: D1Database, menu: NewMenu): Promise<number> {
-	const recipeNames = menu.items.flatMap((item) => (item.recipeName ? [item.recipeName] : []));
+	const recipeNames = new Map(
+		menu.items.flatMap((item) =>
+			item.recipeName ? [[nameKey(item.recipeName), item.recipeName]] : []
+		)
+	);
 	// A batch runs as one transaction on D1's single writer, so the newest menu
-	// row is the one inserted just before the items.
-	const results = await db.batch([
-		...recipeNames.map((name) => upsertRecipeStatement(db, name)),
+	// row is the one inserted first in this batch.
+	const [inserted] = await db.batch([
 		db
 			.prepare('INSERT INTO menu (week_start, source, note) VALUES (?, ?, ?) RETURNING id')
 			.bind(menu.weekStart, menu.source, menu.note ?? null),
+		...[...recipeNames.values()].map((name) => upsertRecipeStatement(db, name)),
 		...menu.items.map((item, position) =>
 			db
 				.prepare(
@@ -61,7 +65,7 @@ export async function saveMenu(db: D1Database, menu: NewMenu): Promise<number> {
 				)
 		)
 	]);
-	return (results[recipeNames.length].results[0] as { id: number }).id;
+	return (inserted.results[0] as { id: number }).id;
 }
 
 interface MenuRow {

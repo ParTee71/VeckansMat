@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { clearTestDb, createTestDb } from '../../../../test/d1';
 import { listMenus, saveMenu } from './menus';
-import { findOrCreateRecipe, nameKey } from './recipes';
+import { nameKey } from './recipes';
 
 let db: D1Database;
 let dispose: () => Promise<void>;
@@ -12,20 +12,25 @@ beforeAll(async () => {
 afterAll(() => dispose());
 beforeEach(() => clearTestDb(db));
 
-const countRecipes = async () =>
-	(await db.prepare('SELECT count(*) AS n FROM recipe').first<number>('n')) ?? 0;
+const recipes = async () =>
+	(await db.prepare('SELECT id, name FROM recipe ORDER BY id').all<{ id: number; name: string }>())
+		.results;
+
+const week = (weekStart: string | null, ...names: (string | null)[]) => ({
+	weekStart,
+	source: 'photo' as const,
+	items: names.map((name) => ({
+		text: name ?? 'Rester',
+		recipeName: name,
+		meal: 'dinner' as const
+	}))
+});
 
 describe('recipes', () => {
-	it('can be just a name', async () => {
-		const recipe = await findOrCreateRecipe(db, 'Pannbiff med lök');
-		expect(recipe).toEqual({ id: expect.any(Number), name: 'Pannbiff med lök' });
-	});
-
-	it('are the same recipe when the name differs only in case and spacing', async () => {
-		const first = await findOrCreateRecipe(db, 'Pannbiff med lök');
-		const second = await findOrCreateRecipe(db, '  pannbiff   MED Lök ');
-		expect(second).toEqual(first);
-		expect(await countRecipes()).toBe(1);
+	it('can be just a name, and the same name written differently is one recipe', async () => {
+		await saveMenu(db, week('2030-01-07', 'Pannbiff med lök'));
+		await saveMenu(db, week('2030-01-14', '  pannbiff   MED Lök ', 'Pannbiff med lök'));
+		expect(await recipes()).toEqual([{ id: expect.any(Number), name: 'Pannbiff med lök' }]);
 	});
 
 	it('normalise Swedish letters', () => {
@@ -33,15 +38,16 @@ describe('recipes', () => {
 	});
 
 	it('need a name', async () => {
-		await expect(findOrCreateRecipe(db, '   ')).rejects.toThrow();
+		await expect(saveMenu(db, week('2030-01-07', '   '))).rejects.toThrow();
 	});
 });
 
 describe('menus', () => {
 	it('link lines to new and existing recipes, and lines without a dish to none', async () => {
-		const existing = await findOrCreateRecipe(db, 'Pannbiff med lök');
+		await saveMenu(db, week('2030-01-07', 'Pannbiff med lök'));
+		const [existing] = await recipes();
 		await saveMenu(db, {
-			weekStart: '2030-01-07',
+			weekStart: '2030-01-14',
 			source: 'photo',
 			items: [
 				{ text: 'pannbiff m. lök', recipeName: 'Pannbiff med lök', meal: 'dinner' },
@@ -52,7 +58,7 @@ describe('menus', () => {
 		});
 
 		const [menu] = await listMenus(db);
-		expect(menu).toMatchObject({ weekStart: '2030-01-07', source: 'photo', note: null });
+		expect(menu).toMatchObject({ weekStart: '2030-01-14', source: 'photo', note: null });
 		expect(menu.items).toEqual([
 			{
 				text: 'pannbiff m. lök',
@@ -77,7 +83,7 @@ describe('menus', () => {
 				recipeName: 'Ostfrallor'
 			}
 		]);
-		expect(await countRecipes()).toBe(3);
+		expect(await recipes()).toHaveLength(3);
 	});
 
 	it('can lack a date, and are listed newest first with undated last', async () => {
@@ -116,16 +122,19 @@ describe('menus', () => {
 		]);
 	});
 
-	it('start on a Monday, and save nothing when the week is wrong', async () => {
-		await expect(
-			saveMenu(db, {
-				weekStart: '2030-01-08',
-				source: 'photo',
-				items: [{ text: 'Linssoppa', recipeName: 'Linssoppa', meal: 'dinner' }]
-			})
-		).rejects.toThrow();
-		expect(await listMenus(db)).toEqual([]);
-		expect(await countRecipes()).toBe(0);
+	it.each(['2030-01-08', '2030-1-7', 'vecka 2'])(
+		'start on a Monday, and save nothing for %s',
+		async (weekStart) => {
+			await expect(saveMenu(db, week(weekStart, 'Linssoppa'))).rejects.toThrow();
+			expect(await listMenus(db)).toEqual([]);
+			expect(await recipes()).toEqual([]);
+		}
+	);
+
+	it('start on a Monday', async () => {
+		await expect(saveMenu(db, week('2030-01-07', 'Linssoppa'))).resolves.toEqual(
+			expect.any(Number)
+		);
 	});
 
 	it('are one per week', async () => {
