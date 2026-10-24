@@ -1,0 +1,100 @@
+name: Release
+
+# Started by hand from the Actions tab. Deploys the version already on main,
+# tags it vX.Y.Z and publishes the CHANGELOG section as a GitHub Release.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Provkör utan att driftsätta eller skapa taggen
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Bara från main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::En release startas från main, inte från ${GITHUB_REF_NAME}."
+          exit 1
+
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Version, tagg och versionshistorik
+        id: version
+        run: |
+          version=$(node -p "require('./package.json').version")
+          tag="v$version"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+            echo "::error::$tag är redan släppt. Höj versionen i en PR först."
+            exit 1
+          fi
+          awk -v heading="## $version" '$0 == heading { found = 1; next } /^## / { found = 0 } found' CHANGELOG.md > notes.md
+          if ! grep -q '[^[:space:]]' notes.md; then
+            echo "::error::CHANGELOG.md saknar rader under ## $version."
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          { echo "### $tag"; cat notes.md; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: CI ska vara grön för den här committen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=$(gh run list --workflow ci.yml --commit "$GITHUB_SHA" --event push --limit 1 --json status,conclusion --jq '.[0] | "\(.status) \(.conclusion)"')
+          if [ "$state" != "completed success" ]; then
+            echo "::error::CI på main är inte grön för ${GITHUB_SHA::7} (${state:-ingen körning}). Vänta tills den är klar och grön."
+            exit 1
+          fi
+
+      - name: Nyckeln når kontot och dess workers.dev-underdomän
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Only Cloudflare's error codes and messages are printed: the logs are public.
+          response=$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain")
+          if [ "$(jq -r .success <<< "$response")" != true ]; then
+            jq -r '.errors[]? | "Cloudflare svarar \(.code): \(.message)"' <<< "$response"
+            echo "::error::Nyckeln når inte kontot, eller så saknar kontot en workers.dev-underdomän. Kolla CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID och underdomänen i Workers & Pages."
+            exit 1
+          fi
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Provkör driftsättningen
+        if: ${{ inputs.dry_run }}
+        run: npx wrangler deploy --dry-run
+
+      - name: Driftsätt skarpt
+        if: ${{ !inputs.dry_run }}
+        run: npx wrangler deploy --tag "$TAG" --message "$TAG"
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Tagg och GitHub Release
+        if: ${{ !inputs.dry_run }}
+        run: gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file notes.md
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}

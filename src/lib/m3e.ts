@@ -2,3 +2,4 @@
 // component on its own so only what is used ends up in the bundle.
 import '@m3e/web/theme';
 import '@m3e/web/card';
+import '@m3e/web/snackbar';
