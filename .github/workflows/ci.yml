@@ -45,3 +45,31 @@ jobs:
           name: playwright-report
           path: test-results/
           retention-days: 7
+
+  # Every green push to main is uploaded as a new version under the preview
+  # alias "main". Production only changes through the release workflow.
+  preview:
+    name: Förhandsadress
+    needs: [verify, e2e]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Ladda upp till förhandsadressen
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # A preview version needs a Worker to attach to, which the first release creates.
+          if [ -z "$(git ls-remote --tags origin 'refs/tags/v*')" ]; then
+            echo "::notice::Ingen release än. Förhandsadressen finns efter första releasen."
+            exit 0
+          fi
+          npx wrangler versions upload --preview-alias main --tag "${GITHUB_SHA::7}" --message "main ${GITHUB_SHA::7}"

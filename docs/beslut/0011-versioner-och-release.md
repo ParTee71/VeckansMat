@@ -15,7 +15,11 @@ fungerande flöde (`release` i `ParTee71/claude-android`).
   `CHANGELOG.md` skrivs där. Releasen frågar inte om numret.
 - **Skarp drift bara vid release** (ägaren 2026-10-23). Mergar till `main` går till
   förhandsadressen. En release startas med `workflow_dispatch`, skapar taggen `vX.Y.Z` och en
-  GitHub Release, och kör `wrangler deploy` så att Cloudflare kan backa med `wrangler rollback`.
+  GitHub Release, och kör `wrangler deploy`, så att en release kan backas i Cloudflares panel under
+  Deployments.
+- **Eget Cloudflare-konto för VeckansMat** (ägaren 2026-10-24). Repot är publikt, och
+  wrangler skriver adressen med kontots workers.dev-underdomän i Actions-loggarna, som alla
+  kan läsa. I ett delat konto skulle de avslöja adressen till ägarens andra appar.
 - **Versionen syns diskret** längst ner i appen och i `/api/health` (ägaren 2026-10-23).
 - **SvelteKits `version.name` är versionen.** En öppen flik märker en ny version (SvelteKit
   kollar varje timme och när fliken får fokus). Då visas "Ny version finns" med knappen
@@ -25,5 +29,6 @@ fungerande flöde (`release` i `ParTee71/claude-android`).
 ## Följder
 
 - Agenten `granskare` kontrollerar höjningen; skillen `release` har tabellen och stegen.
-- Release-workflowen och förhandsadressen byggs när Cloudflare-kontot finns.
+- `release.yml` driftsätter skarpt; jobbet "Förhandsadress" i `ci.yml` laddar upp `main`
+  under alias `main` utan att röra skarp drift.
 - Taggar skapas av workflowen, aldrig från en Claude-session.
