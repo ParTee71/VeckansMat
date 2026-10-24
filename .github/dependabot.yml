@@ -8,6 +8,10 @@ updates:
       # One PR per week for all minor and patch updates instead of one per package.
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # Node types follow the Node major in .nvmrc, which is bumped deliberately.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     commit-message:
       prefix: 'Beroenden'
 
@@ -15,5 +19,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    groups:
+      # The workflows use the actions together, so they are updated together.
+      actions:
+        patterns: ['*']
     commit-message:
       prefix: 'Actions'
