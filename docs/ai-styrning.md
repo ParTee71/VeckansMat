@@ -5,6 +5,20 @@ skrivs vad som provats, varför, och hur det gick. Nyast överst. Hur
 styrningen är uppbyggd just nu står i
 [beslut 0008](beslut/0008-claude-code-uppsattning.md).
 
+## 2026-10-24 – Fyra granskare med var sin vinkel hittar olika saker
+
+**Vad:** Rätterna (#21) gick genom `/simplify` (fyra agenter: återbruk, förenkling, effektivitet,
+nivå), agenten `granskare` och `/code-review`, i den ordningen.
+
+**Lärdom:** Vinklarna överlappade lite men fångade olika saker. Förenklingen hittade text som
+skrivits två gånger, effektiviteten en sparning som läste hela rätten bara för att se att den
+fanns, och granskningen en switch som tappade sitt läge när sparningen misslyckades och ett
+e2e-prov som berodde på i vilken ordning proven kördes. Den sista sortens fel syns aldrig
+när man skriver koden själv, för proven var gröna. Ett annat mönster: webbkomponenter (m3e)
+följer inte alla ramverkets antaganden – `false` blir attributet `"false"` och en knapp i
+skuggträdet räknas inte som formulärets knapp. Sådant skrivs som en kommentar vid koden, så
+att nästa session inte "rättar" tillbaka det.
+
 ## 2026-10-23 – Mockup först, och vad skärmdumpen fångade
 
 **Vad:** Uppmaningen "Ny version finns" ritades först som mockup i en Design-canvas, som också
