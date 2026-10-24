@@ -38,5 +38,21 @@ Agenten `granskare` kontrollerar höjningen.
 - **Taggar pushas aldrig från en Claude-session** (miljön stoppar `refs/tags`). Release-workflowen
   skapar taggen själv.
 
-Stegen för själva releasen skrivs här när `release.yml` byggs, tillsammans med Cloudflare-kontot
-(#5). Tills dess finns inget att släppa skarpt.
+## Förhandsadressen
+
+Varje grön push till `main` laddas upp som en ny Worker-version med alias `main` (jobbet
+"Förhandsadress" i `ci.yml`). Skarp drift påverkas inte. Före första releasen finns ingen Worker
+att hänga versionen på, så jobbet hoppar över uppladdningen med en notis.
+
+## Stegen
+
+0. **Före första releasen:** kontot har en workers.dev-underdomän, och Cloudflare Access står
+   framför appen och förhandsadresserna innan appen har data eller anropar Claude (beslut 0005).
+1. Läs `CHANGELOG.md` under versionen i `package.json` på `main`. Raderna är releasens text.
+2. Ge ägaren länken [Actions → Release](https://github.com/ParTee71/VeckansMat/actions/workflows/release.yml)
+   → **Run workflow**, först med "Provkör" ikryssad (standard), sedan utan.
+3. Workflowen stoppar om taggen redan finns, om raderna saknas eller om CI inte är grön för
+   committen. Annars kör den `wrangler deploy` med versionen som tagg, skapar taggen `vX.Y.Z`
+   och en GitHub Release med raderna.
+4. **Backa:** i Cloudflare under Workers → `veckansmat` → Deployments → Rollback (länken till
+   kontot ges ägaren). Rätta sedan i en ny PR med höjd patchversion.
