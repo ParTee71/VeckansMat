@@ -8,6 +8,7 @@ Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ä
 - Rätterna och de gamla veckorna syns i appen, med en meny längst ner för Veckan, Rätter och Veckor. (#21)
 - En ny rätt läggs till med namnet och ett tryck, och fylls på med ingredienser, steg och taggar när man vill. En rätt kan markeras som att den passar till matlådor. (#21)
 - Appen har bytt färg till terrakotta på vit bakgrund. (#21)
+- Var och en kan byta appens färg på sin egen telefon: terrakotta, skiffer, salvia, eukalyptus, oliv eller en egen färg. (#22)
 
 ## 0.2.0
 

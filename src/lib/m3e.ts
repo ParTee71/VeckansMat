@@ -13,3 +13,4 @@ import '@m3e/web/form-field';
 import '@m3e/web/textarea-autosize';
 import '@m3e/web/switch';
 import '@m3e/web/expansion-panel';
+import '@m3e/web/bottom-sheet';

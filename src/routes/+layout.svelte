@@ -5,6 +5,8 @@
 	import { page, updated } from '$app/state';
 	import favicon from '#lib/assets/favicon.svg';
 	import Icon from '#lib/Icon.svelte';
+	import { loadTheme, theme } from '#lib/theme.svelte.ts';
+	import { themeOf } from '#lib/themes.ts';
 	import type { M3eSnackbarElement } from '@m3e/web/snackbar';
 	import type { LayoutProps } from './$types';
 
@@ -18,9 +20,13 @@
 	] as const;
 	let showNav = $derived(destinations.some((d) => d.href === page.url.pathname));
 
+	let current = $derived(themeOf(theme.choice));
+
 	// The m3e web components touch `customElements`, which only exists in the
 	// browser, so they are registered after hydration instead of during SSR.
+	// The phone's theme is read first, so the scheme is built from it straight away.
 	onMount(() => {
+		loadTheme();
 		import('#lib/m3e.ts');
 	});
 
@@ -46,7 +52,13 @@
 	<title>Veckans mat</title>
 </svelte:head>
 
-<m3e-theme color="#c26b4e" variant="tonal-spot" scheme="auto" motion="expressive" strong-focus>
+<m3e-theme
+	color={current.color}
+	variant={current.variant}
+	scheme="auto"
+	motion="expressive"
+	strong-focus
+>
 	<div class="app">
 		<div class="content">
 			{@render children()}
