@@ -81,7 +81,7 @@ test('who eats is chosen per week, and shows what they do not eat', async ({ pag
 
 test('the arrows go between this week and the next', async ({ page }) => {
 	await open(page, '/');
-	const dates = page.locator('.dates');
+	const dates = page.locator('.subtitle');
 	const first = await dates.textContent();
 	// Only the arrow to the other week is a link.
 	const arrow = page.locator('m3e-icon-button[href]');

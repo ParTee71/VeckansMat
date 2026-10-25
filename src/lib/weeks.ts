@@ -96,3 +96,14 @@ export function weekToPlan(today: string): string {
 	const thisWeek = mondayOf(today);
 	return today >= iso(addDays(thisWeek, 2)) ? addWeeks(thisWeek, 1) : thisWeek;
 }
+
+/** The week a view shows: the one asked for if it is this week or the next, else the one to plan. */
+export function shownWeek(
+	asked: string | null,
+	today = swedishToday()
+): { weekStart: string; thisWeek: string; nextWeek: string } {
+	const thisWeek = mondayOf(today);
+	const nextWeek = addWeeks(thisWeek, 1);
+	const weekStart = asked === thisWeek || asked === nextWeek ? asked : weekToPlan(today);
+	return { weekStart, thisWeek, nextWeek };
+}

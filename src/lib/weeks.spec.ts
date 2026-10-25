@@ -5,6 +5,7 @@ import {
 	isoWeek,
 	mondayOf,
 	shortWeekName,
+	shownWeek,
 	swedishToday,
 	weekDates,
 	weekName,
@@ -41,6 +42,13 @@ describe('the week to plan', () => {
 		expect(weekToPlan('2026-10-27')).toBe('2026-10-26');
 		expect(weekToPlan('2026-10-28')).toBe('2026-11-02');
 		expect(weekToPlan('2026-11-01')).toBe('2026-11-02');
+	});
+
+	it('is shown unless this week or the next is asked for', () => {
+		const weeks = { thisWeek: '2026-10-26', nextWeek: '2026-11-02' };
+		expect(shownWeek(null, '2026-10-28')).toEqual({ weekStart: '2026-11-02', ...weeks });
+		expect(shownWeek('2026-10-26', '2026-10-28')).toEqual({ weekStart: '2026-10-26', ...weeks });
+		expect(shownWeek('2026-10-19', '2026-10-27')).toEqual({ weekStart: '2026-10-26', ...weeks });
 	});
 
 	it('starts on a Monday, also across a year', () => {

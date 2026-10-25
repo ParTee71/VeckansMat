@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { deserialize, type ActionResult } from '$app/forms';
+	import type { ActionResult } from '$app/forms';
 	import type { M3eSnackbarElement } from '@m3e/web/snackbar';
-	import { invalidateAll } from '$app/navigation';
+	import { postAction, type Fields } from '#lib/actions.ts';
 	import { resolve } from '$app/paths';
 	import Icon from '#lib/Icon.svelte';
+	import WeekHeader from '#lib/WeekHeader.svelte';
 	import { nameKey } from '#lib/names.ts';
 	import { isDish, NOT_DISHES, timesText } from '#lib/recipes.ts';
 	import type { Meal, RowInput } from '#lib/server/db/menus.ts';
@@ -74,34 +75,16 @@
 	);
 	let isNew = $derived(key && isDish(draft) && !data.recipes.some((r) => nameKey(r.name) === key));
 
-	async function post(
-		action: string,
-		fields: Record<string, string | number | number[]>
-	): Promise<ActionResult | null> {
-		const body = new FormData();
-		for (const [name, value] of Object.entries(fields)) {
-			for (const v of Array.isArray(value) ? value : [value]) body.append(name, String(v));
-		}
-		let result: ActionResult | null = null;
-		try {
-			const response = await fetch(`?/${action}`, {
-				method: 'POST',
-				body,
-				headers: { 'x-sveltekit-action': 'true' }
-			});
-			result = deserialize(await response.text());
-		} catch {
-			// No answer: the network is down.
-		}
+	async function post(action: string, fields: Fields): Promise<ActionResult | null> {
+		const result = await postAction(action, fields);
 		// A failure stays on screen until the page is loaded again. What an action itself turns
 		// down is for its caller to show.
 		if (!result || result.type === 'error') failed = true;
-		await invalidateAll();
 		return result;
 	}
 
 	/** Posts to Claude's actions, and shows when Claude could not help. */
-	async function postSuggest(action: string, fields: Record<string, string | number | number[]>) {
+	async function postSuggest(action: string, fields: Fields) {
 		const weekStart = week.weekStart;
 		suggestError = null;
 		const result = await post(action, { weekStart, ...fields });
@@ -313,12 +296,14 @@
 {/snippet}
 
 <main>
-	<div class="title">
-		<div>
-			<h1>Vecka {isoWeek(week.weekStart).week}</h1>
-			<p class="dates">{weekDates(week.weekStart)} · {isNext ? 'nästa vecka' : 'den här veckan'}</p>
-		</div>
-		<div class="nav">
+	<WeekHeader
+		title="Vecka {isoWeek(week.weekStart).week}"
+		subtitle="{weekDates(week.weekStart)} · {isNext ? 'nästa vecka' : 'den här veckan'}"
+		weekStart={week.weekStart}
+		thisWeek={data.thisWeek}
+		nextWeek={data.nextWeek}
+	>
+		{#snippet actions()}
 			{#if hasSuggestion}
 				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-icon-button is a button with its own keyboard handling) -->
 				<m3e-icon-button
@@ -329,22 +314,8 @@
 					<Icon name="suggest" />
 				</m3e-icon-button>
 			{/if}
-			<m3e-icon-button
-				href={isNext ? `?vecka=${data.thisWeek}` : undefined}
-				disabled={!isNext || undefined}
-				aria-label="Den här veckan"
-			>
-				<Icon name="previous" />
-			</m3e-icon-button>
-			<m3e-icon-button
-				href={isNext ? undefined : `?vecka=${data.nextWeek}`}
-				disabled={isNext || undefined}
-				aria-label="Nästa vecka"
-			>
-				<Icon name="next" />
-			</m3e-icon-button>
-		</div>
-	</div>
+		{/snippet}
+	</WeekHeader>
 
 	<section class="eaters">
 		<h2>Vilka äter?</h2>
@@ -454,31 +425,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
-	}
-
-	.title {
-		margin: 0.25rem 0 0 0.25rem;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-
-	h1 {
-		margin: 0;
-		font-size: 2.25rem;
-		line-height: 2.75rem;
-		font-weight: 800;
-		letter-spacing: -0.03em;
-	}
-
-	.dates {
-		margin: 0;
-		font-size: 0.875rem;
-		color: var(--md-sys-color-on-surface-variant);
-	}
-
-	.nav {
-		display: flex;
 	}
 
 	h2 {
