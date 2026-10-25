@@ -50,6 +50,7 @@ test('a link in the search field fills in the dish that has only the name', asyn
 	});
 	await page.goBack();
 	await expect(page.getByLabel('Länk eller recepttext')).toBeVisible();
+	await page.waitForLoadState('networkidle');
 	expect(readAgain).toBe(false);
 });
 

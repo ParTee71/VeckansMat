@@ -54,14 +54,24 @@ test('a new version is offered again after another notice has closed', async ({ 
 	const notice = page.getByText('Ny version finns');
 	await expect(notice).toBeVisible();
 
-	// Another notice, such as an undo, takes its place for a while.
+	// An undo takes its place, and is replaced by another undo before it closes, as when two
+	// items are ticked off in a row.
 	await page.evaluate(() =>
 		document.body.insertAdjacentHTML(
 			'beforeend',
-			'<m3e-snackbar duration="1000" open>Något annat</m3e-snackbar>'
+			'<m3e-snackbar id="first" duration="5000" open>Ångra ett</m3e-snackbar>'
 		)
 	);
-	await expect(page.getByText('Något annat')).toBeVisible();
+	await expect(page.getByText('Ångra ett')).toBeVisible();
+	await expect(notice).toBeHidden();
+	await page.evaluate(() => {
+		document.getElementById('first')?.remove();
+		document.body.insertAdjacentHTML(
+			'beforeend',
+			'<m3e-snackbar duration="1000" open>Ångra två</m3e-snackbar>'
+		);
+	});
+	await expect(page.getByText('Ångra två')).toBeVisible();
 	await expect(notice).toBeHidden();
 	await expect(notice).toBeVisible();
 });
