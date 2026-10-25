@@ -15,6 +15,12 @@ const MONTHS = [
 	'december'
 ];
 
+/** The ISO weekdays, 1 = Monday. */
+export const WEEK_DAYS = [1, 2, 3, 4, 5, 6, 7];
+
+/** Lunch is planned on Saturday and Sunday, and on a weekday that already has one. */
+export const hasLunch = (weekday: number, hasOne: boolean) => weekday >= 6 || hasOne;
+
 export const WEEKDAYS = ['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'];
 
 export const WEEKDAY_NAMES = [

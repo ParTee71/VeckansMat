@@ -1,7 +1,7 @@
 // The colour themes a phone can choose. Every theme has the same white surfaces (see the
 // layout); the theme colour gives the accents.
 
-export interface Theme {
+interface Theme {
 	id: string;
 	label: string;
 	/** The colour m3e builds the scheme from. */

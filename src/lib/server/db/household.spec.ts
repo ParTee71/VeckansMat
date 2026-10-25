@@ -1,5 +1,5 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { clearTestDb, createTestDb } from '../../../../test/d1';
+import { describe, expect, it } from 'vitest';
+import { useTestDb } from '../../../../test/d1';
 import { DEFAULT_SETTINGS } from '../../household';
 import {
 	createPerson,
@@ -12,13 +12,7 @@ import {
 } from './household';
 
 let db: D1Database;
-let dispose: () => Promise<void>;
-
-beforeAll(async () => {
-	({ db, dispose } = await createTestDb());
-});
-afterAll(() => dispose());
-beforeEach(() => clearTestDb(db));
+useTestDb((test) => (db = test));
 
 describe('people', () => {
 	it('are added, changed and removed, in the order they were added', async () => {

@@ -7,6 +7,10 @@ export function cleanText(text: string): string {
 export const answerText = (value: unknown, max: number) =>
 	typeof value === 'string' ? cleanText(value).slice(0, max) : '';
 
+/** The non-empty strings of a list in Claude's answer, each cleaned and cut to a length. */
+export const answerStrings = (value: unknown, max = Infinity) =>
+	Array.isArray(value) ? value.map((v) => answerText(v, max)).filter(Boolean) : [];
+
 /**
  * Material for a prompt, which cannot close the tag it is in and write outside it, however the
  * tag is spaced. Text such as "< 5 min" has no tag in it and is kept.

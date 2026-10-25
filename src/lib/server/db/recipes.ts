@@ -31,7 +31,7 @@ export async function listRecipes(db: D1Database): Promise<RecipeSummary[]> {
 	return results;
 }
 
-export interface RecipeWeek {
+interface RecipeWeek {
 	menuId: number;
 	weekStart: string | null;
 	meal: Meal;
@@ -165,41 +165,29 @@ export async function updateRecipe(
 				input.sourceUrl,
 				id
 			),
-		...detailStatements(db, id, input)
+		...detailStatements(db, key, input)
 	]);
 	return true;
 }
 
 /**
- * Replaces the ingredients and tags of a recipe. The recipe is given by its id, or by an SQL
- * expression that finds it when it is inserted in the same batch.
+ * Replaces the ingredients and tags of the recipe with the name key, which may be written earlier
+ * in the same batch.
  */
-function detailStatements(
-	db: D1Database,
-	recipe: number | { nameKey: string },
-	input: RecipeInput
-): D1PreparedStatement[] {
-	const isNew = typeof recipe !== 'number';
-	const [id, arg] = isNew
-		? ['(SELECT id FROM recipe WHERE name_key = ?)', recipe.nameKey]
-		: ['?', recipe];
+function detailStatements(db: D1Database, key: string, input: RecipeInput): D1PreparedStatement[] {
+	const id = '(SELECT id FROM recipe WHERE name_key = ?)';
 	return [
-		// A recipe inserted in the same batch has nothing to replace.
-		...(isNew
-			? []
-			: [
-					db.prepare('DELETE FROM recipe_ingredient WHERE recipe_id = ?').bind(arg),
-					db.prepare('DELETE FROM recipe_tag WHERE recipe_id = ?').bind(arg)
-				]),
+		db.prepare(`DELETE FROM recipe_ingredient WHERE recipe_id = ${id}`).bind(key),
+		db.prepare(`DELETE FROM recipe_tag WHERE recipe_id = ${id}`).bind(key),
 		...input.ingredients.map((raw, position) =>
 			db
 				.prepare(`INSERT INTO recipe_ingredient (recipe_id, position, raw) VALUES (${id}, ?, ?)`)
-				.bind(arg, position, raw)
+				.bind(key, position, raw)
 		),
 		...input.tags.map((tag) =>
 			db
 				.prepare(`INSERT OR IGNORE INTO recipe_tag (recipe_id, tag) VALUES (${id}, ?)`)
-				.bind(arg, tag)
+				.bind(key, tag)
 		)
 	];
 }
@@ -224,7 +212,7 @@ export async function createRecipe(db: D1Database, input: RecipeInput): Promise<
 					input.instructions,
 					input.sourceUrl
 				),
-			...detailStatements(db, { nameKey: key }, input)
+			...detailStatements(db, key, input)
 		]);
 		return results[0].meta.last_row_id;
 	} catch (e) {

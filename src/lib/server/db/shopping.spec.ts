@@ -1,8 +1,9 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { clearTestDb, createTestDb } from '../../../../test/d1';
+import { describe, expect, it } from 'vitest';
+import { useTestDb } from '../../../../test/d1';
+import { dinner, giveIngredients, WEEK } from '../../../../test/fixtures';
 import { createPerson } from './household';
 import { getWeek, setWeekRow } from './menus';
-import { findRecipeByName, updateRecipe } from './recipes';
+import { findRecipeByName } from './recipes';
 import {
 	addShoppingItem,
 	deleteShoppingItem,
@@ -15,29 +16,7 @@ import {
 } from './shopping';
 
 let db: D1Database;
-let dispose: () => Promise<void>;
-
-beforeAll(async () => {
-	({ db, dispose } = await createTestDb());
-});
-afterAll(() => dispose());
-beforeEach(() => clearTestDb(db));
-
-const WEEK = '2030-03-04';
-const dinner = (weekday: number, text: string) => ({ weekday, meal: 'dinner' as const, text });
-
-async function giveIngredients(name: string, ingredients: string[]) {
-	const { id } = (await findRecipeByName(db, name))!;
-	await updateRecipe(db, id, {
-		name,
-		servings: 4,
-		timeMinutes: null,
-		instructions: null,
-		sourceUrl: null,
-		ingredients,
-		tags: []
-	});
-}
+useTestDb((test) => (db = test));
 
 /** A made-up week: two dishes with ingredients, one with just a name, and leftovers. */
 async function planWeek() {
@@ -46,8 +25,8 @@ async function planWeek() {
 	await setWeekRow(db, WEEK, dinner(3, 'Rester'), []);
 	await setWeekRow(db, WEEK, dinner(4, 'Linsgryta'), []);
 	await setWeekRow(db, WEEK, { weekday: 6, meal: 'lunch', text: 'Pannkakor' }, []);
-	await giveIngredients('Fiskgratäng', ['400 g torsk', '2 dl grädde']);
-	await giveIngredients('Linsgryta', ['3 dl röda linser', '1 gul lök']);
+	await giveIngredients(db, 'Fiskgratäng', ['400 g torsk', '2 dl grädde']);
+	await giveIngredients(db, 'Linsgryta', ['3 dl röda linser', '1 gul lök']);
 }
 
 const shown = (items: Awaited<ReturnType<typeof getShoppingList>>) =>

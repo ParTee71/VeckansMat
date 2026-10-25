@@ -9,7 +9,7 @@
 	import { isDish, MEAL_LABELS, NOT_DISHES, timesText } from '#lib/recipes.ts';
 	import type { Meal, RowInput, Week } from '#lib/server/db/menus.ts';
 	import type { RecipeSummary } from '#lib/server/db/recipes.ts';
-	import { WEEKDAY_NAMES, WEEKDAYS, isoWeek, weekDates } from '#lib/weeks.ts';
+	import { WEEK_DAYS, WEEKDAY_NAMES, WEEKDAYS, hasLunch, isoWeek, weekDates } from '#lib/weeks.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -62,18 +62,15 @@
 	const textOf = (weekday: number, meal: Meal) =>
 		pending[keyOf(weekday, meal)] ?? stored(weekday, meal)?.text ?? '';
 
-	const DAYS = [1, 2, 3, 4, 5, 6, 7];
-	// Lunch on Saturday and Sunday, and on any weekday that has one.
 	let lunchDays = $derived(
-		DAYS.filter(
-			(d) =>
-				d >= 6 ||
-				stored(d, 'lunch') ||
-				textOf(d, 'lunch') ||
-				addedLunches[week.weekStart]?.includes(d)
+		WEEK_DAYS.filter((d) =>
+			hasLunch(
+				d,
+				!!(stored(d, 'lunch') || textOf(d, 'lunch') || addedLunches[week.weekStart]?.includes(d))
+			)
 		)
 	);
-	let freeLunchDays = $derived(DAYS.filter((d) => !lunchDays.includes(d)));
+	let freeLunchDays = $derived(WEEK_DAYS.filter((d) => !lunchDays.includes(d)));
 
 	let eaters = $derived(data.people.filter((p) => eaterIds.includes(p.id)));
 	let extra = $derived(data.settings.lunchboxExtraPortions);
@@ -179,7 +176,7 @@
 		if (event.key !== 'Enter') return;
 		event.preventDefault();
 		write(weekday, meal, draft);
-		const days = meal === 'dinner' ? DAYS : lunchDays;
+		const days = meal === 'dinner' ? WEEK_DAYS : lunchDays;
 		const next = days[days.indexOf(weekday) + 1];
 		if (next) edit(next, meal);
 	}
@@ -407,7 +404,7 @@
 	{:else}
 		<h2 class="meal">Middag</h2>
 		<ul class="days">
-			{#each DAYS as weekday (weekday)}
+			{#each WEEK_DAYS as weekday (weekday)}
 				{@render row(weekday, 'dinner')}
 			{/each}
 		</ul>

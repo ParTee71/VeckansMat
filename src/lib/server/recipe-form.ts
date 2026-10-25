@@ -14,7 +14,7 @@ const FIELDS = [
 ];
 
 /** What was written, to show again, and either the recipe or what is wrong with it. */
-export type RecipeForm = { values: Record<string, string>; lunchbox: boolean } & (
+type RecipeForm = { values: Record<string, string>; lunchbox: boolean } & (
 	{ input: RecipeInput } | { error: string }
 );
 

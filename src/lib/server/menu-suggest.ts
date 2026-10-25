@@ -20,6 +20,7 @@ import {
 	type RowInput,
 	type Week
 } from './db/menus';
+import { hasLunch, WEEK_DAYS } from '../weeks';
 
 /** Why there is no suggestion: Claude failed, or the month's cap for Claude is spent. */
 export class MenuSuggestError extends Error {
@@ -90,13 +91,16 @@ export async function suggestMenu(request: MenuRequest, ask: Ask): Promise<Sugge
 	return suggested;
 }
 
-const DINNERS: Slot[] = [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ weekday, meal: 'dinner' }));
+const DINNERS: Slot[] = WEEK_DAYS.map((weekday) => ({ weekday, meal: 'dinner' }));
 
 /** Every day's dinner, lunch at the weekend, and lunch on a weekday that has one. */
 function weekSlots(week: Week): Slot[] {
-	const lunches = [1, 2, 3, 4, 5, 6, 7]
-		.filter((d) => d >= 6 || week.rows.some((r) => r.weekday === d && r.meal === 'lunch'))
-		.map((weekday): Slot => ({ weekday, meal: 'lunch' }));
+	const lunches = WEEK_DAYS.filter((d) =>
+		hasLunch(
+			d,
+			week.rows.some((r) => r.weekday === d && r.meal === 'lunch')
+		)
+	).map((weekday): Slot => ({ weekday, meal: 'lunch' }));
 	return [...DINNERS, ...lunches];
 }
 
@@ -146,7 +150,7 @@ export async function suggestWeek(
 }
 
 /** A swap: the day as it was, so it can be put back, and the dish it got. */
-export interface Swap {
+interface Swap {
 	before: RowInput;
 	text: string;
 }

@@ -17,7 +17,7 @@ export async function open(page: Page, path: string) {
 }
 
 /** Waits until the app's components have loaded, after a load or reload of the page. */
-export async function ready(page: Page) {
+async function ready(page: Page) {
 	await expect(page.locator('html[data-ready]')).toHaveCount(1);
 }
 
@@ -34,4 +34,12 @@ export function countLoads(page: Page) {
 		if (request.url().includes('__data.json')) loads++;
 	});
 	return () => loads;
+}
+
+/** Writes a day's dinner on Veckan, and waits until it shows. */
+export async function writeDay(page: Page, day: string, text: string) {
+	await page.getByRole('button', { name: new RegExp(`^Middag ${day}`) }).click();
+	await page.getByRole('textbox', { name: `Middag ${day}` }).fill(text);
+	await page.keyboard.press('Enter');
+	await expect(page.getByRole('button', { name: `Middag ${day}: ${text}` })).toBeVisible();
 }

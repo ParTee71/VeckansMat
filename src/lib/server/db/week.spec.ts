@@ -1,20 +1,15 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { clearTestDb, createTestDb } from '../../../../test/d1';
+import { describe, expect, it } from 'vitest';
+import { useTestDb } from '../../../../test/d1';
+import { saveMenu } from '../../../../test/menus';
+import { WEEK } from '../../../../test/fixtures';
 import { createPerson } from './household';
 import { addShoppingItem } from './shopping';
-import { getWeek, listMenus, saveMenu, setWeekEaters, setWeekRow } from './menus';
+import { getWeek, listMenus, setWeekEaters, setWeekRow } from './menus';
 import { addRecipe, findRecipeByName, getRecipe, updateRecipe } from './recipes';
 
 let db: D1Database;
-let dispose: () => Promise<void>;
+useTestDb((test) => (db = test));
 
-beforeAll(async () => {
-	({ db, dispose } = await createTestDb());
-});
-afterAll(() => dispose());
-beforeEach(() => clearTestDb(db));
-
-const WEEK = '2030-03-04';
 // Lines written by hand have no reason and nothing to swap to.
 const byHand = { reason: null, alternatives: [], passedOn: [] };
 const dinner = (weekday: number, text: string) => ({ weekday, meal: 'dinner' as const, text });

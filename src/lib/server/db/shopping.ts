@@ -3,7 +3,7 @@ import { LUNCHBOX_TAG } from '../../recipes';
 import { ensureMenu } from './menus';
 import { guessIngredientsStatements } from './recipes';
 
-export type Origin = 'recipe' | 'claude' | 'hand';
+type Origin = 'recipe' | 'claude' | 'hand';
 
 export interface ShoppingItem {
 	id: number;

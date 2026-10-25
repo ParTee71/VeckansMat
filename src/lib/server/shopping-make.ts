@@ -1,6 +1,6 @@
 // Claude makes the week's shopping list, and guesses the ingredients of dishes that have only a
 // name. See docs/beslut/0015-inkopslista.md.
-import { answerText, nameKey } from '../names';
+import { answerStrings, answerText, nameKey } from '../names';
 import { SECTIONS, sectionRank } from '../shopping';
 import { askJson, type Ask } from './claude/claude';
 import {
@@ -24,7 +24,7 @@ import {
 const DEFAULT_EATERS = 2;
 
 /** A dish on the week with the portions to cook. */
-export type PlannedDish = WeekDish & { portions: number };
+type PlannedDish = WeekDish & { portions: number };
 
 /** The week's dishes with their portions, and a fingerprint that changes when they do. */
 export async function shoppingPlan(
@@ -56,9 +56,6 @@ export class ShoppingListError extends Error {
 	}
 }
 
-const strings = (value: unknown, max: number) =>
-	Array.isArray(value) ? value.map((v) => answerText(v, max)).filter(Boolean) : [];
-
 /**
  * Asks Claude for the list and the guesses. The items come in the order of the store's sections,
  * each with the dishes it is for.
@@ -85,7 +82,7 @@ export async function askShoppingList(
 	const guesses = new Map<string, string[]>();
 	for (const guess of Array.isArray(parsed.guesses) ? parsed.guesses : []) {
 		const dish = byKey.get(nameKey(answerText(guess?.dish, 100)));
-		const lines = strings(guess?.ingredients, 100);
+		const lines = answerStrings(guess?.ingredients, 100);
 		if (dish && !dish.ingredients.length && lines.length) guesses.set(dish.name, lines);
 	}
 
@@ -94,7 +91,7 @@ export async function askShoppingList(
 		const name = answerText(item?.text, 100);
 		if (!name) continue;
 		const section = SECTIONS.find((s) => s === item?.section) ?? 'Övrigt';
-		const named = strings(item?.dishes, 100)
+		const named = answerStrings(item?.dishes, 100)
 			.map((d) => byKey.get(nameKey(d))?.name)
 			.filter((d): d is string => !!d);
 		items.push({
