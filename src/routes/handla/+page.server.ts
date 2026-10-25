@@ -1,13 +1,18 @@
-import { error } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import { env } from 'cloudflare:workers';
+import { ask, type Ask } from '#lib/server/claude/claude.ts';
 import {
 	addShoppingItem,
 	deleteShoppingItem,
+	getShoppingBasis,
 	getShoppingList,
-	makeShoppingList,
-	setShoppingItemChecked,
-	weekDishes
+	setShoppingItemChecked
 } from '#lib/server/db/shopping.ts';
+import {
+	makeShoppingListWithClaude,
+	shoppingPlan,
+	ShoppingListError
+} from '#lib/server/shopping-make.ts';
 import { weekOf } from '#lib/server/forms.ts';
 import { shownWeek } from '#lib/weeks.ts';
 import type { Actions, PageServerLoad } from './$types';
@@ -15,12 +20,30 @@ import type { Actions, PageServerLoad } from './$types';
 // The same week as Veckan shows.
 export const load: PageServerLoad = async ({ url }) => {
 	const { weekStart, thisWeek, nextWeek } = shownWeek(url.searchParams.get('vecka'));
-	const [items, dishes] = await Promise.all([
+	const [items, plan, basis] = await Promise.all([
 		getShoppingList(env.DB, weekStart),
-		weekDishes(env.DB, weekStart)
+		shoppingPlan(env.DB, weekStart),
+		getShoppingBasis(env.DB, weekStart)
 	]);
-	return { weekStart, thisWeek, nextWeek, items, dishes };
+	return {
+		weekStart,
+		thisWeek,
+		nextWeek,
+		items,
+		dishes: plan.dishes.map(({ id, name, ingredients, ingredientsGuessed }) => ({
+			id,
+			name,
+			hasIngredients: ingredients.length > 0,
+			ingredientsGuessed
+		})),
+		// The dishes, portions or lines have changed since the list was made.
+		changed: basis !== null && basis !== plan.basis && items.some((item) => item.origin !== 'hand'),
+		basis: plan.basis
+	};
 };
+
+const askShopping: Ask = (params) =>
+	ask(env.DB, 'shopping', { ...params, model: env.SHOPPING_MODEL });
 
 function idOf(form: FormData): number {
 	const id = Number(form.get('id') || NaN);
@@ -30,7 +53,13 @@ function idOf(form: FormData): number {
 
 export const actions: Actions = {
 	make: async ({ request }) => {
-		await makeShoppingList(env.DB, weekOf(await request.formData()));
+		try {
+			await makeShoppingListWithClaude(env.DB, weekOf(await request.formData()), askShopping);
+		} catch (e) {
+			// The list is made of the recipes' lines instead, and the page says why.
+			if (e instanceof ShoppingListError) return fail(503, { shoppingError: e.reason });
+			throw e;
+		}
 	},
 	add: async ({ request }) => {
 		const form = await request.formData();

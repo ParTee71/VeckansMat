@@ -5,6 +5,7 @@
 	import Icon from '#lib/Icon.svelte';
 	import WeekHeader from '#lib/WeekHeader.svelte';
 	import type { ShoppingItem } from '#lib/server/db/shopping.ts';
+	import { sectionRank } from '#lib/shopping.ts';
 	import { isoWeek } from '#lib/weeks.ts';
 	import type { PageProps } from './$types';
 
@@ -22,32 +23,54 @@
 	let showBasket = $state(true);
 	// The latest item put in the basket, which the snackbar can undo.
 	let basketed = $state<ShoppingItem | null>(null);
+	// Why Claude made no list, per week; then the list is the recipes' lines.
+	let listErrors = $state<Record<string, 'failed' | 'limit'>>({});
+	// Per week, the week as it was when the household chose not to update the list; a later
+	// change to the week asks again.
+	let notNow = $state<Record<string, string>>({});
+	let listError = $derived(listErrors[data.weekStart]);
 
 	const isChecked = (item: ShoppingItem) => pendingChecked[item.id] ?? item.checked;
 	let toBuy = $derived(data.items.filter((item) => !isChecked(item)));
 	let basket = $derived(data.items.filter(isChecked));
 	let added = $derived(adding[data.weekStart] ?? []);
 
-	// Written by hand first, under the field they are written in, then a heading per dish.
+	// Written by hand first, under the field they are written in, then the store's sections in
+	// their order; a list of the recipes' lines has a heading per dish.
 	const BY_HAND = 'Skrivet själv';
+	const rank = (item: ShoppingItem) => (item.origin === 'hand' ? -1 : sectionRank(item.section));
 	let groups = $derived(
 		Map.groupBy(
-			toBuy.toSorted((a, b) => Number(b.origin === 'hand') - Number(a.origin === 'hand')),
+			toBuy.toSorted((a, b) => rank(a) - rank(b)),
 			(item) => (item.origin === 'hand' ? BY_HAND : (item.section ?? ''))
 		)
 	);
+	let guessed = $derived(
+		new Set(data.dishes.filter((dish) => dish.ingredientsGuessed).map((dish) => dish.name))
+	);
+	// The dishes are stored as one text, and a name may have a comma of its own.
+	const dishesOf = (item: ShoppingItem) =>
+		[...guessed].some((dish) => `, ${item.dishes}, `.includes(`, ${dish}, `))
+			? `${item.dishes} · gissat`
+			: item.dishes;
 
 	let onlyName = $derived(data.dishes.filter((dish) => !dish.hasIngredients));
 	let isEmpty = $derived(data.items.length === 0 && added.length === 0);
 
 	async function post(action: string, fields: Fields) {
 		const result = await postAction(action, { weekStart: data.weekStart, ...fields });
-		if (!result || result.type !== 'success') failed = true;
+		if (!result || result.type === 'error') failed = true;
+		return result;
 	}
 
 	async function make() {
+		const weekStart = data.weekStart;
 		making = true;
-		await post('make', {});
+		delete listErrors[weekStart];
+		const result = await post('make', {});
+		if (result?.type === 'failure') {
+			listErrors[weekStart] = result.data?.shoppingError as 'failed' | 'limit';
+		}
 		making = false;
 	}
 
@@ -95,7 +118,15 @@
 				onchange={(e: Event & { currentTarget: HTMLElement & { checked: boolean } }) =>
 					check(item, e.currentTarget.checked)}
 			></m3e-checkbox>
-			<span class="text">{item.text}</span>
+			<span class="text">
+				<span>{item.text}</span>
+				{#if item.dishes}
+					<span class="meta">{dishesOf(item)}</span>
+				{/if}
+			</span>
+			{#if item.amount}
+				<span class="amount">{item.amount}</span>
+			{/if}
 		</label>
 		{#if item.origin === 'hand'}
 			<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-icon-button is a button with its own keyboard handling) -->
@@ -152,9 +183,38 @@
 	{/if}
 
 	{#if making}
+		<!-- No notice while the list is being made. -->
+	{:else if listError}
+		<section class="notice">
+			<p>
+				{listError === 'limit'
+					? 'Appen har använt Claude så mycket som månadens tak tillåter'
+					: 'Claude kunde inte göra listan just nu'}, så här står ingredienserna rätt för rätt som
+				de står i recepten.
+			</p>
+			<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
+			<m3e-button variant="outlined" onclick={make}>Försök igen</m3e-button>
+		</section>
+	{:else if data.changed && notNow[data.weekStart] !== data.basis}
+		<section class="notice changed">
+			<h2>Veckan har ändrats</h2>
+			<p>Det du skrivit själv och det som ligger i korgen står kvar när listan uppdateras.</p>
+			<div class="buttons">
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
+				<m3e-button variant="filled" onclick={make}>Uppdatera listan</m3e-button>
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
+				<m3e-button variant="text" onclick={() => (notNow[data.weekStart] = data.basis)}
+					>Inte nu</m3e-button
+				>
+			</div>
+		</section>
+	{/if}
+
+	{#if making}
 		<div class="making">
 			<m3e-loading-indicator></m3e-loading-indicator>
-			<p role="status">Gör listan …</p>
+			<p role="status">Claude gör listan …</p>
+			<p class="hint">Räknar om till veckans portioner och slår ihop det som behövs.</p>
 		</div>
 	{:else if isEmpty}
 		<section class="empty">
@@ -164,16 +224,21 @@
 				<a href="{resolve('/')}?vecka={data.weekStart}">Till veckan</a>
 			{:else}
 				<h2>Ingen inköpslista för veckan än</h2>
-				<p class="hint">Ingredienserna ur veckans rätter, rätt för rätt.</p>
 				<p class="hint">
-					{plural(data.dishes.length - onlyName.length, 'rätt har', 'rätter har')} ingredienser, {plural(
-						onlyName.length,
-						'rätt har',
-						'rätter har'
-					)} bara namn.
+					Claude läser veckans rätter, räknar om till rätt antal portioner och slår ihop det som
+					behövs till en lista sorterad efter butikens avdelningar.
+				</p>
+				<p class="hint">
+					{plural(data.dishes.length - onlyName.length, 'rätt har', 'rätter har')} ingredienser.
+					{#if onlyName.length}
+						{plural(onlyName.length, 'rätt har', 'rätter har')} bara namn, och Claude gissar vad som brukar
+						behövas och skriver in det i rätten.
+					{/if}
 				</p>
 				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
-				<m3e-button variant="filled" onclick={make}>Gör inköpslistan</m3e-button>
+				<m3e-button variant="filled" onclick={make}>
+					<span slot="icon" class="slot-icon"><Icon name="suggest" /></span>Gör inköpslistan
+				</m3e-button>
 			{/if}
 		</section>
 	{:else}
@@ -211,7 +276,7 @@
 		{/if}
 	{/if}
 
-	{#if onlyName.length && !making}
+	{#if onlyName.length && !isEmpty && !making}
 		<p class="hint only-name">
 			Bara namn, inget att lista:
 			{#each onlyName as dish, i (dish.id)}<a
@@ -385,6 +450,44 @@
 		color: var(--md-sys-color-on-surface-variant);
 	}
 
+	.meta {
+		font-size: 0.75rem;
+		color: var(--md-sys-color-on-surface-variant);
+	}
+
+	.amount {
+		font-size: 0.875rem;
+		white-space: nowrap;
+		color: var(--md-sys-color-on-surface-variant);
+	}
+
+	.notice {
+		padding: 1rem;
+		border-radius: 1.25rem;
+		background: var(--md-sys-color-surface-container);
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.625rem;
+	}
+
+	.notice p {
+		margin: 0;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+	}
+
+	.notice.changed {
+		background: var(--md-sys-color-primary-container);
+		color: var(--md-sys-color-on-primary-container);
+	}
+
+	.buttons {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.done .amount,
 	.done .text {
 		text-decoration: line-through;
 	}

@@ -6,8 +6,10 @@ import { findRecipeByName, updateRecipe } from './recipes';
 import {
 	addShoppingItem,
 	deleteShoppingItem,
+	getShoppingBasis,
 	getShoppingList,
 	makeShoppingList,
+	saveShoppingList,
 	setShoppingItemChecked,
 	weekDishes
 } from './shopping';
@@ -55,9 +57,13 @@ describe('the week shopping list', () => {
 	it('has the week dishes once each, in the order they are eaten', async () => {
 		await planWeek();
 		expect(await weekDishes(db, WEEK)).toEqual([
-			expect.objectContaining({ name: 'Fiskgratäng', hasIngredients: true }),
-			expect.objectContaining({ name: 'Linsgryta', hasIngredients: true }),
-			expect.objectContaining({ name: 'Pannkakor', hasIngredients: false })
+			expect.objectContaining({ name: 'Fiskgratäng', times: 1, lunchbox: false }),
+			expect.objectContaining({
+				name: 'Linsgryta',
+				times: 2,
+				ingredients: ['3 dl röda linser', '1 gul lök']
+			}),
+			expect.objectContaining({ name: 'Pannkakor', times: 1, ingredients: [] })
 		]);
 	});
 
@@ -65,7 +71,7 @@ describe('the week shopping list', () => {
 		await planWeek();
 		expect(await getShoppingList(db, WEEK)).toEqual([]);
 
-		await makeShoppingList(db, WEEK);
+		await makeShoppingList(db, WEEK, 'basis');
 		const recipe = { origin: 'recipe', checked: false };
 		expect(shown(await getShoppingList(db, WEEK))).toEqual([
 			{ text: '400 g torsk', section: 'Fiskgratäng', ...recipe },
@@ -77,7 +83,7 @@ describe('the week shopping list', () => {
 
 	it('is made again with what is written by hand and what is in the basket kept', async () => {
 		await planWeek();
-		await makeShoppingList(db, WEEK);
+		await makeShoppingList(db, WEEK, 'basis');
 		await addShoppingItem(db, WEEK, '  Mjölk ');
 		const [cod] = await getShoppingList(db, WEEK);
 		await setShoppingItemChecked(db, cod.id, true);
@@ -85,13 +91,72 @@ describe('the week shopping list', () => {
 		// The lentil stew is swapped for one without ingredients.
 		await setWeekRow(db, WEEK, dinner(2, 'Tacos'), []);
 		await setWeekRow(db, WEEK, dinner(4, 'Tacos'), []);
-		await makeShoppingList(db, WEEK);
+		await makeShoppingList(db, WEEK, 'basis');
 
 		expect(shown(await getShoppingList(db, WEEK))).toEqual([
 			{ text: '400 g torsk', section: 'Fiskgratäng', origin: 'recipe', checked: true },
 			{ text: 'Mjölk', section: null, origin: 'hand', checked: false },
 			{ text: '2 dl grädde', section: 'Fiskgratäng', origin: 'recipe', checked: false }
 		]);
+	});
+
+	it('notes what it was made from', async () => {
+		expect(await getShoppingBasis(db, WEEK)).toBeNull();
+		await planWeek();
+		await makeShoppingList(db, WEEK, 'first');
+		expect(await getShoppingBasis(db, WEEK)).toBe('first');
+	});
+
+	it('saves Claude list with the basket kept and the guesses in their dishes', async () => {
+		await planWeek();
+		await makeShoppingList(db, WEEK, 'basis');
+		const [cod] = await getShoppingList(db, WEEK);
+		await setShoppingItemChecked(db, cod.id, true);
+		await addShoppingItem(db, WEEK, 'Kaffe');
+		const pancakes = (await findRecipeByName(db, 'Pannkakor'))!;
+		const stew = (await findRecipeByName(db, 'Linsgryta'))!;
+
+		const item = (text: string, section: string) => ({
+			text,
+			amount: '1 st',
+			section,
+			dishes: null
+		});
+		await saveShoppingList(
+			db,
+			WEEK,
+			[
+				item('Mjöl', 'Finns kanske hemma'),
+				item('400 G TORSK', 'Kött och fisk'),
+				item('Ägg', 'Mejeri och ägg')
+			],
+			[
+				{ recipeId: pancakes.id, ingredients: ['3 ägg', '6 dl mjölk'] },
+				// A dish with ingredients keeps them.
+				{ recipeId: stew.id, ingredients: ['Fel'] }
+			],
+			'claude'
+		);
+
+		expect(shown(await getShoppingList(db, WEEK))).toEqual([
+			{ text: '400 g torsk', section: 'Fiskgratäng', origin: 'recipe', checked: true },
+			{ text: 'Kaffe', section: null, origin: 'hand', checked: false },
+			{ text: 'Mjöl', section: 'Finns kanske hemma', origin: 'claude', checked: false },
+			{ text: 'Ägg', section: 'Mejeri och ägg', origin: 'claude', checked: false }
+		]);
+		expect(await getShoppingBasis(db, WEEK)).toBe('claude');
+		const dishes = await weekDishes(db, WEEK);
+		expect(dishes.find((d) => d.name === 'Pannkakor')).toMatchObject({
+			servings: null,
+			ingredients: ['3 ägg', '6 dl mjölk'],
+			ingredientsGuessed: true
+		});
+		// A guessed dish can still be filled in from a recipe.
+		expect(await findRecipeByName(db, 'Pannkakor')).toMatchObject({ onlyName: true });
+		expect(dishes.find((d) => d.name === 'Linsgryta')).toMatchObject({
+			ingredients: ['3 dl röda linser', '1 gul lök'],
+			ingredientsGuessed: false
+		});
 	});
 
 	it('takes items by hand, which can be ticked off, unticked and removed', async () => {

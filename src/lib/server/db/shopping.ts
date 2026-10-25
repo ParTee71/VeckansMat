@@ -1,13 +1,19 @@
-import { cleanText } from '../../names';
+import { cleanText, nameKey } from '../../names';
+import { LUNCHBOX_TAG } from '../../recipes';
 import { ensureMenu } from './menus';
+import { guessIngredientsStatements } from './recipes';
 
 export type Origin = 'recipe' | 'claude' | 'hand';
 
 export interface ShoppingItem {
 	id: number;
 	text: string;
-	/** The heading the item is listed under: the dish for a line taken straight from a recipe. */
+	/** How much, such as "400 g", when Claude has worked it out. */
+	amount: string | null;
+	/** The heading the item is listed under: the store section, or the dish for a recipe's line. */
 	section: string | null;
+	/** The dishes that need the item. */
+	dishes: string | null;
 	origin: Origin;
 	checked: boolean;
 }
@@ -16,12 +22,18 @@ export interface ShoppingItem {
 export interface WeekDish {
 	id: number;
 	name: string;
-	hasIngredients: boolean;
+	servings: number | null;
+	/** The ingredient lines as written. */
+	ingredients: string[];
+	ingredientsGuessed: boolean;
+	lunchbox: boolean;
+	/** How many dinners and lunches of the week it is. */
+	times: number;
 }
 
-/** The week's dishes, each once, with when it is first eaten, as `days`. */
+/** The week's dishes, each once, with when it is first eaten and how often, as `days`. */
 const WEEK_DISHES = `WITH days AS (
-	SELECT i.recipe_id, min(i.weekday * 2 + (i.meal = 'dinner')) AS first
+	SELECT i.recipe_id, min(i.weekday * 2 + (i.meal = 'dinner')) AS first, count(*) AS times
 	FROM menu_item i JOIN menu m ON m.id = i.menu_id
 	WHERE m.week_start = ?1 AND i.weekday IS NOT NULL AND i.recipe_id IS NOT NULL
 	GROUP BY i.recipe_id)`;
@@ -31,20 +43,34 @@ export async function weekDishes(db: D1Database, weekStart: string): Promise<Wee
 	const { results } = await db
 		.prepare(
 			`${WEEK_DISHES}
-			 SELECT r.id, r.name, EXISTS (SELECT 1 FROM recipe_ingredient WHERE recipe_id = r.id) AS hasIngredients
+			 SELECT r.id, r.name, r.servings, r.ingredients_guessed AS ingredientsGuessed, d.times,
+			   EXISTS (SELECT 1 FROM recipe_tag t WHERE t.recipe_id = r.id AND t.tag = ?2) AS lunchbox,
+			   (SELECT json_group_array(raw) FROM
+			     (SELECT raw FROM recipe_ingredient WHERE recipe_id = r.id ORDER BY position)) AS ingredients
 			 FROM days d JOIN recipe r ON r.id = d.recipe_id
 			 ORDER BY d.first`
 		)
-		.bind(weekStart)
-		.all<Omit<WeekDish, 'hasIngredients'> & { hasIngredients: number }>();
-	return results.map((dish) => ({ ...dish, hasIngredients: Boolean(dish.hasIngredients) }));
+		.bind(weekStart, LUNCHBOX_TAG)
+		.all<
+			Omit<WeekDish, 'ingredients' | 'ingredientsGuessed' | 'lunchbox'> & {
+				ingredients: string;
+				ingredientsGuessed: number;
+				lunchbox: number;
+			}
+		>();
+	return results.map((dish) => ({
+		...dish,
+		ingredients: JSON.parse(dish.ingredients),
+		ingredientsGuessed: Boolean(dish.ingredientsGuessed),
+		lunchbox: Boolean(dish.lunchbox)
+	}));
 }
 
 /** The week's shopping list in the order it was written. */
 export async function getShoppingList(db: D1Database, weekStart: string): Promise<ShoppingItem[]> {
 	const { results } = await db
 		.prepare(
-			`SELECT s.id, s.text, s.section, s.origin, s.checked
+			`SELECT s.id, s.text, s.amount, s.section, s.dishes, s.origin, s.checked
 			 FROM shopping_item s JOIN menu m ON m.id = s.menu_id
 			 WHERE m.week_start = ? ORDER BY s.position, s.id`
 		)
@@ -53,16 +79,47 @@ export async function getShoppingList(db: D1Database, weekStart: string): Promis
 	return results.map((item) => ({ ...item, checked: Boolean(item.checked) }));
 }
 
+/** What the week's list was made from, or null when it has not been made. */
+export async function getShoppingBasis(db: D1Database, weekStart: string): Promise<string | null> {
+	const row = await db
+		.prepare('SELECT shopping_basis AS basis FROM menu WHERE week_start = ?')
+		.bind(weekStart)
+		.first<{ basis: string | null }>();
+	return row?.basis ?? null;
+}
+
+/** Notes what the week's list is made from. */
+export async function setShoppingBasis(
+	db: D1Database,
+	weekStart: string,
+	basis: string
+): Promise<void> {
+	await db
+		.prepare('UPDATE menu SET shopping_basis = ? WHERE week_start = ?')
+		.bind(basis, weekStart)
+		.run();
+}
+
+/** Takes away what the list was made from before, and notes what it is made from now. */
+const clearStatements = (db: D1Database, menuId: number, basis: string) => [
+	db
+		.prepare("DELETE FROM shopping_item WHERE menu_id = ? AND origin <> 'hand' AND checked = 0")
+		.bind(menuId),
+	db.prepare('UPDATE menu SET shopping_basis = ? WHERE id = ?').bind(basis, menuId)
+];
+
 /**
  * Makes the list from the week's dishes, a heading per dish with its lines as written. What was
  * written by hand and what is in the basket stays, and is not added twice.
  */
-export async function makeShoppingList(db: D1Database, weekStart: string): Promise<void> {
+export async function makeShoppingList(
+	db: D1Database,
+	weekStart: string,
+	basis: string
+): Promise<void> {
 	const menuId = await ensureMenu(db, weekStart);
 	await db.batch([
-		db
-			.prepare("DELETE FROM shopping_item WHERE menu_id = ? AND origin <> 'hand' AND checked = 0")
-			.bind(menuId),
+		...clearStatements(db, menuId, basis),
 		db
 			.prepare(
 				`${WEEK_DISHES}
@@ -76,6 +133,51 @@ export async function makeShoppingList(db: D1Database, weekStart: string): Promi
 				   WHERE s.menu_id = ?2 AND s.checked = 1 AND s.text = i.raw AND s.section = r.name)`
 			)
 			.bind(weekStart, menuId)
+	]);
+}
+
+/** An item on Claude's list. */
+export type NewShoppingItem = Pick<ShoppingItem, 'text' | 'amount' | 'section' | 'dishes'>;
+
+/** Ingredients Claude guessed for a dish that had only a name. */
+export interface Guess {
+	recipeId: number;
+	ingredients: string[];
+}
+
+/**
+ * Saves Claude's list in place of the one before, and the ingredients it guessed in their dishes.
+ * What was written by hand and what is in the basket stays, and is not added twice. A dish given
+ * ingredients meanwhile keeps them.
+ */
+export async function saveShoppingList(
+	db: D1Database,
+	weekStart: string,
+	items: NewShoppingItem[],
+	guesses: Guess[],
+	basis: string
+): Promise<void> {
+	const [menuId, list] = await Promise.all([
+		ensureMenu(db, weekStart),
+		getShoppingList(db, weekStart)
+	]);
+	const inBasket = new Set(
+		list.filter((i) => i.checked && i.origin !== 'hand').map((i) => nameKey(i.text))
+	);
+	await db.batch([
+		...clearStatements(db, menuId, basis),
+		...guesses.flatMap((g) => guessIngredientsStatements(db, g.recipeId, g.ingredients)),
+		...items
+			.filter((item) => !inBasket.has(nameKey(item.text)))
+			.map((item) =>
+				db
+					.prepare(
+						`INSERT INTO shopping_item (menu_id, position, text, amount, section, dishes, origin)
+						 SELECT ?1, (SELECT coalesce(max(position) + 1, 0) FROM shopping_item WHERE menu_id = ?1),
+						   ?2, ?3, ?4, ?5, 'claude'`
+					)
+					.bind(menuId, item.text, item.amount, item.section, item.dishes)
+			)
 	]);
 }
 

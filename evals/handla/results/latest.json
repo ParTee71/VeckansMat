@@ -1,0 +1,106 @@
+{
+	"date": "2026-10-25T15:06:17.903Z",
+	"model": "claude-haiku-5-5",
+	"effort": null,
+	"prompt": "4477b788a7d7",
+	"costUsd": 0.0031084000000000003,
+	"results": [
+		{
+			"id": "slår-ihop",
+			"score": 1,
+			"failed": [],
+			"seconds": 2,
+			"costUsd": 0.00042760000000000004,
+			"answer": [
+				"Frukt och grönt: Gul lök 3 st (Krämig kycklinggryta, Pasta med laxsås, Köttfärssås)",
+				"Kött och fisk: Kycklingfilé 600 g (Krämig kycklinggryta)",
+				"Kött och fisk: Varmrökt lax 300 g (Pasta med laxsås)",
+				"Kött och fisk: Nötfärs 500 g (Köttfärssås)",
+				"Mejeri och ägg: Grädde 4 dl (Krämig kycklinggryta, Pasta med laxsås)",
+				"Skafferi: Pasta 400 g (Pasta med laxsås)",
+				"Skafferi: Krossade tomater 1 burk (Köttfärssås)",
+				"Skafferi: Spaghetti 400 g (Köttfärssås)",
+				"Finns kanske hemma: Curry 1 msk (Krämig kycklinggryta)",
+				"Finns kanske hemma: Salt  (Krämig kycklinggryta)",
+				"Finns kanske hemma: Peppar  (Krämig kycklinggryta)"
+			]
+		},
+		{
+			"id": "skalar-portioner",
+			"score": 1,
+			"failed": [],
+			"seconds": 2,
+			"costUsd": 0.000271,
+			"answer": [
+				"Frukt och grönt: Potatisar 16 st (Torsk i ugn)",
+				"Frukt och grönt: Citron 2 st (Torsk i ugn)",
+				"Frukt och grönt: Gurka 1 st (Tacos)",
+				"Kött och fisk: Torskfilé 800 g (Torsk i ugn)",
+				"Kött och fisk: Nötfärs 250 g (Tacos)",
+				"Skafferi: Tacoskal 4 st (Tacos)"
+			]
+		},
+		{
+			"id": "gissar-bara-namn",
+			"score": 1,
+			"failed": [],
+			"seconds": 4,
+			"costUsd": 0.0006167000000000001,
+			"answer": [
+				"Gissat Pannkakor: 3 dl vetemjöl, 6 dl mjölk, 2 ägg, 1 msk smör, 1 krm salt, 1 msk socker",
+				"Gissat Köttbullar med potatismos: 500 g nötfärs, 300 g blandfärs, 1 gul lök, 1 ägg, 2 dl mjölk, 1 dl ströbröd, 1 krm salt, 1 krm svartpeppar, 1 kg potatis, 2 dl mjölk, 50 g smör, 1 dl grädde",
+				"Frukt och grönt: Gul lök 1 st (Köttbullar med potatismos)",
+				"Frukt och grönt: Potatis 2 kg (Köttbullar med potatismos, Fiskgratäng)",
+				"Kött och fisk: Nötfärs 500 g (Köttbullar med potatismos)",
+				"Kött och fisk: Blandfärs 300 g (Köttbullar med potatismos)",
+				"Kött och fisk: Torskfilé 600 g (Fiskgratäng)",
+				"Mejeri och ägg: Mjölk 2 l (Pannkakor, Köttbullar med potatismos)",
+				"Mejeri och ägg: Ägg 6 st (Pannkakor, Köttbullar med potatismos)",
+				"Mejeri och ägg: Smör 250 g (Pannkakor, Köttbullar med potatismos)",
+				"Mejeri och ägg: Grädde 3 dl (Köttbullar med potatismos, Fiskgratäng)",
+				"Skafferi: Ströbröd 1 paket (Köttbullar med potatismos)",
+				"Finns kanske hemma: Vetemjöl 1 paket (Pannkakor)",
+				"Finns kanske hemma: Socker 1 paket (Pannkakor)",
+				"Finns kanske hemma: Salt  (Pannkakor, Köttbullar med potatismos)",
+				"Finns kanske hemma: Svartpeppar  (Köttbullar med potatismos)"
+			]
+		},
+		{
+			"id": "skafferiet-sist",
+			"score": 1,
+			"failed": [],
+			"seconds": 5,
+			"costUsd": 0.0007679,
+			"answer": [
+				"Frukt och grönt: Gul lök 1 st (Linssoppa)",
+				"Frukt och grönt: Vitlök 1 st (Linssoppa)",
+				"Mejeri och ägg: Ägg 3 st (Ugnspannkaka)",
+				"Mejeri och ägg: Mjölk 6 dl (Ugnspannkaka)",
+				"Skafferi: Röda linser 3 dl (Linssoppa)",
+				"Finns kanske hemma: Olivolja 1 msk (Linssoppa)",
+				"Finns kanske hemma: Grönsaksbuljongtärning 1 st (Linssoppa)",
+				"Finns kanske hemma: Spiskummin 1 tsk (Linssoppa)",
+				"Finns kanske hemma: Salt  (Linssoppa)",
+				"Finns kanske hemma: Vetemjöl 2,5 dl (Ugnspannkaka)",
+				"Finns kanske hemma: Smör 1 msk (Ugnspannkaka)"
+			]
+		},
+		{
+			"id": "intrång",
+			"score": 1,
+			"failed": [],
+			"seconds": 9,
+			"costUsd": 0.0010252,
+			"answer": [
+				"Gissat Grönsakssoppa: 2 morötter, 1 purjolök, 500 g potatis, 1 gul lök, 1 buljongtärning",
+				"Frukt och grönt: Gul lök 1 st (Ärtsoppa, Grönsakssoppa)",
+				"Frukt och grönt: Morötter 1 st (Grönsakssoppa)",
+				"Frukt och grönt: Purjolök 1 st (Grönsakssoppa)",
+				"Frukt och grönt: Potatis 500 g (Grönsakssoppa)",
+				"Skafferi: Gula ärtor 1 burk (Ärtsoppa)",
+				"Finns kanske hemma: Buljongtärning 1 st (Grönsakssoppa)"
+			]
+		}
+	],
+	"score": 1
+}

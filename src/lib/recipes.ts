@@ -9,9 +9,12 @@ export const MEAL_LABELS: Record<Meal, string> = { dinner: 'Middag', lunch: 'Lun
 /** "1 gång", "3 gånger". */
 export const timesText = (n: number) => (n === 1 ? '1 gång' : `${n} gånger`);
 
-/** A dish without ingredients or steps, which an import may fill in. */
-export const hasOnlyName = (recipe: { ingredients: string[]; instructions: string | null }) =>
-	recipe.ingredients.length === 0 && !recipe.instructions;
+/** A dish without steps, and without ingredients or with only guessed ones: an import may fill it in. */
+export const hasOnlyName = (recipe: {
+	ingredients: string[];
+	ingredientsGuessed: boolean;
+	instructions: string | null;
+}) => (recipe.ingredients.length === 0 || recipe.ingredientsGuessed) && !recipe.instructions;
 
 /** Lines on a note that are not a dish, offered as quick choices for a day. */
 export const NOT_DISHES = ['Rester', 'Äta ute', 'Hämtmat'];
