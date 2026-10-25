@@ -3,15 +3,16 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
-/** A case's result: the share of rules that held, and the names of those that did not. */
+/** A case's result: the share of rules that held, the names of those that did not, and its cost. */
 export interface Scored {
 	id: string;
 	score: number;
 	failed: string[];
+	costUsd: number;
 }
 
 /** Each rule passed or failed, by its name, as a score. */
-export function score(checks: Record<string, boolean>): Omit<Scored, 'id'> {
+export function score(checks: Record<string, boolean>): Pick<Scored, 'score' | 'failed'> {
 	const failed = Object.keys(checks).filter((k) => !checks[k]);
 	const total = Object.keys(checks).length;
 	return { score: (total - failed.length) / total, failed };
@@ -19,14 +20,18 @@ export function score(checks: Record<string, boolean>): Omit<Scored, 'id'> {
 
 const percent = (n: number | undefined) => (n === undefined ? '–' : `${Math.round(n * 100)} %`);
 
-/** Prints the run beside the last saved one, and saves it in place of that one. */
+/**
+ * Prints the run beside the last saved one, and saves it in place of that one. The results are in
+ * the order of the cases, with a gap for a case that did not finish.
+ */
 export function report<R extends Scored>(
 	file: URL,
-	run: { model: string; prompt: string; costUsd: number; results: R[] } & Record<string, unknown>,
+	run: { model: string; prompt: string; results: (R | undefined)[] } & Record<string, unknown>,
 	columns: (result: R) => Record<string, unknown> = () => ({})
 ) {
-	const { results } = run;
+	const results = run.results.filter((r) => r !== undefined);
 	if (!results.length) return;
+	const costUsd = results.reduce((sum, r) => sum + r.costUsd, 0);
 	const previous = existsSync(file)
 		? (JSON.parse(readFileSync(file, 'utf8')) as { results: Scored[]; score: number })
 		: null;
@@ -41,7 +46,7 @@ export function report<R extends Scored>(
 		}))
 	);
 	console.log(
-		`Totalt ${percent(total)} (förut ${percent(previous?.score)}), ${run.model}, $${run.costUsd.toFixed(4)}`
+		`Totalt ${percent(total)} (förut ${percent(previous?.score)}), ${run.model}, $${costUsd.toFixed(4)}`
 	);
 	mkdirSync(new URL('.', file), { recursive: true });
 	writeFileSync(
@@ -50,6 +55,7 @@ export function report<R extends Scored>(
 			{
 				date: new Date().toISOString(),
 				...run,
+				costUsd,
 				prompt: createHash('sha256').update(run.prompt).digest('hex').slice(0, 12),
 				score: total,
 				results
