@@ -34,6 +34,8 @@ Du granskar ändringar i VeckansMat. Du ändrar aldrig filer och kör bara läsa
   `wrangler.jsonc`) ska den höja versionen enligt `/release` och skriva raden i `CHANGELOG.md`.
   Saknad höjning eller rad är ❌; en ren dokument-, test-, CI- eller `.claude/`-ändring som höjer
   är ⚠️.
+- **Ingen omladdning:** laddar en ändring på plats om sidan (`invalidateAll`, `location.reload`,
+  `use:enhance` utan `invalidateAll: false`) i strid med `0016-spara-i-bakgrunden.md`?
 - **Data och drift:** ny D1-migrering utan lokal körning, skrivning mot skarp data.
 
 ## Rapport (exakt detta format)

@@ -219,3 +219,18 @@ skrivning, uppstart i molnet) och spärrar i `.claude/settings.json`.
 
 **Att följa upp:** Följs reglerna i `CLAUDE.md` utan påminnelse? Stoppar
 hooken något på riktigt? Saknas en skill som borde finnas?
+
+## 2026-10-25 – En regel om hur appen ska kännas
+
+**Vad:** Ägarens önskan att sidan aldrig laddas om när något sparas blev ett beslut
+(`docs/beslut/0016-spara-i-bakgrunden.md`) och en egen kontrollpunkt för agenten `granskare`.
+
+**Varför så:**
+
+- **Ett beslut, inte en rad i `CLAUDE.md`.** Regeln gäller bara när en vy sparar något, så den
+  behöver inte läsas i varje session. Som ADR har den sitt varför, och Claude läser den när
+  diffen rör samma sak.
+- **Granskaren kontrollerar den.** En regel som bara står i text glöms ibland; en namngiven
+  kontrollpunkt i granskningen före varje PR fångar det som glömts.
+- **Ett prov som håller den.** E2E-proven räknar sidans dataladdningar, så ett brott syns som
+  ett rött test och inte först i telefonen.

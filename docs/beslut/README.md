@@ -20,3 +20,4 @@ med `/adr` i Claude Code.
 | [0013](0013-recept-in.md)                | Recept in från länkar, foton och text           | Beslutat                                  |
 | [0014](0014-veckoforslag.md)             | Claude föreslår veckan                          | Beslutat                                  |
 | [0015](0015-inkopslista.md)              | Inköpslistan                                    | Beslutat                                  |
+| [0016](0016-spara-i-bakgrunden.md)       | Spara i bakgrunden, ladda inte om sidan         | Beslutat                                  |
