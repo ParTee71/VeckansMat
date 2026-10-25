@@ -70,22 +70,22 @@ function menu(text) {
 
 /** A made-up list: one item per dish, and a guess for each dish with just a name. */
 function shopping(text) {
-	const dishes = [...text.matchAll(/^- (.+): cook \d+ portions\. (No|Lines)/gm)].map(
-		([, name, lines]) => ({ name, guess: lines === 'No' })
+	const dishes = [...text.matchAll(/^(\d+)\. (.+): cook \d+ portions\. (No|Lines)/gm)].map(
+		([, number, name, lines]) => ({ number: Number(number), name, guess: lines === 'No' })
 	);
 	return {
 		guesses: dishes
 			.filter((dish) => dish.guess)
-			.map((dish) => ({ dish: dish.name, ingredients: ['2 gula lökar', '500 g potatis'] })),
+			.map((dish) => ({ dish: dish.number, ingredients: ['2 gula lökar', '500 g potatis'] })),
 		items: [
 			...dishes.map((dish) => ({
 				text: `Till ${dish.name.toLowerCase()}`,
 				amount: '1 st',
 				section: 'Skafferi',
-				dishes: [dish.name]
+				lines: [`${dish.number}.1`]
 			})),
-			{ text: 'Gul lök', amount: '2 st', section: 'Frukt och grönt', dishes: [] },
-			{ text: 'Salt', amount: '', section: 'Finns kanske hemma', dishes: [] }
+			{ text: 'Gul lök', amount: '2 st', section: 'Frukt och grönt', lines: [] },
+			{ text: 'Salt', amount: '', section: 'Finns kanske hemma', lines: [] }
 		]
 	};
 }

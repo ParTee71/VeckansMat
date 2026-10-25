@@ -19,5 +19,6 @@ med `/adr` i Claude Code.
 | [0012](0012-datamodell.md)               | Datamodell för recept och veckomenyer           | Beslutat                                  |
 | [0013](0013-recept-in.md)                | Recept in från länkar, foton och text           | Beslutat                                  |
 | [0014](0014-veckoforslag.md)             | Claude föreslår veckan                          | Beslutat                                  |
-| [0015](0015-inkopslista.md)              | Inköpslistan                                    | Beslutat                                  |
+| [0015](0015-inkopslista.md)              | Inköpslistan                                    | Beslutat, korgen ersatt av 0017           |
 | [0016](0016-spara-i-bakgrunden.md)       | Spara i bakgrunden, ladda inte om sidan         | Beslutat                                  |
+| [0017](0017-varans-identitet.md)         | En vara är de receptrader den täcker            | Beslutat                                  |

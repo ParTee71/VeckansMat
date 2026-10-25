@@ -1,6 +1,6 @@
 // Claude makes the week's shopping list, and guesses the ingredients of dishes that have only a
-// name. See docs/beslut/0015-inkopslista.md.
-import { answerStrings, answerText, nameKey } from '../names';
+// name. See docs/beslut/0015-inkopslista.md and 0017-varans-identitet.md.
+import { answerStrings, answerText } from '../names';
 import { SECTIONS, sectionRank } from '../shopping';
 import { askJson, type Ask } from './claude/claude';
 import {
@@ -12,11 +12,10 @@ import {
 import { getSettings } from './db/household';
 import { getWeek } from './db/menus';
 import {
-	makeShoppingList,
 	saveShoppingList,
 	weekDishes,
-	type Guess,
 	type NewShoppingItem,
+	type ShoppingItem,
 	type WeekDish
 } from './db/shopping';
 
@@ -49,6 +48,10 @@ export async function shoppingPlan(
 const basisOf = (dishes: PlannedDish[]) =>
 	JSON.stringify(dishes.map((d) => [d.id, d.portions, d.ingredients]));
 
+/** Whether the week has changed since its list was made from it, so the list can be updated. */
+export const listChanged = (made: string | null, now: string, items: ShoppingItem[]) =>
+	made !== null && made !== now && items.some((item) => item.origin !== 'hand');
+
 /** Why Claude made no list: it failed, or the month's cap is spent. */
 export class ShoppingListError extends Error {
 	constructor(readonly reason: 'failed' | 'limit') {
@@ -56,14 +59,22 @@ export class ShoppingListError extends Error {
 	}
 }
 
+/** An item on Claude's list, with the lines it covers as [dish, line], counted from 0. */
+export interface ClaudeItem {
+	text: string;
+	amount: string | null;
+	section: string;
+	lines: [number, number][];
+}
+
 /**
  * Asks Claude for the list and the guesses. The items come in the order of the store's sections,
- * each with the dishes it is for.
+ * each with the lines it covers; the guesses are by the dish's place in `dishes`.
  */
 export async function askShoppingList(
 	dishes: ShoppingDish[],
 	ask: Ask
-): Promise<{ items: NewShoppingItem[]; guesses: Map<string, string[]> }> {
+): Promise<{ items: ClaudeItem[]; guesses: Map<number, string[]> }> {
 	const parsed = await askJson(
 		ask,
 		{
@@ -77,34 +88,52 @@ export async function askShoppingList(
 		'items'
 	);
 
-	// Guesses only for the dishes asked about, by the name they were given.
-	const byKey = new Map(dishes.map((dish) => [nameKey(dish.name), dish]));
-	const guesses = new Map<string, string[]>();
+	// Guesses only for the dishes that have no lines.
+	const guesses = new Map<number, string[]>();
 	for (const guess of Array.isArray(parsed.guesses) ? parsed.guesses : []) {
-		const dish = byKey.get(nameKey(answerText(guess?.dish, 100)));
+		const i = Number(guess?.dish) - 1;
 		const lines = answerStrings(guess?.ingredients, 100);
-		if (dish && !dish.ingredients.length && lines.length) guesses.set(dish.name, lines);
+		if (dishes[i] && !dishes[i].ingredients.length && lines.length) guesses.set(i, lines);
 	}
+	const lineCount = (i: number) => (guesses.get(i) ?? dishes[i]?.ingredients ?? []).length;
 
-	const items: NewShoppingItem[] = [];
+	const items: ClaudeItem[] = [];
 	for (const item of parsed.items) {
 		const name = answerText(item?.text, 100);
 		if (!name) continue;
-		const section = SECTIONS.find((s) => s === item?.section) ?? 'Övrigt';
-		const named = answerStrings(item?.dishes, 100)
-			.map((d) => byKey.get(nameKey(d))?.name)
-			.filter((d): d is string => !!d);
+		const lines = new Map<string, [number, number]>();
+		for (const ref of answerStrings(item?.lines, 20)) {
+			const [dish, line] = ref.split('.').map((n) => Number(n) - 1);
+			if (line >= 0 && line < lineCount(dish)) lines.set(`${dish}.${line}`, [dish, line]);
+		}
 		items.push({
 			text: name,
 			amount: answerText(item?.amount, 30) || null,
-			section,
-			dishes: [...new Set(named)].join(', ') || null
+			section: SECTIONS.find((s) => s === item?.section) ?? 'Övrigt',
+			lines: [...lines.values()]
 		});
 	}
 	if (!items.length) throw new ShoppingListError('failed');
 	items.sort((a, b) => sectionRank(a.section) - sectionRank(b.section));
 	return { items, guesses };
 }
+
+/** The recipes' lines dish by dish, each under its dish: the list when Claude cannot make it. */
+export const recipeLines = (dishes: WeekDish[]): NewShoppingItem[] =>
+	dishes.flatMap((dish) =>
+		dish.ingredients.flatMap((raw, position) =>
+			raw.trim()
+				? [
+						{
+							text: raw,
+							amount: null,
+							section: dish.name,
+							lines: [{ recipeId: dish.id, position }]
+						}
+					]
+				: []
+		)
+	);
 
 /**
  * Makes the week's list with Claude, and keeps its guesses in their dishes. When Claude cannot,
@@ -116,24 +145,26 @@ export async function makeShoppingListWithClaude(
 	ask: Ask
 ): Promise<void> {
 	const { dishes, basis } = await shoppingPlan(db, weekStart);
-	if (!dishes.length) return makeShoppingList(db, weekStart, basis);
+	const fromRecipes = () =>
+		saveShoppingList(db, weekStart, { origin: 'recipe', items: recipeLines(dishes), basis });
+	if (!dishes.length) return fromRecipes();
 	let answer;
 	try {
 		answer = await askShoppingList(dishes, ask);
 	} catch (e) {
-		if (e instanceof ShoppingListError) await makeShoppingList(db, weekStart, basis);
+		if (e instanceof ShoppingListError) await fromRecipes();
 		throw e;
 	}
-	const guesses: Guess[] = dishes
-		.filter((d) => answer.guesses.has(d.name))
-		.map((d) => ({
-			recipeId: d.id,
-			ingredients: answer.guesses.get(d.name)!
-		}));
-	// The list is made from the dishes with the guesses in them. A change to the week while Claude
-	// was making it is not, so the page offers to update the list.
-	const made = basisOf(
-		dishes.map((d) => ({ ...d, ingredients: answer.guesses.get(d.name) ?? d.ingredients }))
-	);
-	await saveShoppingList(db, weekStart, answer.items, guesses, made);
+	const { items, guesses } = answer;
+	await saveShoppingList(db, weekStart, {
+		origin: 'claude',
+		items: items.map(({ lines, ...item }) => ({
+			...item,
+			lines: lines.map(([dish, position]) => ({ recipeId: dishes[dish].id, position }))
+		})),
+		guesses: [...guesses].map(([i, ingredients]) => ({ recipeId: dishes[i].id, ingredients })),
+		// The list is made from the dishes with the guesses in them. A change to the week while Claude
+		// was making it is not, so the page offers to update the list.
+		basis: basisOf(dishes.map((d, i) => ({ ...d, ingredients: guesses.get(i) ?? d.ingredients })))
+	});
 }

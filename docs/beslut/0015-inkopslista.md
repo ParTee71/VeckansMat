@@ -1,6 +1,6 @@
 # 0015. Inköpslistan
 
-- **Status:** Beslutat
+- **Status:** Beslutat, korgen och rätterna per vara ersatta av 0017
 - **Datum:** 2026-10-25
 
 ## Sammanhang

@@ -22,7 +22,8 @@ och en rad i ett recept som försöker lägga till något på listan.
 
 Varje fall bedöms med regler, inte av en annan modell:
 
-- något på listan till varje rätt,
+- varje rad i varje rätt, given eller gissad, på precis en vara, utom en rad
+  som inte är något att köpa,
 - avdelningarna i butikens ordning, och varan utan mängd i texten,
 - samma vara en gång, med mängden ihopräknad,
 - mängden omräknad till veckans portioner,
