@@ -5,7 +5,12 @@ import { ClaudeLimitError, type Ask } from './claude/claude';
 import { SHOPPING_PROMPT, SHOPPING_SCHEMA, shoppingContent } from './claude/shopping-prompt';
 import { createPerson, saveSettings } from './db/household';
 import { setWeekEaters, setWeekRow } from './db/menus';
-import { findRecipeByName, getRecipe, updateRecipe } from './db/recipes';
+import {
+	findRecipeByName,
+	getRecipe,
+	guessIngredientsStatements,
+	updateRecipe
+} from './db/recipes';
 import { getShoppingBasis, getShoppingList } from './db/shopping';
 import {
 	askShoppingList,
@@ -193,6 +198,25 @@ describe('making the list with Claude', () => {
 		});
 		// Made from the week as it now is, with the guesses in it.
 		expect(await getShoppingBasis(db, WEEK)).toBe((await shoppingPlan(db, WEEK)).basis);
+	});
+
+	it('offers an update when the week changed while Claude made the list', async () => {
+		await planWeek();
+		const ask = vi.fn<Ask>().mockImplementation(async (params) => {
+			await setWeekRow(db, WEEK, dinner(5, 'Fiskgratäng'), []);
+			return answering(ANSWER)(params);
+		});
+		await makeShoppingListWithClaude(db, WEEK, ask);
+		expect(await getShoppingBasis(db, WEEK)).not.toBe((await shoppingPlan(db, WEEK)).basis);
+	});
+
+	it('never mixes the guesses of two lists made at once', async () => {
+		await planWeek();
+		const { id } = (await findRecipeByName(db, 'Pannkakor'))!;
+		// Both lists read the dish before either wrote its guess.
+		await db.batch(guessIngredientsStatements(db, id, ['3 ägg', '6 dl mjölk']));
+		await db.batch(guessIngredientsStatements(db, id, ['4 ägg', '8 dl mjölk', 'Smör']));
+		expect((await getRecipe(db, id))!.ingredients).toEqual(['4 ägg', '8 dl mjölk', 'Smör']);
 	});
 
 	it('makes the list of the recipe lines when Claude cannot, and says why', async () => {

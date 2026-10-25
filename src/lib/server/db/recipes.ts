@@ -109,6 +109,9 @@ export function guessIngredientsStatements(
 	recipeId: number,
 	ingredients: string[]
 ): D1PreparedStatement[] {
+	// Two lists made at once both guess; the later guess replaces the earlier one whole, so the
+	// lines are never a mix of the two.
+	const guessed = '(SELECT ingredients_guessed FROM recipe WHERE id = ?1) = 1';
 	return [
 		db
 			.prepare(
@@ -116,12 +119,12 @@ export function guessIngredientsStatements(
 				 WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM recipe_ingredient WHERE recipe_id = ?1)`
 			)
 			.bind(recipeId),
+		db.prepare(`DELETE FROM recipe_ingredient WHERE recipe_id = ?1 AND ${guessed}`).bind(recipeId),
 		...ingredients.map((raw, position) =>
 			db
 				.prepare(
 					`INSERT INTO recipe_ingredient (recipe_id, position, raw)
-					 SELECT ?1, ?2, ?3 WHERE (SELECT ingredients_guessed FROM recipe WHERE id = ?1) = 1
-					 ON CONFLICT DO NOTHING`
+					 SELECT ?1, ?2, ?3 WHERE ${guessed}`
 				)
 				.bind(recipeId, position, raw)
 		)

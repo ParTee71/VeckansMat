@@ -88,18 +88,6 @@ export async function getShoppingBasis(db: D1Database, weekStart: string): Promi
 	return row?.basis ?? null;
 }
 
-/** Notes what the week's list is made from. */
-export async function setShoppingBasis(
-	db: D1Database,
-	weekStart: string,
-	basis: string
-): Promise<void> {
-	await db
-		.prepare('UPDATE menu SET shopping_basis = ? WHERE week_start = ?')
-		.bind(basis, weekStart)
-		.run();
-}
-
 /** Takes away what the list was made from before, and notes what it is made from now. */
 const clearStatements = (db: D1Database, menuId: number, basis: string) => [
 	db

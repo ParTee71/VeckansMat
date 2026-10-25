@@ -14,7 +14,6 @@ import { getWeek } from './db/menus';
 import {
 	makeShoppingList,
 	saveShoppingList,
-	setShoppingBasis,
 	weekDishes,
 	type Guess,
 	type NewShoppingItem,
@@ -43,10 +42,12 @@ export async function shoppingPlan(
 		// A dish good for lunch boxes is cooked with extra portions each time.
 		portions: dish.times * (eaters + (dish.lunchbox ? settings.lunchboxExtraPortions : 0))
 	}));
-	// What the list is made from: changes when a dish, its portions or its lines do.
-	const basis = JSON.stringify(planned.map((d) => [d.id, d.portions, d.ingredients]));
-	return { dishes: planned, basis };
+	return { dishes: planned, basis: basisOf(planned) };
 }
+
+/** What the list is made from: changes when a dish, its portions or its lines do. */
+const basisOf = (dishes: PlannedDish[]) =>
+	JSON.stringify(dishes.map((d) => [d.id, d.portions, d.ingredients]));
 
 /** Why Claude made no list: it failed, or the month's cap is spent. */
 export class ShoppingListError extends Error {
@@ -132,8 +133,10 @@ export async function makeShoppingListWithClaude(
 			recipeId: d.id,
 			ingredients: answer.guesses.get(d.name)!
 		}));
-	await saveShoppingList(db, weekStart, answer.items, guesses, basis);
-	// The guesses are now in their dishes, so the week the list is made from has changed with them.
-	if (guesses.length)
-		await setShoppingBasis(db, weekStart, (await shoppingPlan(db, weekStart)).basis);
+	// The list is made from the dishes with the guesses in them. A change to the week while Claude
+	// was making it is not, so the page offers to update the list.
+	const made = basisOf(
+		dishes.map((d) => ({ ...d, ingredients: answer.guesses.get(d.name) ?? d.ingredients }))
+	);
+	await saveShoppingList(db, weekStart, answer.items, guesses, made);
 }
