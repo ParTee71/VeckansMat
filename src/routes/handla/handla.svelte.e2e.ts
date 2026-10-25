@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { open } from '../../../test/e2e';
+import { open, saved } from '../../../test/e2e';
 
 // Runs after the tests of Veckan, in its own Playwright project, since both write the weeks Veckan
 // shows. The made-up dishes come from test/e2e-seed.sql.
@@ -37,6 +37,7 @@ test('the week shopping list is made from the dishes and ticked off in the store
 	await onion.click();
 	await expect(page.getByRole('heading', { name: /^I korgen/ })).toBeVisible();
 	await expect(onion).toBeChecked();
+	await saved(page);
 	await page.reload();
 	await expect(page.getByRole('checkbox', { name: 'Gul lök' })).toBeChecked();
 
@@ -78,6 +79,7 @@ test('a list made before the week changed offers to be updated', async ({ page }
 	await page.locator('m3e-button', { hasText: 'Inte nu' }).click();
 	await expect(changed).toHaveCount(0);
 
+	await saved(page);
 	await page.reload();
 	await page.locator('m3e-button', { hasText: 'Uppdatera listan' }).click();
 	await expect(changed).toHaveCount(0);
