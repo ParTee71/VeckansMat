@@ -22,7 +22,8 @@ export const actions: Actions = {
 		try {
 			await saveSettings(env.DB, settings);
 		} catch (e) {
-			if (e instanceof RangeError) return fail(400, { error: 'Det gick inte att spara.' });
+			if (e instanceof RangeError)
+				return fail(400, { error: 'Det gick inte att spara. Ladda om sidan och försök igen.' });
 			throw e;
 		}
 	}

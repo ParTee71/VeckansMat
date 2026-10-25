@@ -12,14 +12,17 @@
 	let lunchboxExtra = $derived(data.settings.lunchboxExtraPortions);
 
 	let settingsForm: HTMLFormElement;
+	let changed = '';
 
-	// The rules field keeps what is being written while the page reloads its data.
-	const keepFields: SubmitFunction =
-		() =>
-		async ({ update }) =>
-			update({ reset: false });
+	// Only the field that changed is sent, so two quick saves never undo each other. The rules
+	// field keeps what is being written while the page reloads its data.
+	const sendChanged: SubmitFunction = ({ formData }) => {
+		for (const key of [...formData.keys()]) if (key !== changed) formData.delete(key);
+		return async ({ update }) => update({ reset: false });
+	};
 
-	async function save() {
+	async function save(field: string) {
+		changed = field;
 		await tick();
 		settingsForm.requestSubmit();
 	}
@@ -60,7 +63,7 @@
 	</m3e-button>
 
 	<h2>Regler för varje vecka</h2>
-	<form method="POST" action="?/settings" use:enhance={keepFields} bind:this={settingsForm}>
+	<form method="POST" action="?/settings" use:enhance={sendChanged} bind:this={settingsForm}>
 		<m3e-form-field variant="filled">
 			<label slot="label" for="menuRules">Skriv som till en person, en regel per rad</label>
 			<textarea
@@ -68,7 +71,7 @@
 				name="menuRules"
 				rows="4"
 				value={data.settings.menuRules}
-				onchange={save}></textarea>
+				onchange={() => save('menuRules')}></textarea>
 			<m3e-textarea-autosize for="menuRules"></m3e-textarea-autosize>
 		</m3e-form-field>
 
@@ -82,7 +85,7 @@
 					disabled={newDishes <= 0 || undefined}
 					onclick={() => {
 						newDishes--;
-						save();
+						save('newDishesPerWeek');
 					}}><Icon name="remove" /></m3e-icon-button
 				>
 				<output aria-labelledby="new-dishes">{newDishes}</output>
@@ -93,7 +96,7 @@
 					disabled={newDishes >= MAX_NEW_DISHES || undefined}
 					onclick={() => {
 						newDishes++;
-						save();
+						save('newDishesPerWeek');
 					}}><Icon name="add" /></m3e-icon-button
 				>
 			</div>
@@ -107,10 +110,10 @@
 					<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
 					<m3e-button
 						variant={lunchboxExtra === n ? 'filled' : 'tonal'}
-						aria-label="{n} extra portioner"
+						aria-label={n === 1 ? '1 extra portion' : `${n} extra portioner`}
 						onclick={() => {
 							lunchboxExtra = n;
-							save();
+							save('lunchboxExtraPortions');
 						}}>{n}</m3e-button
 					>
 				{/each}

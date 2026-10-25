@@ -36,20 +36,24 @@ test('a person is added with what they do not eat, changed and removed', async (
 test('the rules for every week are saved as they are changed', async ({ page }) => {
 	await open(page, '/hushallet');
 	const rules = page.getByLabel('Skriv som till en person, en regel per rad');
+	// Each change is saved on its own, so the test waits for each save before the next change.
+	const saving = () => page.waitForResponse((r) => r.url().includes('/settings'));
 	await rules.fill('Fisk en gång i veckan.\nVegetariskt på måndagar.');
+	let saved = saving();
 	await rules.blur();
-	const saved = page.waitForResponse((r) => r.url().includes('/settings'));
+	await saved;
+	saved = saving();
 	await page.getByRole('button', { name: 'Fler nya rätter' }).click();
 	await saved;
-	const saved2 = page.waitForResponse((r) => r.url().includes('/settings'));
-	await page.getByRole('button', { name: '1 extra portioner' }).click();
-	await saved2;
+	saved = saving();
+	await page.getByRole('button', { name: '1 extra portion', exact: true }).click();
+	await saved;
 
 	await page.reload();
 	await expect(rules).toHaveValue('Fisk en gång i veckan.\nVegetariskt på måndagar.');
 	await expect(page.getByRole('status')).toHaveText('2');
 	// m3e drops aria-pressed from a button that is not a toggle, so the variant shows the choice.
-	await expect(page.getByRole('button', { name: '1 extra portioner' })).toHaveAttribute(
+	await expect(page.getByRole('button', { name: '1 extra portion', exact: true })).toHaveAttribute(
 		'variant',
 		'filled'
 	);
