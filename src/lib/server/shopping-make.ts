@@ -92,7 +92,11 @@ export async function askShoppingList(
 	const guesses = new Map<number, string[]>();
 	for (const guess of Array.isArray(parsed.guesses) ? parsed.guesses : []) {
 		const i = Number(guess?.dish) - 1;
-		const lines = answerStrings(guess?.ingredients, 100);
+		// Claude sometimes writes a line's number, such as "3.1", into the line itself.
+		const lines = answerStrings(guess?.ingredients, 100).map((line, j) => {
+			const number = `${i + 1}.${j + 1} `;
+			return line.startsWith(number) ? line.slice(number.length).trim() : line;
+		});
 		if (dishes[i] && !dishes[i].ingredients.length && lines.length) guesses.set(i, lines);
 	}
 	const lineCount = (i: number) => (guesses.get(i) ?? dishes[i]?.ingredients ?? []).length;

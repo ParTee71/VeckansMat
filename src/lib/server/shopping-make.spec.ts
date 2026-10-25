@@ -145,6 +145,15 @@ describe('asking Claude for the shopping list', () => {
 		expect([...guesses]).toEqual([[2, ['3 ägg', '6 dl mjölk', '2,5 dl vetemjöl']]]);
 	});
 
+	it('takes the line numbers out of the guesses, and only where they fit the line', async () => {
+		const answer = {
+			...ANSWER,
+			guesses: [{ dish: 3, ingredients: ['3.1 3 ägg', '1.5 dl mjölk', '3.3 2,5 dl vetemjöl'] }]
+		};
+		const { guesses } = await askShoppingList(dishes, answering(answer));
+		expect(guesses.get(2)).toEqual(['3 ägg', '1.5 dl mjölk', '2,5 dl vetemjöl']);
+	});
+
 	it('takes no guesses for a dish that has lines', async () => {
 		const answer = { ...ANSWER, guesses: [{ dish: 1, ingredients: ['Fel'] }] };
 		const { guesses } = await askShoppingList(dishes, answering(answer));

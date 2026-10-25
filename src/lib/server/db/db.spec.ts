@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { useTestDb } from '../../../../test/d1';
+import { giveIngredients } from '../../../../test/fixtures';
 import { saveMenu } from '../../../../test/menus';
 import { nameKey } from '../../names';
 import { listMenus } from './menus';
@@ -8,6 +10,7 @@ import {
 	createRecipe,
 	findRecipeByName,
 	getRecipe,
+	guessIngredientsStatements,
 	listRecipes,
 	NameTakenError,
 	updateRecipe,
@@ -302,5 +305,27 @@ describe('finding a recipe by name', () => {
 
 	it('is null when there is none', async () => {
 		expect(await findRecipeByName(db, 'Ärtsoppa')).toBeNull();
+	});
+});
+
+describe('migration 0010', () => {
+	const migration = readFileSync('migrations/0010_guessed_line_numbers.sql', 'utf8');
+
+	it('takes the line numbers out of guessed lines, and only where they fit the line', async () => {
+		const guessed = await addRecipe(db, 'Pannkakor');
+		await db.batch(
+			guessIngredientsStatements(db, guessed, ['3.1 3 ägg', '1.5 dl mjölk', '3.3 2,5 dl vetemjöl'])
+		);
+		await addRecipe(db, 'Fiskgratäng');
+		await giveIngredients(db, 'Fiskgratäng', ['1.1 kg torsk', '2 dl grädde']);
+		await db.exec(migration.replace(/--.*$/gm, '').replace(/\s+/g, ' '));
+
+		expect((await getRecipe(db, guessed))!.ingredients).toEqual([
+			'3 ägg',
+			'1.5 dl mjölk',
+			'2,5 dl vetemjöl'
+		]);
+		const fish = (await findRecipeByName(db, 'Fiskgratäng'))!;
+		expect((await getRecipe(db, fish.id))!.ingredients).toEqual(['1.1 kg torsk', '2 dl grädde']);
 	});
 });
