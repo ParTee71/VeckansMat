@@ -1,12 +1,12 @@
 <script lang="ts">
 	import Icon from '#lib/Icon.svelte';
-	import { LUNCHBOX_TAG, MEAL_LABELS, timesText } from '#lib/recipes.ts';
+	import { hasOnlyName, LUNCHBOX_TAG, MEAL_LABELS, timesText } from '#lib/recipes.ts';
 	import { weekName } from '#lib/weeks.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 	let recipe = $derived(data.recipe);
-	let onlyName = $derived(recipe.ingredients.length === 0 && !recipe.instructions);
+	let onlyName = $derived(hasOnlyName(recipe));
 	let lastWeek = $derived(recipe.weeks.find((w) => w.weekStart)?.weekStart ?? null);
 	let eaten = $derived(
 		recipe.weeks.length === 0
@@ -50,9 +50,12 @@
 				Rätten har bara ett namn. Lägg till ingredienser när du vill, så kommer de med på
 				inköpslistan.
 			</p>
-			<m3e-button variant="filled" href="/ratter/{recipe.id}/redigera"
-				>Lägg till ingredienser</m3e-button
-			>
+			<div class="invite-actions">
+				<m3e-button variant="filled" href="/ratter/ny?till={recipe.id}">
+					<span slot="icon" class="slot-icon"><Icon name="link" /></span>Hämta från en länk
+				</m3e-button>
+				<m3e-button variant="tonal" href="/ratter/{recipe.id}/redigera">Skriv in själv</m3e-button>
+			</div>
 		</section>
 	{/if}
 
@@ -173,6 +176,12 @@
 
 	.invite p {
 		margin: 0;
+	}
+
+	.invite-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
 	}
 
 	ul {

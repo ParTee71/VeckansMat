@@ -31,7 +31,7 @@ test('a new dish is added with its name and one tap, and can be filled in', asyn
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ärtsoppa');
 	await expect(page.getByText('Rätten har bara ett namn.')).toBeVisible();
 
-	await page.locator('m3e-button', { hasText: 'Lägg till ingredienser' }).click();
+	await page.locator('m3e-button', { hasText: 'Skriv in själv' }).click();
 	await page.getByLabel('Portioner').fill('4');
 	await page.getByLabel('Ingredienser, en per rad').fill('500 g köttfärs\n1 vitkål');
 	await page.locator('m3e-switch#lunchbox').click();

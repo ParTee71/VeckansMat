@@ -126,16 +126,95 @@ export async function updateRecipe(
 				input.sourceUrl,
 				id
 			),
-		db.prepare('DELETE FROM recipe_ingredient WHERE recipe_id = ?').bind(id),
-		...input.ingredients.map((raw, position) =>
-			db
-				.prepare('INSERT INTO recipe_ingredient (recipe_id, position, raw) VALUES (?, ?, ?)')
-				.bind(id, position, raw)
-		),
-		db.prepare('DELETE FROM recipe_tag WHERE recipe_id = ?').bind(id),
-		...input.tags.map((tag) =>
-			db.prepare('INSERT OR IGNORE INTO recipe_tag (recipe_id, tag) VALUES (?, ?)').bind(id, tag)
-		)
+		...detailStatements(db, id, input)
 	]);
 	return true;
+}
+
+/**
+ * Replaces the ingredients and tags of a recipe. The recipe is given by its id, or by an SQL
+ * expression that finds it when it is inserted in the same batch.
+ */
+function detailStatements(
+	db: D1Database,
+	recipe: number | { nameKey: string },
+	input: RecipeInput
+): D1PreparedStatement[] {
+	const isNew = typeof recipe !== 'number';
+	const [id, arg] = isNew
+		? ['(SELECT id FROM recipe WHERE name_key = ?)', recipe.nameKey]
+		: ['?', recipe];
+	return [
+		// A recipe inserted in the same batch has nothing to replace.
+		...(isNew
+			? []
+			: [
+					db.prepare('DELETE FROM recipe_ingredient WHERE recipe_id = ?').bind(arg),
+					db.prepare('DELETE FROM recipe_tag WHERE recipe_id = ?').bind(arg)
+				]),
+		...input.ingredients.map((raw, position) =>
+			db
+				.prepare(`INSERT INTO recipe_ingredient (recipe_id, position, raw) VALUES (${id}, ?, ?)`)
+				.bind(arg, position, raw)
+		),
+		...input.tags.map((tag) =>
+			db
+				.prepare(`INSERT OR IGNORE INTO recipe_tag (recipe_id, tag) VALUES (${id}, ?)`)
+				.bind(arg, tag)
+		)
+	];
+}
+
+/** Adds a whole recipe, all or nothing, and gives its id. */
+export async function createRecipe(db: D1Database, input: RecipeInput): Promise<number> {
+	const key = nameKey(input.name);
+	if (!key) throw new Error('A recipe needs a name');
+	try {
+		// A batch is one transaction: a taken name fails the insert and nothing is written.
+		const results = await db.batch([
+			db
+				.prepare(
+					`INSERT INTO recipe (name, name_key, servings, time_minutes, instructions, source_url)
+					 VALUES (?, ?, ?, ?, ?, ?)`
+				)
+				.bind(
+					input.name.trim(),
+					key,
+					input.servings,
+					input.timeMinutes,
+					input.instructions,
+					input.sourceUrl
+				),
+			...detailStatements(db, { nameKey: key }, input)
+		]);
+		return results[0].meta.last_row_id;
+	} catch (e) {
+		// D1 reports the constraint only in the message.
+		if (String(e).includes('UNIQUE constraint failed: recipe.name_key'))
+			throw new NameTakenError(input.name);
+		throw e;
+	}
+}
+
+export interface RecipeMatch {
+	id: number;
+	name: string;
+	/** True when the recipe has no ingredients or steps yet, so an import may fill it in. */
+	onlyName: boolean;
+	timesEaten: number;
+}
+
+/** The recipe with the same name, written in any case or spacing, or null. */
+export async function findRecipeByName(db: D1Database, name: string): Promise<RecipeMatch | null> {
+	const row = await db
+		.prepare(
+			`SELECT r.id, r.name,
+			   r.instructions IS NULL AND NOT EXISTS
+			     (SELECT 1 FROM recipe_ingredient WHERE recipe_id = r.id) AS onlyName,
+			   (SELECT count(*) FROM menu_item WHERE recipe_id = r.id) AS timesEaten
+			 FROM recipe r WHERE r.name_key = ?`
+		)
+		.bind(nameKey(name))
+		.first<Omit<RecipeMatch, 'onlyName'> & { onlyName: number }>();
+	return row && { ...row, onlyName: row.onlyName === 1 };
 }
