@@ -2,17 +2,20 @@
 	import type { Snippet } from 'svelte';
 	import Icon from './Icon.svelte';
 
-	// The heading of a view about this week or the next, with arrows between the two.
+	// The heading of a view about this week or the next, with arrows between the two. Under the
+	// title it says which of the two it is, between `before` and `after`.
 	let {
 		title,
-		subtitle,
+		before,
+		after = '',
 		weekStart,
 		thisWeek,
 		nextWeek,
 		actions
 	}: {
 		title: string;
-		subtitle: string;
+		before: string;
+		after?: string;
 		weekStart: string;
 		thisWeek: string;
 		nextWeek: string;
@@ -25,8 +28,8 @@
 
 <div class="title">
 	<div>
-		<h1>{title}</h1>
-		<p class="subtitle">{subtitle}</p>
+		<h1 class="view-title">{title}</h1>
+		<p class="subtitle">{before} · {isNext ? 'nästa vecka' : 'den här veckan'}{after}</p>
 	</div>
 	<div class="nav">
 		{@render actions?.()}
@@ -53,14 +56,6 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-	}
-
-	h1 {
-		margin: 0;
-		font-size: 2.25rem;
-		line-height: 2.75rem;
-		font-weight: 800;
-		letter-spacing: -0.03em;
 	}
 
 	.subtitle {

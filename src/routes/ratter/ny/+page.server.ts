@@ -14,7 +14,7 @@ import { recipeUrl, siteName } from '#lib/links.ts';
 import { RecipeReadError, type RecipeDraft } from '#lib/server/recipe-draft.ts';
 import { fetchPage, pageText, recipeFromHtml } from '#lib/server/recipe-link.ts';
 import { photosOf, readRecipe, type RecipeSource } from '#lib/server/recipe-parse.ts';
-import { hasOnlyName, LUNCHBOX_TAG } from '#lib/recipes.ts';
+import { formValues, hasOnlyName, LUNCHBOX_TAG } from '#lib/recipes.ts';
 import { parseRecipeForm } from '#lib/server/recipe-form.ts';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -81,15 +81,15 @@ async function readLink(link: URL, allowLocal: boolean): Promise<RecipeDraft> {
  * the page does not give is kept, such as its tags.
  */
 function valuesOf(draft: Partial<RecipeDraft>, stored: Recipe | null): Record<string, string> {
-	return {
+	return formValues({
 		name: draft.name ?? '',
-		servings: (draft.servings ?? stored?.servings)?.toString() ?? '',
-		timeMinutes: (draft.timeMinutes ?? stored?.timeMinutes)?.toString() ?? '',
-		ingredients: draft.ingredients?.join('\n') ?? '',
-		instructions: draft.instructions ?? '',
-		tags: stored?.tags.filter((tag) => tag !== LUNCHBOX_TAG).join(', ') ?? '',
-		sourceUrl: draft.sourceUrl || (stored?.sourceUrl ?? '')
-	};
+		servings: draft.servings ?? stored?.servings ?? null,
+		timeMinutes: draft.timeMinutes ?? stored?.timeMinutes ?? null,
+		ingredients: draft.ingredients ?? [],
+		instructions: draft.instructions ?? null,
+		tags: stored?.tags ?? [],
+		sourceUrl: draft.sourceUrl || stored?.sourceUrl || null
+	});
 }
 
 /** A dish that already has the name and is not the one being filled in. */
@@ -186,8 +186,7 @@ export const actions: Actions = {
 				id = await createRecipe(env.DB, input);
 			}
 		} catch (e) {
-			if (e instanceof NameTakenError)
-				return invalid(`Det finns redan en rätt som heter ${input.name.trim()}.`);
+			if (e instanceof NameTakenError) return invalid(e.message);
 			throw e;
 		}
 		redirect(303, `/ratter/${id}`);

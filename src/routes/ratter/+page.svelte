@@ -3,11 +3,12 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import Icon from '#lib/Icon.svelte';
+	import Initial from '#lib/Initial.svelte';
 	import SubmitButton from '#lib/SubmitButton.svelte';
 	import ThemeSheet from '#lib/ThemeSheet.svelte';
 	import { recipeUrl } from '#lib/links.ts';
 	import { nameKey } from '#lib/names.ts';
-	import { timesText } from '#lib/recipes.ts';
+	import { byName, byOften, matching, timesText } from '#lib/recipes.ts';
 	import { shortWeekName } from '#lib/weeks.ts';
 	import type { M3eSnackbarElement } from '@m3e/web/snackbar';
 	import type { RecipeSummary } from '#lib/server/db/recipes.ts';
@@ -22,8 +23,6 @@
 	] as const;
 	let order = $state<(typeof orders)[number][0]>('often');
 
-	const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, 'sv');
-
 	// Dishes added here, shown at once without loading the page again.
 	let added = $state<RecipeSummary[]>([]);
 	$effect.pre(() => {
@@ -32,18 +31,8 @@
 	});
 	let recipes = $derived([...data.recipes, ...added]);
 
-	let sorted = $derived(
-		recipes.toSorted(
-			order === 'name'
-				? byName
-				: (a, b) =>
-						b.timesEaten - a.timesEaten ||
-						(b.lastWeek ?? '').localeCompare(a.lastWeek ?? '') ||
-						byName(a, b)
-		)
-	);
 	let key = $derived(nameKey(query));
-	let shown = $derived(key ? sorted.filter((r) => nameKey(r.name).includes(key)) : sorted);
+	let shown = $derived(matching(recipes, query).toSorted(order === 'name' ? byName : byOften));
 	let exact = $derived(key ? recipes.find((r) => nameKey(r.name) === key) : undefined);
 	// A link is not a dish's name but a recipe to read.
 	let link = $derived(!!recipeUrl(query, true));
@@ -77,8 +66,6 @@
 			goto(resolve('/ratter/[id]', { id: String(form.added.id) }));
 		}
 	}
-
-	const shapes = ['round', 'square', 'leaf'];
 </script>
 
 <svelte:head>
@@ -87,7 +74,7 @@
 
 <main>
 	<div class="title">
-		<h1>Rätter</h1>
+		<h1 class="view-title">Rätter</h1>
 		<m3e-icon-button aria-label="Byt färg">
 			<m3e-bottom-sheet-trigger for="theme"><Icon name="palette" /></m3e-bottom-sheet-trigger>
 		</m3e-icon-button>
@@ -114,7 +101,7 @@
 			>
 		{/if}
 		{#if form?.error}
-			<p class="error" role="alert">{form.error}</p>
+			<p class="error-text" role="alert">{form.error}</p>
 		{/if}
 	</form>
 
@@ -142,9 +129,7 @@
 		<m3e-list variant="segmented">
 			{#each shown as recipe, i (recipe.id)}
 				<m3e-list-action href="/ratter/{recipe.id}">
-					<span slot="leading" class="initial {shapes[i % shapes.length]}" aria-hidden="true"
-						>{recipe.name[0]}</span
-					>
+					<Initial name={recipe.name} index={i} />
 					{recipe.name}
 					<span slot="supporting-text">{meta(recipe.timesEaten, recipe.lastWeek)}</span>
 					<span slot="trailing" class="slot-icon"><Icon name="next" /></span>
@@ -187,14 +172,6 @@
 		justify-content: space-between;
 	}
 
-	h1 {
-		margin: 0;
-		font-size: 2.25rem;
-		line-height: 2.75rem;
-		font-weight: 800;
-		letter-spacing: -0.03em;
-	}
-
 	h2 {
 		margin: 0.25rem 0 0 0.25rem;
 		font-size: 0.875rem;
@@ -208,11 +185,6 @@
 		gap: 0.875rem;
 	}
 
-	.error {
-		margin: 0;
-		color: var(--md-sys-color-error);
-	}
-
 	.order {
 		display: flex;
 		align-items: center;
@@ -220,10 +192,6 @@
 		gap: 0.5rem;
 		font-size: 0.875rem;
 		color: var(--md-sys-color-on-surface-variant);
-	}
-
-	m3e-list {
-		--m3e-segmented-list-item-container-color: var(--md-sys-color-surface-container);
 	}
 
 	m3e-fab {
@@ -236,32 +204,5 @@
 
 	.empty {
 		color: var(--md-sys-color-on-surface-variant);
-	}
-
-	.initial {
-		width: 2.5rem;
-		height: 2.5rem;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-weight: 700;
-	}
-
-	.round {
-		border-radius: 50%;
-		background: var(--md-sys-color-primary-container);
-		color: var(--md-sys-color-on-primary-container);
-	}
-
-	.square {
-		border-radius: 0.875rem;
-		background: var(--md-sys-color-secondary-container);
-		color: var(--md-sys-color-on-secondary-container);
-	}
-
-	.leaf {
-		border-radius: 50% 50% 50% 0.75rem;
-		background: var(--md-sys-color-tertiary-container);
-		color: var(--md-sys-color-on-tertiary-container);
 	}
 </style>

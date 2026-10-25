@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { afterNavigate } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import FormHeader from '#lib/FormHeader.svelte';
 	import Icon from '#lib/Icon.svelte';
 	import RecipeFields from '#lib/RecipeFields.svelte';
 	import SubmitButton from '#lib/SubmitButton.svelte';
@@ -91,14 +92,8 @@
 </svelte:head>
 
 {#if review}
-	<form method="POST" action="?/save{till}" use:enhance>
-		<header>
-			<m3e-icon-button variant="tonal" href={restart} aria-label="Börja om">
-				<Icon name="close" />
-			</m3e-icon-button>
-			<h1>Nytt recept</h1>
-			<SubmitButton variant="filled">Spara</SubmitButton>
-		</header>
+	<form method="POST" action="?/save{till}" class="form-page" use:enhance>
+		<FormHeader title="Nytt recept" back={restart} backLabel="Börja om" />
 
 		{#if review.existing}
 			<section class="notice">
@@ -129,28 +124,24 @@
 		method="POST"
 		action="?/read{till}"
 		enctype="multipart/form-data"
+		class="form-page"
 		use:enhance={read}
 		bind:this={readForm}
 	>
-		<header>
-			<m3e-icon-button
-				variant="tonal"
-				href={data.target ? `/ratter/${data.target.id}` : '/ratter'}
-				aria-label="Avbryt"
-			>
-				<Icon name="close" />
-			</m3e-icon-button>
-			<h1>Nytt recept</h1>
-		</header>
+		<FormHeader
+			title="Nytt recept"
+			back={data.target ? `/ratter/${data.target.id}` : '/ratter'}
+			save={false}
+		/>
 
 		{#if reading}
 			<div class="reading">
 				<m3e-loading-indicator></m3e-loading-indicator>
 				<p role="status">Läser receptet …</p>
-				<p class="hint">Det brukar ta några sekunder.</p>
+				<p class="muted">Det brukar ta några sekunder.</p>
 			</div>
 		{:else}
-			<p class="hint">
+			<p class="muted">
 				{#if data.target}
 					Klistra in en länk eller texten till receptet på {data.target.name}, eller fotografera
 					det.
@@ -183,7 +174,7 @@
 						</button>
 					{/if}
 				</div>
-				<p class="hint small">
+				<p class="muted small">
 					{tooMany
 						? `Högst ${MAX_PHOTOS} bilder per recept.`
 						: 'Flera foton läses som ett recept, till exempel två sidor ur en kokbok.'}
@@ -199,7 +190,7 @@
 			</m3e-form-field>
 
 			{#if link && !photos.length}
-				<p class="hint small with-icon"><Icon name="link" />En länk till {siteName(link)}</p>
+				<p class="muted small with-icon"><Icon name="link" />En länk till {siteName(link)}</p>
 			{/if}
 
 			{#if !photos.length}
@@ -232,7 +223,7 @@
 			/>
 
 			{#if shrinking}
-				<p class="hint small" role="status">Gör bilderna mindre …</p>
+				<p class="muted small" role="status">Gör bilderna mindre …</p>
 			{/if}
 			<SubmitButton variant="filled" size="medium">Läs in receptet</SubmitButton>
 		{/if}
@@ -240,7 +231,7 @@
 
 	<!-- After a read that failed, rather than one that was sent wrong. -->
 	{#if !reading && form?.kind}
-		<form method="POST" action="?/fillIn{till}" use:enhance class="fill-in">
+		<form method="POST" action="?/fillIn{till}" use:enhance class="form-page fill-in">
 			<input type="hidden" name="text" value={form.text} />
 			<SubmitButton variant="text">
 				{form.kind === 'link' ? 'Fyll i själv, med länken sparad' : 'Fyll i själv'}
@@ -250,35 +241,7 @@
 {/if}
 
 <style>
-	form {
-		max-width: 40rem;
-		margin: 0 auto;
-		padding: 0 1rem 1rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	header {
-		margin: 0 -0.5rem;
-		padding: 0.5rem 0;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	h1 {
-		flex-grow: 1;
-		margin: 0;
-		font-size: 1.375rem;
-		font-weight: 700;
-	}
-
-	m3e-form-field {
-		width: 100%;
-	}
-
-	.hint {
+	.muted {
 		margin: 0 0.25rem;
 		color: var(--md-sys-color-on-surface-variant);
 	}
@@ -379,17 +342,11 @@
 		font-weight: 700;
 	}
 
-	.error,
 	.done,
 	.notice {
 		margin: 0;
 		padding: 0.75rem 1rem;
 		border-radius: 1rem;
-	}
-
-	.error {
-		background: var(--md-sys-color-error-container);
-		color: var(--md-sys-color-on-error-container);
 	}
 
 	.done {

@@ -2,6 +2,7 @@
 	import { tick } from 'svelte';
 	import { enhance } from '$app/forms';
 	import Icon from '#lib/Icon.svelte';
+	import Initial from '#lib/Initial.svelte';
 	import { LUNCHBOX_EXTRA_CHOICES, MAX_NEW_DISHES } from '#lib/household.ts';
 	import type { PageProps, SubmitFunction } from './$types';
 
@@ -26,8 +27,6 @@
 		await tick();
 		settingsForm.requestSubmit();
 	}
-
-	const shapes = ['round', 'square', 'leaf'];
 </script>
 
 <svelte:head>
@@ -44,14 +43,12 @@
 <main>
 	<h2>Personer</h2>
 	{#if data.people.length === 0}
-		<p class="hint">Inga personer än. Lägg till de som brukar äta, med det de inte äter.</p>
+		<p class="note">Inga personer än. Lägg till de som brukar äta, med det de inte äter.</p>
 	{:else}
 		<m3e-list variant="segmented">
 			{#each data.people as person, i (person.id)}
 				<m3e-list-action href="/hushallet/{person.id}">
-					<span slot="leading" class="initial {shapes[i % shapes.length]}" aria-hidden="true"
-						>{person.name[0]}</span
-					>
+					<Initial name={person.name} index={i} />
 					{person.name}
 					<span slot="supporting-text">{person.requirements.split('\n')[0] || 'Inga krav'}</span>
 				</m3e-list-action>
@@ -122,9 +119,9 @@
 		</div>
 
 		{#if form?.error}
-			<p class="error" role="alert">{form.error}</p>
+			<p class="error-text" role="alert">{form.error}</p>
 		{/if}
-		<p class="hint">Sparas direkt. Gäller varje vecka, tillsammans med kraven för de som äter.</p>
+		<p class="note">Sparas direkt. Gäller varje vecka, tillsammans med kraven för de som äter.</p>
 	</form>
 </main>
 
@@ -165,14 +162,6 @@
 		gap: 0.875rem;
 	}
 
-	m3e-form-field {
-		width: 100%;
-	}
-
-	m3e-list {
-		--m3e-segmented-list-item-container-color: var(--md-sys-color-surface-container);
-	}
-
 	.add {
 		align-self: flex-start;
 	}
@@ -199,43 +188,5 @@
 		text-align: center;
 		font-size: 1.125rem;
 		font-weight: 700;
-	}
-
-	.hint {
-		margin: 0 0.25rem;
-		font-size: 0.8125rem;
-		color: var(--md-sys-color-on-surface-variant);
-	}
-
-	.error {
-		margin: 0;
-		color: var(--md-sys-color-error);
-	}
-
-	.initial {
-		width: 2.5rem;
-		height: 2.5rem;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-weight: 700;
-	}
-
-	.round {
-		border-radius: 50%;
-		background: var(--md-sys-color-primary-container);
-		color: var(--md-sys-color-on-primary-container);
-	}
-
-	.square {
-		border-radius: 0.875rem;
-		background: var(--md-sys-color-secondary-container);
-		color: var(--md-sys-color-on-secondary-container);
-	}
-
-	.leaf {
-		border-radius: 50% 50% 50% 0.75rem;
-		background: var(--md-sys-color-tertiary-container);
-		color: var(--md-sys-color-on-tertiary-container);
 	}
 </style>

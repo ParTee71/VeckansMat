@@ -134,7 +134,12 @@ export function guessIngredientsStatements(
 export type RecipeInput = Omit<Recipe, 'id' | 'weeks' | 'ingredientsGuessed'>;
 
 /** Thrown when a recipe is renamed to a name another recipe has. */
-export class NameTakenError extends Error {}
+/** Another dish has the name. The message is for the household. */
+export class NameTakenError extends Error {
+	constructor(name: string) {
+		super(`Det finns redan en rätt som heter ${name.trim()}.`);
+	}
+}
 
 /** Replaces everything about a recipe, all or nothing. False when there is no recipe with the id. */
 export async function updateRecipe(

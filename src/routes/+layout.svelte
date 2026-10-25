@@ -3,6 +3,7 @@
 	import { version } from '$app/env';
 	import { beforeNavigate, invalidateAll } from '$app/navigation';
 	import { page, updated } from '$app/state';
+	import '#lib/app.css';
 	import favicon from '#lib/assets/favicon.svg';
 	import Icon from '#lib/Icon.svelte';
 	import { loadTheme, theme } from '#lib/theme.svelte.ts';
