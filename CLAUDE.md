@@ -8,15 +8,16 @@ föreslå en ny ADR i stället (`/adr`).
 ## Kommandon
 
     npm run dev        # utvecklingsserver
-    npm run verify     # typkontroll + lint + enhetstester – kör före varje push
+    npm run verify     # typkontroll + lint + enhetstester – kör före varje push (en hook spärrar)
     npm run test:e2e   # Playwright mot ett bygge i lokal workerd
     npm run format     # Prettier på allt
     npm run types      # efter ändring i wrangler.jsonc
 
-En hook kör `npm run verify` före `git push` och stoppar pushen om den faller.
-
 ## Regler som aldrig bryts
 
+- **Plan före kod, alltid.** Varje bugg och ändring, även små, börjar med ett
+  issue med plan (`/refine-issue`). Vänta på ägarens ok (etiketten `plan-godkänd`)
+  före gren, kod och PR. Bara ägaren kan släppa på det. Se `docs/beslut/0018-plan-fore-kod.md`.
 - **Repot är publikt.** Inga personuppgifter (namn, allergier, hushållets
   inställningar) eller hemligheter i kod, tester, commits eller issues.
   Testdata är påhittad. Hemligheter bara i Cloudflare/GitHub secrets och
@@ -33,8 +34,6 @@ gränssnitt, `docs/`, commit-meddelanden, issues och PR:er.
 
 ## Arbetssätt
 
-- **Issue först.** Varje uppgift planeras i ett GitHub-issue innan den
-  byggs (vad, varför, hur det provas), utom väldigt små och enkla saker.
 - En sak per PR. Tester skrivs i samma PR som koden. Ändras appen höjs versionen
   och `CHANGELOG.md` får en rad (`/release`). Skarp drift bara vid release.
 - Komponenter från `@m3e/web`, registrerade i `src/lib/m3e.ts`.

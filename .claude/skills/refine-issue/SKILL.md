@@ -1,13 +1,15 @@
 ---
 name: refine-issue
-description: Gör en idé, en bugg eller ett önskemål till ett planerat GitHub-issue i VeckansMat – avsikt, kodgenomgång, omfång, Definition of Done, mockup för ny GUI och Agent · modell · effort – och skapar eller uppdaterar issuet efter bekräftelse. Använd innan något som inte är väldigt litet byggs, och när någon säger skapa issue, planera, förfina, skriv upp en bugg, idé, önskemål.
+description: Gör en idé, en bugg eller ett önskemål till ett planerat GitHub-issue i VeckansMat – avsikt, kodgenomgång, omfång, Definition of Done, mockup för ny GUI och Agent · modell · effort – skapar issuet och stannar tills ägaren godkänt planen. Använd före varje ändring, även små, och när någon säger skapa issue, planera, förfina, skriv upp en bugg, idé, önskemål.
 ---
 
 # Förfina och planera ett issue
 
-Allt som inte är väldigt litet planeras i ett issue innan det byggs (`CLAUDE.md`). Målet är ett
-issue som en annan session kan genomföra med `/implement-issue` utan fler frågor. Samla frågor,
-förhör inte. **Skapa eller uppdatera inte issuet förrän i steg 7.**
+Varje bugg, ändring och funktion planeras i ett issue innan den byggs, även små
+([beslut 0018](../../../docs/beslut/0018-plan-fore-kod.md)). Bedöm aldrig själv att något är för
+litet; bara ägaren kan säga att en plan inte behövs. Målet är ett issue som en annan session kan
+genomföra med `/implement-issue` utan fler frågor. Samla frågor, förhör inte. **Skapa eller
+uppdatera inte issuet förrän i steg 7.** Undersöka koden får du, ändra den får du inte.
 
 Har du ett nummer: hämta issuet och dess kommentarer, förfina och uppdatera det i steg 7.
 
@@ -101,10 +103,21 @@ standard:
 | Flera lager, datamodell, migrering, prompter, granskning  | Opus   |
 | Väldigt komplexa issues                                   | Fable  |
 
-Titel: `<område>: <sammanfattning>`. Visa utkastet och **vänta på bekräftelse**.
+Titel: `<område>: <sammanfattning>`. Gå vidare till steg 7: planen visas och godkänns i
+issuet (steg 8), inte som ett utkast i chatten.
 
 ## Steg 7 – Skapa eller uppdatera
 
 Skapa med GitHub MCP (`issue_write`), eller uppdatera med hela den förfinade texten – lägg inte
-bara till i slutet. Rapportera nummer och länk, och erbjud `/implement-issue`, gärna i en ny
+bara till i slutet.
+
+## Steg 8 – STOPP: vänta på ägarens ok
+
+Visa issuets länk och de öppna frågorna, och **avsluta turen**. Ingen gren, ingen kod, ingen PR,
+inget "jag börjar under tiden".
+
+När ägaren skrivit ok: uppdatera issuet med svaren på de öppna frågorna, sätt etiketten
+`plan-godkänd` och skriv en kommentar på issuet: var och när ägaren godkände, med ägarens ord.
+Sätt aldrig etiketten utan ett ok från ägaren. Finns redan en PR, kör om kontrollen **Plan
+godkänd** efteråt; den läser etiketten när den körs. Erbjud sedan `/implement-issue`, gärna i en ny
 session så att genomförandet får ren kontext med issuet som underlag.

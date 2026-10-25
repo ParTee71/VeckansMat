@@ -22,3 +22,4 @@ med `/adr` i Claude Code.
 | [0015](0015-inkopslista.md)              | Inköpslistan                                    | Beslutat, korgen ersatt av 0017           |
 | [0016](0016-spara-i-bakgrunden.md)       | Spara i bakgrunden, ladda inte om sidan         | Beslutat                                  |
 | [0017](0017-varans-identitet.md)         | En vara är de receptrader den täcker            | Beslutat                                  |
+| [0018](0018-plan-fore-kod.md)            | Plan före kod, med spärr                        | Beslutat                                  |
