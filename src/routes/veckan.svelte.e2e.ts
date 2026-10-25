@@ -48,6 +48,27 @@ test('a week is written as quickly as on a note', async ({ page }) => {
 	await expect(page.getByRole('button', { name: 'Middag onsdag: tom' })).toBeVisible();
 });
 
+test('a day is written with the keyboard alone', async ({ page }) => {
+	await open(page, '/');
+	await page.getByRole('button', { name: /^Middag fredag/ }).click();
+	await page.getByRole('textbox', { name: 'Middag fredag' }).fill('linss');
+	// Tab goes past the clear button to the suggestion, without writing what is typed.
+	await page.keyboard.press('Tab');
+	await page.keyboard.press('Tab');
+	await expect(page.getByRole('button', { name: /^Linssoppa/ })).toBeFocused();
+	await page.keyboard.press('Enter');
+	await expect(page.getByRole('button', { name: 'Middag fredag: Linssoppa' })).toBeVisible();
+
+	await page.getByRole('button', { name: 'Middag fredag: Linssoppa' }).click();
+	await page.keyboard.press('Tab');
+	await expect(page.getByRole('button', { name: 'Töm raden' })).toBeFocused();
+	await page.keyboard.press('Enter');
+	await expect(page.getByRole('button', { name: 'Middag fredag: tom' })).toBeVisible();
+
+	await open(page, '/ratter');
+	await expect(page.getByText('linss', { exact: true })).toHaveCount(0);
+});
+
 test('who eats is chosen per week, and shows what they do not eat', async ({ page }) => {
 	const people = ['Ätare Ett', 'Ätare Två'];
 	for (const name of people) {

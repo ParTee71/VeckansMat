@@ -197,7 +197,14 @@
 	{@const label = WEEKDAYS[weekday - 1]}
 	{@const name = `${MEAL_LABELS[meal]} ${WEEKDAY_NAMES[weekday - 1]}`}
 	{#if editing === keyOf(weekday, meal)}
-		<li class="row editing">
+		<!-- Leaving the row writes the day; moving within it, as to a suggestion with Tab, does not. -->
+		<li
+			class="row editing"
+			onfocusout={(e) =>
+				!e.currentTarget.contains(e.relatedTarget as Node | null) &&
+				editing === keyOf(weekday, meal) &&
+				write(weekday, meal, draft)}
+		>
 			<div class="line">
 				<span class="day">{label}</span>
 				<input
@@ -206,7 +213,6 @@
 					enterkeyhint="next"
 					bind:value={draft}
 					onkeydown={(e) => keydown(e, weekday, meal)}
-					onblur={() => editing === keyOf(weekday, meal) && write(weekday, meal, draft)}
 					{@attach focus}
 				/>
 				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-icon-button is a button with its own keyboard handling) -->
