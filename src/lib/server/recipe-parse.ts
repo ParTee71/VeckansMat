@@ -1,6 +1,7 @@
 // Reads a recipe from photos or text with Claude. See docs/beslut/0006-claude-i-appen.md and
 // docs/beslut/0013-recept-in.md.
 import type Anthropic from '@anthropic-ai/sdk';
+import { answerStrings, answerText } from '../names';
 import { MAX_PHOTOS } from '../photos';
 import { askJson, type Ask } from './claude/claude';
 import { RECIPE_PROMPT, RECIPE_SCHEMA } from './claude/recipe-prompt';
@@ -8,10 +9,10 @@ import { RecipeReadError, type RecipeDraft } from './recipe-draft';
 
 // A photo the phone made smaller is well under this. The cap keeps a Worker's memory, which
 // holds each photo a few times over, clear of its limit, and is under Claude's own of 5 MB.
-export const MAX_PHOTO_BYTES = 3_000_000;
-export const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const;
+const MAX_PHOTO_BYTES = 3_000_000;
+const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const;
 
-export interface Photo {
+interface Photo {
 	type: (typeof PHOTO_TYPES)[number];
 	bytes: Uint8Array;
 }
@@ -67,25 +68,17 @@ function content(source: RecipeSource): Anthropic.ContentBlockParam[] {
 	return blocks;
 }
 
-const strings = (value: unknown): string[] =>
-	Array.isArray(value)
-		? value
-				.filter((item) => typeof item === 'string')
-				.map((item) => item.trim())
-				.filter(Boolean)
-		: [];
-
 const count = (value: unknown): number | null =>
 	Number.isInteger(value) && (value as number) > 0 ? (value as number) : null;
 
 /** The answer as a draft, keeping each field that is right even when another is not. */
 function toDraft(answer: Record<string, unknown>, sourceUrl: string): RecipeDraft | null {
-	const steps = strings(answer.instructions);
+	const steps = answerStrings(answer.instructions);
 	const draft = {
-		name: typeof answer.name === 'string' ? answer.name.trim() : '',
+		name: answerText(answer.name, Infinity),
 		servings: count(answer.servings),
 		timeMinutes: count(answer.timeMinutes),
-		ingredients: strings(answer.ingredients),
+		ingredients: answerStrings(answer.ingredients),
 		instructions: steps.length ? steps.map((step, i) => `${i + 1}. ${step}`).join('\n') : null,
 		sourceUrl
 	};

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { open, read } from '../../test/e2e';
+import { open, read, writeDay } from '../../test/e2e';
 
 // Spends the month's cap for Claude, so playwright.config.ts gives it a Worker of its own.
 test.describe.configure({ mode: 'serial' });
@@ -27,10 +27,7 @@ test('no week is suggested once the month has cost the cap', async ({ page }) =>
 
 test('the shopping list is the recipe lines once the month has cost the cap', async ({ page }) => {
 	await open(page, '/');
-	await page.getByRole('button', { name: /^Middag måndag/ }).click();
-	await page.getByRole('textbox', { name: 'Middag måndag' }).fill('Fiskgratäng');
-	await page.keyboard.press('Enter');
-	await expect(page.getByRole('button', { name: 'Middag måndag: Fiskgratäng' })).toBeVisible();
+	await writeDay(page, 'måndag', 'Fiskgratäng');
 
 	await open(page, '/handla');
 	await page.locator('m3e-button', { hasText: 'Gör inköpslistan' }).click();

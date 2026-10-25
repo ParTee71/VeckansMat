@@ -1,36 +1,17 @@
 import type Anthropic from '@anthropic-ai/sdk';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearTestDb, createTestDb } from '../../../test/d1';
+import { describe, expect, it, vi } from 'vitest';
+import { answering, reason } from '../../../test/claude';
+import { useTestDb } from '../../../test/d1';
+import { WEEK } from '../../../test/fixtures';
 import { ClaudeLimitError, type Ask } from './claude/claude';
 import { MENU_PROMPT, MENU_SCHEMA, menuContent, type MenuRequest } from './claude/menu-prompt';
 import { createPerson, saveSettings } from './db/household';
 import { getMenuHistory, getWeek, setWeekEaters, setWeekRow } from './db/menus';
 import { addRecipe, getRecipe, updateRecipe } from './db/recipes';
-import { MenuSuggestError, suggestMenu, suggestWeek, swapRow } from './menu-suggest';
+import { suggestMenu, suggestWeek, swapRow } from './menu-suggest';
 
 let db: D1Database;
-let dispose: () => Promise<void>;
-
-beforeAll(async () => {
-	({ db, dispose } = await createTestDb());
-});
-afterAll(() => dispose());
-beforeEach(() => clearTestDb(db));
-
-const WEEK = '2030-03-04';
-
-// Claude is never called: each test says what it answers.
-const answering = (...answers: unknown[]) => {
-	const ask = vi.fn<Ask>();
-	for (const answer of answers) {
-		ask.mockResolvedValueOnce({
-			content: [{ type: 'text', text: JSON.stringify(answer) }],
-			stop_reason: 'end_turn',
-			usage: { input_tokens: 1, output_tokens: 1 }
-		} as unknown as Anthropic.Message);
-	}
-	return ask;
-};
+useTestDb((test) => (db = test));
 
 const alt = (dish: string, reason = 'Passar') => ({ dish, reason });
 const dinner = (
@@ -44,12 +25,6 @@ const dinner = (
 	reason: `Skäl ${weekday}`,
 	alternatives
 });
-
-const reason = (promise: Promise<unknown>) =>
-	promise.then(
-		() => 'ok',
-		(e: unknown) => (e instanceof MenuSuggestError ? e.reason : String(e))
-	);
 
 const request = (overrides: Partial<MenuRequest> = {}): MenuRequest => ({
 	weekStart: WEEK,

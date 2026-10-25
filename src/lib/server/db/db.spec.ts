@@ -1,7 +1,8 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { clearTestDb, createTestDb } from '../../../../test/d1';
+import { describe, expect, it } from 'vitest';
+import { useTestDb } from '../../../../test/d1';
+import { saveMenu } from '../../../../test/menus';
 import { nameKey } from '../../names';
-import { listMenus, saveMenu } from './menus';
+import { listMenus } from './menus';
 import {
 	addRecipe,
 	createRecipe,
@@ -14,13 +15,7 @@ import {
 } from './recipes';
 
 let db: D1Database;
-let dispose: () => Promise<void>;
-
-beforeAll(async () => {
-	({ db, dispose } = await createTestDb());
-});
-afterAll(() => dispose());
-beforeEach(() => clearTestDb(db));
+useTestDb((test) => (db = test));
 
 const recipes = async () =>
 	(await db.prepare('SELECT id, name FROM recipe ORDER BY id').all<{ id: number; name: string }>())

@@ -1,13 +1,13 @@
 import { DEFAULT_SETTINGS, isValidSetting, type Settings } from '../../household';
 
-export interface Person {
+interface Person {
 	id: number;
 	name: string;
 	/** Allergies, diets and what the person does not eat, as written. */
 	requirements: string;
 }
 
-export type PersonInput = Omit<Person, 'id'>;
+type PersonInput = Omit<Person, 'id'>;
 
 /** Everyone in the household, in the order they were added. */
 export async function listPeople(db: D1Database): Promise<Person[]> {

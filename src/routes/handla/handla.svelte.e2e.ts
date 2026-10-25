@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { countLoads, open, saved } from '../../../test/e2e';
+import { countLoads, open, saved, writeDay } from '../../../test/e2e';
 
 // Has a Worker of its own in playwright.config.ts, since it writes the same weeks as the tests of
 // Veckan. The made-up dishes come from test/e2e-seed.sql.
@@ -71,12 +71,7 @@ test('the guessed ingredients are written into the dish', async ({ page }) => {
 
 test('a list made before the week changed offers to be updated', async ({ page }) => {
 	await open(page, '/');
-	await page.getByRole('button', { name: /^Middag onsdag/ }).click();
-	await page.getByRole('textbox', { name: 'Middag onsdag' }).fill('Linsgryta i handlaprovet');
-	await page.keyboard.press('Enter');
-	await expect(
-		page.getByRole('button', { name: 'Middag onsdag: Linsgryta i handlaprovet' })
-	).toBeVisible();
+	await writeDay(page, 'onsdag', 'Linsgryta i handlaprovet');
 
 	await open(page, '/handla');
 	const changed = page.getByRole('heading', { name: 'Veckan har ändrats' });

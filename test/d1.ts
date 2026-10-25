@@ -1,7 +1,7 @@
 import { cpSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { inject } from 'vitest';
+import { afterAll, beforeAll, beforeEach, inject } from 'vitest';
 import { getPlatformProxy } from 'wrangler';
 
 /**
@@ -22,7 +22,7 @@ export async function createTestDb() {
 }
 
 /** Empties the database, so each test starts clean. The other tables follow by cascade. */
-export async function clearTestDb(db: D1Database) {
+async function clearTestDb(db: D1Database) {
 	await db.batch([
 		db.prepare('DELETE FROM menu'),
 		db.prepare('DELETE FROM recipe'),
@@ -30,4 +30,15 @@ export async function clearTestDb(db: D1Database) {
 		db.prepare('DELETE FROM person'),
 		db.prepare('DELETE FROM setting')
 	]);
+}
+
+/** A database of its own for the spec file, handed to `use`, and emptied before each test. */
+export function useTestDb(use: (db: D1Database) => void) {
+	let test: Awaited<ReturnType<typeof createTestDb>>;
+	beforeAll(async () => {
+		test = await createTestDb();
+		use(test.db);
+	});
+	afterAll(() => test.dispose());
+	beforeEach(() => clearTestDb(test.db));
 }

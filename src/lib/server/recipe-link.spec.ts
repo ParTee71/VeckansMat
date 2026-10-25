@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { reason } from '../../../test/claude';
 import { recipeUrl } from '../links';
-import { RecipeReadError } from './recipe-draft';
 import { durationMinutes, fetchPage, pageText, recipeFromHtml } from './recipe-link';
 
 // Made-up pages in the shapes recipe sites use.
@@ -197,12 +197,6 @@ describe('fetching a recipe', () => {
 		recipeFromHtml(await fetchPage(at, fetcher), at.href)!;
 	const respond = (body: BodyInit | null, init?: ResponseInit) =>
 		vi.fn<typeof fetch>().mockResolvedValue(new Response(body, init));
-
-	const reason = (promise: Promise<unknown>) =>
-		promise.then(
-			() => 'ok',
-			(e: unknown) => (e instanceof RecipeReadError ? e.reason : String(e))
-		);
 
 	it('reads the page', async () => {
 		const fetcher = respond(page(curry));

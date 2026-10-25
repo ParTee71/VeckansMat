@@ -1,7 +1,7 @@
 import type Anthropic from '@anthropic-ai/sdk';
 import { env } from 'cloudflare:workers';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearTestDb, createTestDb } from '../../../../test/d1';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useTestDb } from '../../../../test/d1';
 import {
 	ask,
 	askFor,
@@ -13,14 +13,8 @@ import {
 } from './claude';
 
 let db: D1Database;
-let dispose: () => Promise<void>;
-
-beforeAll(async () => {
-	({ db, dispose } = await createTestDb());
-});
-afterAll(() => dispose());
+useTestDb((test) => (db = test));
 beforeEach(async () => {
-	await clearTestDb(db);
 	env.CLAUDE_MONTHLY_LIMIT_USD = '5';
 });
 

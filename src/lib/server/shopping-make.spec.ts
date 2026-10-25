@@ -1,65 +1,17 @@
-import type Anthropic from '@anthropic-ai/sdk';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearTestDb, createTestDb } from '../../../test/d1';
+import { describe, expect, it, vi } from 'vitest';
+import { answering, failing, reason } from '../../../test/claude';
+import { useTestDb } from '../../../test/d1';
+import { dinner, giveIngredients, WEEK } from '../../../test/fixtures';
 import { ClaudeLimitError, type Ask } from './claude/claude';
 import { SHOPPING_PROMPT, SHOPPING_SCHEMA, shoppingContent } from './claude/shopping-prompt';
 import { createPerson, saveSettings } from './db/household';
 import { setWeekEaters, setWeekRow } from './db/menus';
-import {
-	findRecipeByName,
-	getRecipe,
-	guessIngredientsStatements,
-	updateRecipe
-} from './db/recipes';
+import { findRecipeByName, getRecipe, guessIngredientsStatements } from './db/recipes';
 import { getShoppingBasis, getShoppingList } from './db/shopping';
-import {
-	askShoppingList,
-	makeShoppingListWithClaude,
-	ShoppingListError,
-	shoppingPlan
-} from './shopping-make';
+import { askShoppingList, makeShoppingListWithClaude, shoppingPlan } from './shopping-make';
 
 let db: D1Database;
-let dispose: () => Promise<void>;
-
-beforeAll(async () => {
-	({ db, dispose } = await createTestDb());
-});
-afterAll(() => dispose());
-beforeEach(() => clearTestDb(db));
-
-const WEEK = '2030-03-04';
-const dinner = (weekday: number, text: string) => ({ weekday, meal: 'dinner' as const, text });
-
-// Claude is never called: each test says what it answers.
-const answering = (answer: unknown) =>
-	vi.fn<Ask>().mockResolvedValue({
-		content: [{ type: 'text', text: JSON.stringify(answer) }],
-		stop_reason: 'end_turn',
-		usage: { input_tokens: 1, output_tokens: 1 }
-	} as unknown as Anthropic.Message);
-
-const failing = (error: Error) => vi.fn<Ask>().mockRejectedValue(error);
-
-const reason = (promise: Promise<unknown>) =>
-	promise.then(
-		() => 'ok',
-		(e: unknown) => (e instanceof ShoppingListError ? e.reason : String(e))
-	);
-
-async function giveIngredients(name: string, ingredients: string[], tags: string[] = []) {
-	const { id } = (await findRecipeByName(db, name))!;
-	await updateRecipe(db, id, {
-		name,
-		servings: 4,
-		timeMinutes: null,
-		instructions: null,
-		sourceUrl: null,
-		ingredients,
-		tags
-	});
-	return id;
-}
+useTestDb((test) => (db = test));
 
 /** A made-up week: a stew twice and good for lunch boxes, fish with lines, pancakes by name. */
 async function planWeek() {
@@ -67,8 +19,8 @@ async function planWeek() {
 	await setWeekRow(db, WEEK, dinner(2, 'Linsgryta'), []);
 	await setWeekRow(db, WEEK, dinner(4, 'Linsgryta'), []);
 	await setWeekRow(db, WEEK, { weekday: 6, meal: 'lunch', text: 'Pannkakor' }, []);
-	await giveIngredients('Fiskgratäng', ['400 g torsk', '2 dl grädde']);
-	await giveIngredients('Linsgryta', ['3 dl röda linser', '1 gul lök'], ['matlåda']);
+	await giveIngredients(db, 'Fiskgratäng', ['400 g torsk', '2 dl grädde']);
+	await giveIngredients(db, 'Linsgryta', ['3 dl röda linser', '1 gul lök'], ['matlåda']);
 }
 
 const ANSWER = {
@@ -109,7 +61,7 @@ describe('the plan for the week shopping', () => {
 		expect(added).not.toBe(before.basis);
 
 		// A line changed, with as many lines as before.
-		await giveIngredients('Fiskgratäng', ['400 g lax', '2 dl grädde']);
+		await giveIngredients(db, 'Fiskgratäng', ['400 g lax', '2 dl grädde']);
 		expect((await shoppingPlan(db, WEEK)).basis).not.toBe(added);
 	});
 });
@@ -242,7 +194,7 @@ describe('making the list with Claude', () => {
 	it('is no longer guessed once the dish is saved by hand', async () => {
 		await planWeek();
 		await makeShoppingListWithClaude(db, WEEK, answering(ANSWER));
-		await giveIngredients('Pannkakor', ['3 ägg']);
+		await giveIngredients(db, 'Pannkakor', ['3 ägg']);
 		const pancakes = (await getRecipe(db, (await findRecipeByName(db, 'Pannkakor'))!.id))!;
 		expect(pancakes.ingredientsGuessed).toBe(false);
 	});

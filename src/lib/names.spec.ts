@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { stripTags } from './names';
+import { answerStrings, stripTags } from './names';
 
 describe('material for a prompt', () => {
 	it('loses every tag, however it is spaced', () => {
@@ -17,5 +17,12 @@ describe('material for a prompt', () => {
 	it('keeps text that only looks a little like a tag', () => {
 		expect(stripTags('Grädda < 5 min i 225 grader')).toBe('Grädda < 5 min i 225 grader');
 		expect(stripTags('1 < 2 och 3 > 2')).toBe('1 < 2 och 3 > 2');
+	});
+});
+
+describe("a list in Claude's answer", () => {
+	it('keeps the strings, cleaned the same way whichever answer they come from', () => {
+		expect(answerStrings(['  3 dl\n mjölk ', '', 4, ' ägg'])).toEqual(['3 dl mjölk', 'ägg']);
+		expect(answerStrings('3 ägg')).toEqual([]);
 	});
 });
