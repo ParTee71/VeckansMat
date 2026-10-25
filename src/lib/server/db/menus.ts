@@ -1,6 +1,7 @@
 import { nameKey } from '../../names';
 import { isDish, LUNCHBOX_TAG } from '../../recipes';
-import { upsertRecipeStatement } from './recipes';
+import { addWeeks } from '../../weeks';
+import { upsertRecipeStatement, type RecipeSummary } from './recipes';
 
 export type Meal = 'dinner' | 'lunch';
 
@@ -115,6 +116,12 @@ export async function listMenus(db: D1Database): Promise<Menu[]> {
 	}));
 }
 
+/** A dish Claude suggests, with why. */
+export interface Choice {
+	text: string;
+	reason: string;
+}
+
 /** A day's dinner or lunch on a week planned in the app. */
 export interface WeekRow {
 	/** ISO weekday, 1 = Monday. */
@@ -124,6 +131,12 @@ export interface WeekRow {
 	recipeId: number | null;
 	/** The dish is good for lunch boxes, so extra portions are cooked. */
 	lunchbox: boolean;
+	/** Why Claude chose the dish, or null when it was written by hand. */
+	reason: string | null;
+	/** What a tap on swap goes through, in order. */
+	alternatives: Choice[];
+	/** The dishes swapped away from the day. */
+	passedOn: string[];
 }
 
 export interface Week {
@@ -133,16 +146,25 @@ export interface Week {
 	rows: WeekRow[];
 	/** Who eats: those chosen for the week, or else those who ate the latest week before. */
 	eaters: number[];
+	/** What the household wished for the week when Claude suggested it. */
+	wish: string | null;
 }
+
+type WeekRowRow = Omit<WeekRow, 'lunchbox' | 'alternatives' | 'passedOn'> & {
+	lunchbox: number;
+	alternatives: string | null;
+	passedOn: string | null;
+};
 
 /** A week as planned in the app. Lines without a weekday, from old notes, are left out. */
 export async function getWeek(db: D1Database, weekStart: string): Promise<Week> {
 	const [menu, rows, eaters, earlier] = await db.batch([
-		db.prepare('SELECT id FROM menu WHERE week_start = ?').bind(weekStart),
+		db.prepare('SELECT id, wish FROM menu WHERE week_start = ?').bind(weekStart),
 		db
 			.prepare(
 				`SELECT i.weekday, i.meal, i.text, i.recipe_id AS recipeId,
-				 EXISTS (SELECT 1 FROM recipe_tag t WHERE t.recipe_id = i.recipe_id AND t.tag = ?) AS lunchbox
+				 EXISTS (SELECT 1 FROM recipe_tag t WHERE t.recipe_id = i.recipe_id AND t.tag = ?) AS lunchbox,
+				 i.reason, i.alternatives, i.passed_on AS passedOn
 				 FROM menu_item i JOIN menu m ON m.id = i.menu_id
 				 WHERE m.week_start = ? AND i.weekday IS NOT NULL
 				 ORDER BY i.weekday, i.position`
@@ -167,11 +189,14 @@ export async function getWeek(db: D1Database, weekStart: string): Promise<Week> 
 	return {
 		weekStart,
 		saved,
-		rows: (rows.results as unknown as WeekRow[]).map((row) => ({
+		rows: (rows.results as unknown as WeekRowRow[]).map((row) => ({
 			...row,
-			lunchbox: Boolean(row.lunchbox)
+			lunchbox: Boolean(row.lunchbox),
+			alternatives: row.alternatives ? JSON.parse(row.alternatives) : [],
+			passedOn: row.passedOn ? JSON.parse(row.passedOn) : []
 		})),
-		eaters: saved ? ids(eaters) : ids(earlier)
+		eaters: saved ? ids(eaters) : ids(earlier),
+		wish: saved ? (menu.results[0] as { wish: string | null }).wish : null
 	};
 }
 
@@ -207,28 +232,61 @@ const eaterStatements = (db: D1Database, menuId: number, eaters: number[]) =>
 			.bind(menuId, id)
 	);
 
+/** A day's line as it is written, with why and what to swap to when Claude suggested it. */
+export interface RowInput {
+	weekday: number;
+	meal: Meal;
+	text: string;
+	reason?: string | null;
+	alternatives?: Choice[];
+	passedOn?: string[];
+}
+
 /**
  * Writes a day's dinner or lunch. A dish not seen before becomes a recipe with just a name, and
  * blank text empties the day.
  */
-export async function setWeekRow(
+export function setWeekRow(
 	db: D1Database,
 	weekStart: string,
-	row: { weekday: number; meal: Meal; text: string },
+	row: RowInput,
+	eaters: number[]
+): Promise<void> {
+	return setWeekRows(db, weekStart, [row], eaters);
+}
+
+/** Writes several days at once, all or nothing. */
+export async function setWeekRows(
+	db: D1Database,
+	weekStart: string,
+	rows: RowInput[],
 	eaters: number[]
 ): Promise<void> {
 	const menuId = await ensureMenu(db, weekStart, eaters);
+	await db.batch(rows.flatMap((row) => rowStatements(db, menuId, row)));
+}
+
+function rowStatements(db: D1Database, menuId: number, row: RowInput): D1PreparedStatement[] {
 	const text = row.text.trim().replace(/\s+/g, ' ');
 	if (!text) {
-		await db
-			.prepare('DELETE FROM menu_item WHERE menu_id = ? AND weekday = ? AND meal = ?')
-			.bind(menuId, row.weekday, row.meal)
-			.run();
-		return;
+		return [
+			db
+				.prepare('DELETE FROM menu_item WHERE menu_id = ? AND weekday = ? AND meal = ?')
+				.bind(menuId, row.weekday, row.meal)
+		];
 	}
 	const dish = isDish(text);
-	const args = [menuId, row.weekday, row.meal, dish ? nameKey(text) : null, text];
-	await db.batch([
+	const args = [
+		menuId,
+		row.weekday,
+		row.meal,
+		dish ? nameKey(text) : null,
+		text,
+		row.reason || null,
+		row.alternatives?.length ? JSON.stringify(row.alternatives) : null,
+		row.passedOn?.length ? JSON.stringify(row.passedOn) : null
+	];
+	return [
 		...(dish ? [upsertRecipeStatement(db, text)] : []),
 		// The day's line is changed where it is, or added after all others, so lines from an old
 		// note for the same week are never written over.
@@ -237,21 +295,36 @@ export async function setWeekRow(
 				`UPDATE menu_item SET
 				   -- A dish already in the collection is written as it is named there.
 				   text = coalesce((SELECT name FROM recipe WHERE name_key = ?4), ?5),
-				   recipe_id = (SELECT id FROM recipe WHERE name_key = ?4)
+				   recipe_id = (SELECT id FROM recipe WHERE name_key = ?4),
+				   reason = ?6, alternatives = ?7, passed_on = ?8
 				 WHERE menu_id = ?1 AND weekday = ?2 AND meal = ?3`
 			)
 			.bind(...args),
 		db
 			.prepare(
-				`INSERT INTO menu_item (menu_id, position, weekday, meal, text, recipe_id)
+				`INSERT INTO menu_item (menu_id, position, weekday, meal, text, recipe_id, reason, alternatives, passed_on)
 				 SELECT ?1, (SELECT coalesce(max(position) + 1, 0) FROM menu_item WHERE menu_id = ?1),
 				   ?2, ?3, coalesce((SELECT name FROM recipe WHERE name_key = ?4), ?5),
-				   (SELECT id FROM recipe WHERE name_key = ?4)
+				   (SELECT id FROM recipe WHERE name_key = ?4), ?6, ?7, ?8
 				 WHERE NOT EXISTS (
 				   SELECT 1 FROM menu_item WHERE menu_id = ?1 AND weekday = ?2 AND meal = ?3)`
 			)
 			.bind(...args)
-	]);
+	];
+}
+
+/** Keeps what the household wished for the week, or nothing when it is blank. */
+export async function setWeekWish(
+	db: D1Database,
+	weekStart: string,
+	wish: string,
+	eaters: number[]
+): Promise<void> {
+	const menuId = await ensureMenu(db, weekStart, eaters);
+	await db
+		.prepare('UPDATE menu SET wish = ? WHERE id = ?')
+		.bind(wish.trim() || null, menuId)
+		.run();
 }
 
 /** Sets who eats the week. */
@@ -265,4 +338,56 @@ export async function setWeekEaters(
 		db.prepare('DELETE FROM menu_person WHERE menu_id = ?').bind(menuId),
 		...eaterStatements(db, menuId, eaters)
 	]);
+}
+
+/** A dish in the collection, with how often and when it was eaten before a week. */
+export type DishHistory = Omit<RecipeSummary, 'id'> & { tags: string[] };
+
+/** A week before, with its lines in order. Old notes do not always say the day. */
+export interface PastWeek {
+	weekStart: string;
+	rows: { weekday: number | null; meal: Meal; text: string }[];
+}
+
+/** What a suggestion for a week builds on: every dish, and the weeks just before. */
+export async function getMenuHistory(
+	db: D1Database,
+	weekStart: string,
+	weeks: number
+): Promise<{ dishes: DishHistory[]; pastWeeks: PastWeek[] }> {
+	const [dishes, rows] = await db.batch([
+		db
+			.prepare(
+				`SELECT r.name,
+				   (SELECT json_group_array(tag) FROM (SELECT tag FROM recipe_tag WHERE recipe_id = r.id ORDER BY tag)) AS tags,
+				   count(e.recipe_id) AS timesEaten, max(e.week_start) AS lastWeek
+				 FROM recipe r
+				 LEFT JOIN (
+				   SELECT i.recipe_id, m.week_start FROM menu_item i JOIN menu m ON m.id = i.menu_id
+				   WHERE m.week_start IS NULL OR m.week_start < ?1
+				 ) e ON e.recipe_id = r.id
+				 GROUP BY r.id
+				 ORDER BY r.name`
+			)
+			.bind(weekStart),
+		db
+			.prepare(
+				`SELECT m.week_start AS weekStart, i.weekday, i.meal, i.text
+				 FROM menu m JOIN menu_item i ON i.menu_id = m.id
+				 WHERE m.week_start < ?1 AND m.week_start >= ?2
+				 ORDER BY m.week_start DESC, i.weekday IS NULL, i.weekday, i.meal DESC, i.position`
+			)
+			.bind(weekStart, addWeeks(weekStart, -weeks))
+	]);
+	type Row = PastWeek['rows'][number] & { weekStart: string };
+	const byWeek = Map.groupBy(rows.results as unknown as Row[], (row) => row.weekStart);
+	return {
+		dishes: (dishes.results as unknown as (Omit<DishHistory, 'tags'> & { tags: string })[]).map(
+			(dish) => ({ ...dish, tags: JSON.parse(dish.tags) })
+		),
+		pastWeeks: [...byWeek].map(([weekStart, rows]) => ({
+			weekStart,
+			rows: rows.map(({ weekday, meal, text }) => ({ weekday, meal, text }))
+		}))
+	};
 }

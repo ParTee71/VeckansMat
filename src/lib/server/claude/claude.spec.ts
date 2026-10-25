@@ -102,6 +102,16 @@ describe('the cost', () => {
 		expect(await spentThisMonth(db)).toBe(1.5);
 	});
 
+	it('counts what is written to and read from the cache', () => {
+		const cached = {
+			...usage(0, 0),
+			cache_creation_input_tokens: 1e6,
+			cache_read_input_tokens: 1e6
+		};
+		// Sonnet: $2 per million in, a quarter more to write the cache and a tenth to read it.
+		expect(costUsd('claude-sonnet-5-5', cached)).toBeCloseTo(2.5 + 0.2);
+	});
+
 	it('of a model without a price is counted high, so the cap holds', () => {
 		expect(costUsd('claude-okand', usage(1e6, 0))).toBeGreaterThan(
 			costUsd('claude-sonnet-5-5', usage(1e6, 0))

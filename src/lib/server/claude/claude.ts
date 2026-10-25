@@ -4,7 +4,12 @@ import Anthropic from '@anthropic-ai/sdk';
 import { env } from 'cloudflare:workers';
 
 /** What a call is for, kept with its cost. */
-export type Purpose = 'recipe';
+export type Purpose = 'recipe' | 'menu';
+
+/** Sends a request without its model, which the caller chooses. */
+export type Ask = (
+	params: Omit<Anthropic.MessageCreateParamsNonStreaming, 'model'>
+) => Promise<Anthropic.Message>;
 
 /**
  * Dollars per million tokens. Haiku's price is for prompts up to 100K tokens, which the app's
@@ -24,9 +29,14 @@ export class ClaudeLimitError extends Error {
 	}
 }
 
+/** What a call cost. Writing to the cache costs a quarter more than input, reading a tenth. */
 export function costUsd(model: string, usage: Anthropic.Usage): number {
 	const price = PRICES[model] ?? UNKNOWN_PRICE;
-	return (usage.input_tokens * price.input + usage.output_tokens * price.output) / 1e6;
+	const input =
+		usage.input_tokens +
+		(usage.cache_creation_input_tokens ?? 0) * 1.25 +
+		(usage.cache_read_input_tokens ?? 0) * 0.1;
+	return (input * price.input + usage.output_tokens * price.output) / 1e6;
 }
 
 /** What calls have cost since the start of the month, in UTC. */
@@ -73,7 +83,10 @@ export async function ask(
 			.bind(
 				purpose,
 				params.model,
-				message.usage.input_tokens,
+				// Everything read, also from and into the cache, which the cost prices apart.
+				message.usage.input_tokens +
+					(message.usage.cache_creation_input_tokens ?? 0) +
+					(message.usage.cache_read_input_tokens ?? 0),
 				message.usage.output_tokens,
 				costUsd(params.model, message.usage)
 			)

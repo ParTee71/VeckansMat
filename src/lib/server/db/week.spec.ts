@@ -14,6 +14,8 @@ afterAll(() => dispose());
 beforeEach(() => clearTestDb(db));
 
 const WEEK = '2030-03-04';
+// Lines written by hand have no reason and nothing to swap to.
+const byHand = { reason: null, alternatives: [], passedOn: [] };
 const dinner = (weekday: number, text: string) => ({ weekday, meal: 'dinner' as const, text });
 
 describe('a week planned in the app', () => {
@@ -22,7 +24,8 @@ describe('a week planned in the app', () => {
 			weekStart: WEEK,
 			saved: false,
 			rows: [],
-			eaters: []
+			eaters: [],
+			wish: null
 		});
 	});
 
@@ -35,9 +38,23 @@ describe('a week planned in the app', () => {
 		expect(week.saved).toBe(true);
 		const soup = await findRecipeByName(db, 'ärtsoppa');
 		expect(week.rows).toEqual([
-			{ weekday: 1, meal: 'dinner', text: 'Ärtsoppa', recipeId: soup!.id, lunchbox: false },
-			{ weekday: 2, meal: 'dinner', text: 'Tacos', recipeId: expect.any(Number), lunchbox: false },
-			{ weekday: 6, meal: 'lunch', text: 'Rester', recipeId: null, lunchbox: false }
+			{
+				weekday: 1,
+				meal: 'dinner',
+				text: 'Ärtsoppa',
+				recipeId: soup!.id,
+				lunchbox: false,
+				...byHand
+			},
+			{
+				weekday: 2,
+				meal: 'dinner',
+				text: 'Tacos',
+				recipeId: expect.any(Number),
+				lunchbox: false,
+				...byHand
+			},
+			{ weekday: 6, meal: 'lunch', text: 'Rester', recipeId: null, lunchbox: false, ...byHand }
 		]);
 		// Lines like "Rester" are not dishes.
 		expect(await findRecipeByName(db, 'rester')).toBeNull();
@@ -50,7 +67,14 @@ describe('a week planned in the app', () => {
 		await updateRecipe(db, id, { ...(await recipeInput(id)), tags: ['matlåda'] });
 		await setWeekRow(db, WEEK, dinner(3, 'kycklinggryta  med CURRY'), []);
 		expect((await getWeek(db, WEEK)).rows).toEqual([
-			{ weekday: 3, meal: 'dinner', text: 'Kycklinggryta med curry', recipeId: id, lunchbox: true }
+			{
+				weekday: 3,
+				meal: 'dinner',
+				text: 'Kycklinggryta med curry',
+				recipeId: id,
+				lunchbox: true,
+				...byHand
+			}
 		]);
 	});
 

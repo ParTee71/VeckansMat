@@ -18,3 +18,4 @@ med `/adr` i Claude Code.
 | [0011](0011-versioner-och-release.md)    | Versioner och release                           | Beslutat, förhandsadressen ersatt av 0012 |
 | [0012](0012-datamodell.md)               | Datamodell för recept och veckomenyer           | Beslutat                                  |
 | [0013](0013-recept-in.md)                | Recept in från länkar, foton och text           | Beslutat                                  |
+| [0014](0014-veckoforslag.md)             | Claude föreslår veckan                          | Beslutat                                  |

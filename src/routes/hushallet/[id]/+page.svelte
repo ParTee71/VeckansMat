@@ -36,7 +36,10 @@
 		<textarea id="requirements" name="requirements" rows="4" value={values.requirements}></textarea>
 		<m3e-textarea-autosize for="requirements"></m3e-textarea-autosize>
 	</m3e-form-field>
-	<p class="hint">Gäller de veckor personen äter med.</p>
+	<p class="hint">
+		Gäller de veckor personen äter med. Allergier och det hen inte äter följer Claude alltid, det
+		andra när det går.
+	</p>
 </form>
 
 {#if data.person}

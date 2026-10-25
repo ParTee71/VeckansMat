@@ -5,6 +5,37 @@ skrivs vad som provats, varför, och hur det gick. Nyast överst. Hur
 styrningen är uppbyggd just nu står i
 [beslut 0008](beslut/0008-claude-code-uppsattning.md).
 
+## 2026-10-25 – Veckoförslaget: vanorna i materialet, reglerna i prompten
+
+**Vad:** Claude Sonnet 5.5 föreslår veckan (#32). Prompten står i
+`src/lib/server/claude/menu-prompt.ts` och mäts med evalen i `evals/meny/`.
+
+**Hur prompten byggdes:**
+
+- **Vanorna kommer ur materialet, inte ur prompten.** Prompten säger hur man väljer (husets
+  regler, krav, variation, vardag och helg), och hushållets egna rätter, veckor och regler
+  skickas som material. Samma prompt fungerar för vilket hushåll som helst.
+- **Absolut eller önskemål sägs rakt ut.** Det en person inte kan äta får aldrig bli fel, inte
+  heller i alternativen; resten följs när det går. Utan den skillnaden väger modellen en
+  allergi mot "fisk en gång i veckan".
+- **Appen räknar, modellen väljer.** Veckonummer och hur ofta en rätt ätits räknas ut i koden och
+  skickas färdiga, i stället för att modellen ska räkna fram dem ur datum.
+- **Materialet först och cachat**, veckan sist. Det som är lika mellan anropen ligger överst i
+  meddelandet med en cache-markering, så en andra fråga strax efter blir billigare.
+- **Två alternativ per dag i samma svar** gör ett byte direkt och gratis. Bara när de är slut
+  görs ett nytt anrop.
+
+**Evalen** (11 fall, regler i stället för en domarmodell): första körningen gav 99 %. Det enda
+som föll var att alternativen till en vegetarian upprepade veckans egna rätter; samlingen hade
+helt enkelt för få vegetariska rätter. Prompten fick säga att ett alternativ får vara en ny rätt
+när samlingen inte räcker, och nästa körning gav 99,8 %: det enda som föll var ett alternativ till söndagens lunch som redan stod i veckan, något appen nu hoppar över vid ett byte. Med låg effort i stället för medel gick
+det dubbelt så fort men gav 95 %, och en gång fisk till den som inte äter fisk. Medel fick det,
+för 15–20 sekunder och ungefär 3 cent per vecka.
+
+**Lärdom:** En eval som går fel kan peka på fallet lika väl som på prompten. Här var regeln
+rimlig men omöjlig med den samlingen, och rätt ändring var att säga vad modellen ska göra när
+reglerna inte går ihop.
+
 ## 2026-10-25 – Appens första prompt, och en eval som mäter den
 
 **Vad:** Claude Haiku 5.5 läser recept ur foton och inklistrad text (#26). Prompten står i

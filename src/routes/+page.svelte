@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { deserialize } from '$app/forms';
+	import { deserialize, type ActionResult } from '$app/forms';
+	import type { M3eSnackbarElement } from '@m3e/web/snackbar';
 	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import Icon from '#lib/Icon.svelte';
 	import { nameKey } from '#lib/names.ts';
 	import { isDish, NOT_DISHES, timesText } from '#lib/recipes.ts';
-	import type { Meal } from '#lib/server/db/menus.ts';
+	import type { Meal, RowInput } from '#lib/server/db/menus.ts';
 	import { WEEKDAY_NAMES, WEEKDAYS, isoWeek, weekDates } from '#lib/weeks.ts';
 	import type { PageProps } from './$types';
 
@@ -25,6 +26,19 @@
 	// Who eats, as just tapped, before the server has answered.
 	let pendingEaters = $state<Record<string, number[]>>({});
 	let eaterIds = $derived(pendingEaters[week.weekStart] ?? week.eaters);
+
+	// Claude's suggestion: the week being suggested, a day being swapped, and what went wrong.
+	// The wish as written, per week, so that the page loading again does not wipe it.
+	let wishes = $state<Record<string, string>>({});
+	let wish = $derived(wishes[week.weekStart] ?? week.wish ?? '');
+	let suggesting = $state<string | null>(null);
+	let swapping = $state<string | null>(null);
+	let suggestError = $state<{ weekStart: string; reason: 'failed' | 'limit' } | null>(null);
+	// The latest swap, which the snackbar can undo.
+	let swapped = $state<{ key: string; weekStart: string; before: RowInput; text: string } | null>(
+		null
+	);
+	let hasSuggestion = $derived(week.rows.some((r) => r.reason !== null));
 
 	const keyOf = (weekday: number, meal: Meal) => `${week.weekStart}-${meal}-${weekday}`;
 	const stored = (weekday: number, meal: Meal) =>
@@ -60,24 +74,75 @@
 	);
 	let isNew = $derived(key && isDish(draft) && !data.recipes.some((r) => nameKey(r.name) === key));
 
-	async function post(action: string, fields: Record<string, string | number | number[]>) {
+	async function post(
+		action: string,
+		fields: Record<string, string | number | number[]>
+	): Promise<ActionResult | null> {
 		const body = new FormData();
 		for (const [name, value] of Object.entries(fields)) {
 			for (const v of Array.isArray(value) ? value : [value]) body.append(name, String(v));
 		}
+		let result: ActionResult | null = null;
 		try {
 			const response = await fetch(`?/${action}`, {
 				method: 'POST',
 				body,
 				headers: { 'x-sveltekit-action': 'true' }
 			});
-			const result = deserialize(await response.text());
-			// A failure stays on screen until the page is loaded again.
-			if (result.type === 'failure' || result.type === 'error') failed = true;
+			result = deserialize(await response.text());
 		} catch {
-			failed = true;
+			// No answer: the network is down.
 		}
+		// A failure stays on screen until the page is loaded again. What an action itself turns
+		// down is for its caller to show.
+		if (!result || result.type === 'error') failed = true;
 		await invalidateAll();
+		return result;
+	}
+
+	/** Posts to Claude's actions, and shows when Claude could not help. */
+	async function postSuggest(action: string, fields: Record<string, string | number | number[]>) {
+		const weekStart = week.weekStart;
+		suggestError = null;
+		const result = await post(action, { weekStart, ...fields });
+		if (result?.type === 'failure')
+			suggestError = { weekStart, reason: result.data?.suggestError as 'failed' | 'limit' };
+		return result;
+	}
+
+	async function suggest() {
+		editing = null;
+		suggesting = week.weekStart;
+		await postSuggest('suggest', { wish, eaters: eaterIds });
+		suggesting = null;
+	}
+
+	async function swap(weekday: number, meal: Meal) {
+		const weekStart = week.weekStart;
+		const key = keyOf(weekday, meal);
+		swapping = key;
+		const result = await postSuggest('swap', { weekday, meal });
+		if (result?.type === 'success' && result.data?.before) {
+			const { before, text } = result.data as { before: RowInput; text: string };
+			swapped = { key, weekStart, before, text };
+		}
+		if (swapping === key) swapping = null;
+	}
+
+	async function undoSwap(event: ToggleEvent & { currentTarget: M3eSnackbarElement }) {
+		if (event.newState !== 'closed' || !swapped) return;
+		const { before, weekStart } = swapped;
+		swapped = null;
+		if (!event.currentTarget.isActionTaken) return;
+		await post('restore', {
+			weekStart,
+			weekday: before.weekday,
+			meal: before.meal,
+			text: before.text,
+			reason: before.reason ?? '',
+			alternatives: JSON.stringify(before.alternatives ?? []),
+			passedOn: JSON.stringify(before.passedOn ?? [])
+		});
 	}
 
 	function edit(weekday: number, meal: Meal) {
@@ -90,6 +155,7 @@
 		editing = null;
 		const k = keyOf(weekday, meal);
 		if (text.trim() === textOf(weekday, meal)) return;
+		if (swapped?.key === k) swapped = null;
 		pending[k] = text.trim();
 		await post('row', {
 			weekStart: week.weekStart,
@@ -133,6 +199,9 @@
 	}
 
 	const extraText = (n: number) => `Matlåda · ${n} ${n === 1 ? 'portion' : 'portioner'} extra`;
+	// Why Claude chose the dish, and how much extra to cook of a lunch-box dish.
+	const metaText = (row: { reason: string | null; lunchbox: boolean }) =>
+		[row.reason, row.lunchbox && extraText(extra)].filter(Boolean).join(' · ');
 	const focus = (input: HTMLInputElement) => input.focus();
 </script>
 
@@ -206,7 +275,10 @@
 			</div>
 		</li>
 	{:else}
-		<li class="row">
+		{@const current = stored(weekday, meal)}
+		{@const saved = current && text === current.text ? current : null}
+		{@const meta = saved ? metaText(saved) : ''}
+		<li class={['row', swapped?.key === keyOf(weekday, meal) && 'swapped']}>
 			<button
 				type="button"
 				class="show"
@@ -216,11 +288,26 @@
 				<span class="day">{label}</span>
 				<span class="text">
 					<span class={text ? '' : 'empty'}>{text || 'Skriv en rätt'}</span>
-					{#if stored(weekday, meal)?.lunchbox && text === stored(weekday, meal)?.text}
-						<span class="meta">{extraText(extra)}</span>
+					{#if meta}
+						<span class="meta">{meta}</span>
 					{/if}
 				</span>
 			</button>
+			{#if saved?.reason}
+				{#if swapping === keyOf(weekday, meal)}
+					<m3e-loading-indicator class="swap" aria-label="Byter {name}"></m3e-loading-indicator>
+				{:else}
+					<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-icon-button is a button with its own keyboard handling) -->
+					<m3e-icon-button
+						class="swap"
+						aria-label="Byt {name}"
+						disabled={!!swapping || !!suggesting || undefined}
+						onclick={() => swap(weekday, meal)}
+					>
+						<Icon name="swap" />
+					</m3e-icon-button>
+				{/if}
+			{/if}
 		</li>
 	{/if}
 {/snippet}
@@ -232,6 +319,16 @@
 			<p class="dates">{weekDates(week.weekStart)} · {isNext ? 'nästa vecka' : 'den här veckan'}</p>
 		</div>
 		<div class="nav">
+			{#if hasSuggestion}
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-icon-button is a button with its own keyboard handling) -->
+				<m3e-icon-button
+					aria-label="Nytt förslag på hela veckan"
+					disabled={!!suggesting || !!swapping || undefined}
+					onclick={suggest}
+				>
+					<Icon name="suggest" />
+				</m3e-icon-button>
+			{/if}
 			<m3e-icon-button
 				href={isNext ? `?vecka=${data.thisWeek}` : undefined}
 				disabled={!isNext || undefined}
@@ -271,43 +368,83 @@
 			<p class="hint">{data.settings.menuRules.replace(/\n+/g, ' ')}</p>
 		{/if}
 		<a href={resolve('/hushallet')}>Ändra personer och regler</a>
+		{#if !hasSuggestion && !suggesting}
+			<m3e-form-field variant="filled">
+				<label slot="label" for="wish">Något särskilt den här veckan? (frivilligt)</label>
+				<input
+					id="wish"
+					autocomplete="off"
+					bind:value={() => wish, (value) => (wishes[week.weekStart] = value)}
+				/>
+			</m3e-form-field>
+			<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
+			<m3e-button variant="filled" disabled={!!swapping || undefined} onclick={suggest}>
+				<span slot="icon" class="slot-icon"><Icon name="suggest" /></span>Föreslå veckan
+			</m3e-button>
+		{/if}
 	</section>
 
 	{#if failed}
 		<p class="error" role="alert">Det gick inte att spara. Kontrollera nätet och försök igen.</p>
 	{/if}
-
-	<h2 class="meal">Middag</h2>
-	<ul class="days">
-		{#each DAYS as weekday (weekday)}
-			{@render row(weekday, 'dinner')}
-		{/each}
-	</ul>
-
-	<div class="meal">
-		<h2>Lunch</h2>
-		{#if freeLunchDays.length}
-			<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
-			<m3e-button variant="text" onclick={() => (choosingLunch = !choosingLunch)}>
-				<span slot="icon" class="slot-icon"><Icon name="add" /></span>Lunch en vardag
-			</m3e-button>
-		{/if}
-	</div>
-	{#if choosingLunch}
-		<div class="quick" role="group" aria-label="Välj dag för lunch">
-			{#each freeLunchDays as weekday (weekday)}
-				<button type="button" class="chip" onclick={() => addLunch(weekday)}
-					>{WEEKDAYS[weekday - 1]}</button
-				>
-			{/each}
-		</div>
+	{#if suggestError?.weekStart === week.weekStart}
+		<p class="error" role="alert">
+			{#if suggestError.reason === 'limit'}
+				Appen har föreslagit så mycket som månadens tak tillåter. Skriv in rätterna själv, eller
+				vänta till nästa månad.
+			{:else}
+				Claude kunde inte föreslå något just nu. Skriv in rätterna själv, eller försök igen.
+			{/if}
+		</p>
 	{/if}
-	<ul class="days">
-		{#each lunchDays as weekday (weekday)}
-			{@render row(weekday, 'lunch')}
-		{/each}
-	</ul>
+
+	{#if suggesting === week.weekStart}
+		<div class="suggesting">
+			<m3e-loading-indicator></m3e-loading-indicator>
+			<p role="status">Claude sätter ihop veckan …</p>
+			<p class="hint">Utgår från era gamla veckor och rätter. Brukar ta 10–20 sekunder.</p>
+		</div>
+	{:else}
+		<h2 class="meal">Middag</h2>
+		<ul class="days">
+			{#each DAYS as weekday (weekday)}
+				{@render row(weekday, 'dinner')}
+			{/each}
+		</ul>
+
+		<div class="meal">
+			<h2>Lunch</h2>
+			{#if freeLunchDays.length}
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
+				<m3e-button variant="text" onclick={() => (choosingLunch = !choosingLunch)}>
+					<span slot="icon" class="slot-icon"><Icon name="add" /></span>Lunch en vardag
+				</m3e-button>
+			{/if}
+		</div>
+		{#if choosingLunch}
+			<div class="quick" role="group" aria-label="Välj dag för lunch">
+				{#each freeLunchDays as weekday (weekday)}
+					<button type="button" class="chip" onclick={() => addLunch(weekday)}
+						>{WEEKDAYS[weekday - 1]}</button
+					>
+				{/each}
+			</div>
+		{/if}
+		<ul class="days">
+			{#each lunchDays as weekday (weekday)}
+				{@render row(weekday, 'lunch')}
+			{/each}
+		</ul>
+	{/if}
 </main>
+
+{#key swapped}
+	{#if swapped}
+		<m3e-snackbar action="Ångra" duration="6000" open ontoggle={undoSwap}>
+			{swapped.before.text} byttes mot {swapped.text}
+		</m3e-snackbar>
+	{/if}
+{/key}
 
 <style>
 	main {
@@ -413,6 +550,43 @@
 	.row {
 		border-radius: 0.25rem;
 		background: var(--md-sys-color-surface-container);
+		display: flex;
+		align-items: center;
+	}
+
+	.row.swapped {
+		background: var(--md-sys-color-primary-container);
+	}
+
+	.swap {
+		flex-shrink: 0;
+		margin-right: 0.25rem;
+	}
+
+	m3e-loading-indicator.swap {
+		width: 3rem;
+		height: 3rem;
+	}
+
+	.suggesting {
+		padding: 2rem 1rem;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.5rem;
+		text-align: center;
+	}
+
+	.suggesting p {
+		margin: 0;
+	}
+
+	.eaters m3e-button {
+		align-self: flex-start;
+	}
+
+	m3e-form-field {
+		width: 100%;
 	}
 
 	.row:first-child {
@@ -426,7 +600,8 @@
 	}
 
 	.show {
-		width: 100%;
+		flex-grow: 1;
+		min-width: 0;
 		min-height: 3.5rem;
 		padding: 0.375rem 1rem 0.375rem 0.75rem;
 		border: 0;
@@ -471,8 +646,8 @@
 		background: var(--md-sys-color-surface-container-high);
 		outline: 2px solid var(--md-sys-color-primary);
 		outline-offset: -2px;
-		display: flex;
 		flex-direction: column;
+		align-items: stretch;
 		gap: 0.5rem;
 	}
 

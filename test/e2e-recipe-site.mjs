@@ -1,5 +1,6 @@
 // A made-up recipe site for the Playwright tests, so reading a link never leaves the machine,
-// and a stand-in for Claude's API under /claude, so no test calls the real one.
+// and a stand-in for Claude's API under /claude, so no test calls the real one. It reads recipes
+// and suggests weeks.
 import { createServer } from 'node:http';
 
 const recipe = (name, extra = {}) => ({
@@ -34,10 +35,44 @@ const answer = (name, ingredients = [], extra = {}) => ({
 	...extra
 });
 
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DINNERS = [
+	'Blomkålssoppa',
+	'Kycklinggryta',
+	'Tacos',
+	'Laxpudding',
+	'Hemgjord pizza',
+	'Kycklinglår med rotfrukter',
+	'Pannkakor'
+];
+
+/** A week for the days the request asks for, or new dishes for a day swapped. */
+function menu(text) {
+	if (text.includes('Krascha')) return 'inget menyförslag';
+	const asked = text.split('\n').find((line) => /^(Plan these|Suggest)/.test(line));
+	const slots = [...asked.matchAll(/(\w+day) (dinner|lunch)/g)].map(([, day, meal]) => ({
+		weekday: DAYS.indexOf(day) + 1,
+		meal
+	}));
+	const again = asked.startsWith('Suggest');
+	return {
+		rows: slots.map(({ weekday, meal }) => ({
+			weekday,
+			meal,
+			dish: again ? 'Fiskpinnar' : meal === 'lunch' ? 'Varm korv' : DINNERS[weekday - 1],
+			reason: again ? 'Snabbt' : 'Senast v. 36',
+			alternatives: (again ? ['Köttbullar', 'Lasagne'] : ['Pytt i panna', 'Korv stroganoff']).map(
+				(dish) => ({ dish, reason: 'Ett annat förslag' })
+			)
+		}))
+	};
+}
+
 /** What the stand-in reads from a request: a recipe by what the text says, and its cost. */
 function claude(request) {
 	const content = request.messages[0].content;
 	const text = content.map((block) => block.text ?? '').join('\n');
+	if (request.output_config.format.schema.properties.rows) return [menu(text)];
 	// Only photos the phone made smaller, which are always JPEG.
 	if (content.some((block) => block.source?.media_type === 'image/jpeg')) {
 		return [answer('Saffransbullar', ['50 g jäst', '5 dl mjölk'], { servings: 30 })];
@@ -54,14 +89,16 @@ function messages(request, response) {
 	request.on('data', (chunk) => (body += chunk));
 	request.on('end', () => {
 		const params = JSON.parse(body);
-		const [recipe, inputTokens = 1500] = claude(params);
+		const [reply, inputTokens = 1500] = claude(params);
 		response.writeHead(200, { 'content-type': 'application/json' }).end(
 			JSON.stringify({
 				id: 'msg_e2e',
 				type: 'message',
 				role: 'assistant',
 				model: params.model,
-				content: [{ type: 'text', text: JSON.stringify(recipe) }],
+				content: [
+					{ type: 'text', text: typeof reply === 'string' ? reply : JSON.stringify(reply) }
+				],
 				stop_reason: 'end_turn',
 				stop_sequence: null,
 				usage: { input_tokens: inputTokens, output_tokens: 300 }

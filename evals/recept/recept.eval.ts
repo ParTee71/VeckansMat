@@ -1,24 +1,21 @@
 // Reads every case with the real API and the app's own prompt, grades the answers by rules and
 // compares them with the last saved run. See evals/recept/README.md.
 import Anthropic from '@anthropic-ai/sdk';
-import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, it } from 'vitest';
 import { nameKey } from '../../src/lib/names';
-import { costUsd } from '../../src/lib/server/claude/claude';
+import { costUsd, type Ask } from '../../src/lib/server/claude/claude';
 import { RECIPE_PROMPT } from '../../src/lib/server/claude/recipe-prompt';
 import { RecipeReadError, type RecipeDraft } from '../../src/lib/server/recipe-draft';
 import { pageText } from '../../src/lib/server/recipe-link';
-import { readRecipe, type Ask, type RecipeSource } from '../../src/lib/server/recipe-parse';
+import { readRecipe, type RecipeSource } from '../../src/lib/server/recipe-parse';
+import { report, score, type Scored } from '../report';
 import { CASES, type Case } from './cases';
 
 const MODEL = process.env.RECIPE_MODEL ?? 'claude-haiku-5-5';
 const RESULTS = new URL('results/latest.json', import.meta.url);
 
-interface Result {
-	id: string;
-	score: number;
-	failed: string[];
+interface Result extends Scored {
 	answer: RecipeDraft | string;
 }
 
@@ -86,48 +83,8 @@ for (const c of CASES) {
 		}
 		const checks = grade(c, typeof answer === 'string' ? null : answer);
 		if (answer === 'failed') checks['svar'] = false;
-		const passed = Object.values(checks).filter(Boolean).length;
-		results.push({
-			id: c.id,
-			score: passed / Object.keys(checks).length,
-			failed: Object.keys(checks).filter((k) => !checks[k]),
-			answer
-		});
+		results.push({ id: c.id, ...score(checks), answer });
 	});
 }
 
-afterAll(() => {
-	if (!results.length) return;
-	const previous = existsSync(RESULTS)
-		? (JSON.parse(readFileSync(RESULTS, 'utf8')) as { results: Result[]; score: number })
-		: null;
-	const score = results.reduce((sum, r) => sum + r.score, 0) / results.length;
-	const percent = (n: number | undefined) => (n === undefined ? '–' : `${Math.round(n * 100)} %`);
-	console.table(
-		results.map((r) => ({
-			fall: r.id,
-			förut: percent(previous?.results.find((p) => p.id === r.id)?.score),
-			nu: percent(r.score),
-			fel: r.failed.join('; ')
-		}))
-	);
-	console.log(
-		`Totalt ${percent(score)} (förut ${percent(previous?.score)}), ${MODEL}, $${cost.toFixed(4)}`
-	);
-	mkdirSync(new URL('.', RESULTS), { recursive: true });
-	writeFileSync(
-		RESULTS,
-		JSON.stringify(
-			{
-				date: new Date().toISOString(),
-				model: MODEL,
-				prompt: createHash('sha256').update(RECIPE_PROMPT).digest('hex').slice(0, 12),
-				score,
-				costUsd: cost,
-				results
-			},
-			null,
-			'\t'
-		) + '\n'
-	);
-});
+afterAll(() => report(RESULTS, { model: MODEL, prompt: RECIPE_PROMPT, costUsd: cost, results }));

@@ -14,14 +14,22 @@
 	// carries no account identifiers. CI creates it if it is missing.
 	"d1_databases": [{ "binding": "DB", "database_name": "veckansmat" }],
 	// The key is a secret, ANTHROPIC_API_KEY, set on each Worker. See docs/beslut/0006-claude-i-appen.md.
-	"vars": { "RECIPE_MODEL": "claude-haiku-5-5", "CLAUDE_MONTHLY_LIMIT_USD": "5" },
+	"vars": {
+		"RECIPE_MODEL": "claude-haiku-5-5",
+		"MENU_MODEL": "claude-sonnet-5-5",
+		"CLAUDE_MONTHLY_LIMIT_USD": "5"
+	},
 	"env": {
 		// Its own Worker (veckansmat-preview) and database, so that trying out main
 		// never touches the household's data.
 		"preview": {
 			"d1_databases": [{ "binding": "DB", "database_name": "veckansmat-preview" }],
 			// Not inherited from the top level, so repeated here.
-			"vars": { "RECIPE_MODEL": "claude-haiku-5-5", "CLAUDE_MONTHLY_LIMIT_USD": "5" }
+			"vars": {
+				"RECIPE_MODEL": "claude-haiku-5-5",
+				"MENU_MODEL": "claude-sonnet-5-5",
+				"CLAUDE_MONTHLY_LIMIT_USD": "5"
+			}
 		}
 	}
 }

@@ -19,6 +19,7 @@
 		"test": "vitest --run",
 		"test:e2e": "playwright test",
 		"eval:recept": "vitest run --config evals/recept/vitest.config.ts",
+		"eval:meny": "vitest run --config evals/meny/vitest.config.ts",
 		"verify": "npm run check && npm run lint && npm run test",
 		"types": "wrangler types"
 	},

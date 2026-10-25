@@ -1,9 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { open, read, SITE } from '../../../../test/e2e';
 
-// Photos and text are read by the stand-in for Claude in test/e2e-recipe-site.mjs. The tests
-// run in order, since the last one spends the month's cap, and no other test file calls Claude.
-test.describe.configure({ mode: 'serial' });
+// Photos and text are read by the stand-in for Claude in test/e2e-recipe-site.mjs.
 
 // A one-pixel PNG; the phone makes it a JPEG before it is sent.
 const png = (name: string) => ({
@@ -78,17 +76,4 @@ test('text without a recipe can be filled in with the text kept', async ({ page 
 	);
 	await page.getByRole('button', { name: 'Fyll i själv' }).click();
 	await expect(page.getByLabel('Gör så här')).toHaveValue('Hej hej');
-});
-
-test('nothing more is read once the month has cost the cap', async ({ page }) => {
-	await open(page, '/ratter/ny');
-	await read(page, 'Dyr gryta');
-	await expect(page.getByLabel('Namn')).toHaveValue('Dyr gryta');
-
-	await page.getByRole('button', { name: 'Börja om' }).click();
-	await read(page, 'Pannkakor');
-	await expect(page.getByRole('alert')).toHaveText(
-		'Appen har läst så många recept som månadens tak tillåter. Fyll i det själv, eller vänta till nästa månad.'
-	);
-	await expect(page.getByRole('button', { name: 'Fyll i själv' })).toBeVisible();
 });

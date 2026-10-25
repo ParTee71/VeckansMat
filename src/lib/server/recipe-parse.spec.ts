@@ -1,9 +1,9 @@
 import type Anthropic from '@anthropic-ai/sdk';
 import { describe, expect, it, vi } from 'vitest';
-import { ClaudeLimitError } from './claude/claude';
+import { ClaudeLimitError, type Ask } from './claude/claude';
 import { RECIPE_PROMPT, RECIPE_SCHEMA } from './claude/recipe-prompt';
 import { RecipeReadError } from './recipe-draft';
-import { photosOf, readRecipe, type Ask } from './recipe-parse';
+import { photosOf, readRecipe } from './recipe-parse';
 
 // Claude is never called: each test says what it answers.
 const answering = (text: string | null, stop_reason: Anthropic.StopReason = 'end_turn') =>
