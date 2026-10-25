@@ -62,8 +62,8 @@ function readError(reason: RecipeReadError['reason'], kind: Kind): string {
 // Far more than a recipe; a longer paste is something else.
 const MAX_TEXT = 20_000;
 
-/** Reads with Claude, using the model the app is set to. */
-const withClaude = (source: RecipeSource) => readRecipe(source, askFor('recipe'));
+const askRecipe = askFor('recipe');
+const withClaude = (source: RecipeSource) => readRecipe(source, askRecipe);
 
 /** A page's JSON-LD when it has one, otherwise Claude reads the page's text. */
 async function readLink(link: URL, allowLocal: boolean): Promise<RecipeDraft> {

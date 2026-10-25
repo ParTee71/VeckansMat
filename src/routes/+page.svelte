@@ -5,8 +5,8 @@
 	import { resolve } from '$app/paths';
 	import Icon from '#lib/Icon.svelte';
 	import WeekHeader from '#lib/WeekHeader.svelte';
-	import { nameKey } from '#lib/names.ts';
-	import { isDish, MEAL_LABELS, NOT_DISHES, plural, timesText } from '#lib/recipes.ts';
+	import { nameKey, plural } from '#lib/names.ts';
+	import { isDish, MEAL_LABELS, NOT_DISHES, timesText } from '#lib/recipes.ts';
 	import type { Meal, RowInput } from '#lib/server/db/menus.ts';
 	import { WEEKDAY_NAMES, WEEKDAYS, isoWeek, weekDates } from '#lib/weeks.ts';
 	import type { PageProps } from './$types';

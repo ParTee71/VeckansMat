@@ -14,3 +14,6 @@ export const stripTags = (text: string) => text.replace(/<\/?[a-z_]+>/gi, '').tr
 export function nameKey(name: string): string {
 	return cleanText(name).toLocaleLowerCase('sv');
 }
+
+/** "1 vara", "3 varor". */
+export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;

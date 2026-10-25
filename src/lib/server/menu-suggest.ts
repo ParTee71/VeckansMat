@@ -41,7 +41,7 @@ const sameSlot = (a: Slot, b: Slot) => a.weekday === b.weekday && a.meal === b.m
 /** Asks Claude, and keeps each day it answered right even when another is not. */
 export async function suggestMenu(request: MenuRequest, ask: Ask): Promise<SuggestedRow[]> {
 	const [material, plan] = menuContent(request);
-	const { answer, message } = await askJson(
+	const answer = await askJson(
 		ask,
 		{
 			max_tokens: 16000,
@@ -59,13 +59,10 @@ export async function suggestMenu(request: MenuRequest, ask: Ask): Promise<Sugge
 			]
 		},
 		(reason) => new MenuSuggestError(reason),
-		'menu'
+		'menu',
+		'rows'
 	);
-	const rows = answer.rows;
-	if (!Array.isArray(rows)) {
-		console.error('Claude gave no menu answer', message.stop_reason);
-		throw new MenuSuggestError('failed');
-	}
+	const { rows } = answer;
 
 	const passedOn = new Set((request.passedOn ?? []).map(nameKey));
 	const suggested: SuggestedRow[] = [];

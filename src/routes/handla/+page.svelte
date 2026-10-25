@@ -5,7 +5,7 @@
 	import Icon from '#lib/Icon.svelte';
 	import WeekHeader from '#lib/WeekHeader.svelte';
 	import type { ShoppingItem } from '#lib/server/db/shopping.ts';
-	import { plural } from '#lib/recipes.ts';
+	import { plural } from '#lib/names.ts';
 	import { sectionRank } from '#lib/shopping.ts';
 	import { isoWeek } from '#lib/weeks.ts';
 	import type { PageProps } from './$types';

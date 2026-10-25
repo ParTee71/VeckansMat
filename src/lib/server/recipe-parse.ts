@@ -93,7 +93,7 @@ function toDraft(answer: Record<string, unknown>, sourceUrl: string): RecipeDraf
 }
 
 export async function readRecipe(source: RecipeSource, ask: Ask): Promise<RecipeDraft> {
-	const { answer } = await askJson(
+	const answer = await askJson(
 		ask,
 		{
 			max_tokens: 8000,

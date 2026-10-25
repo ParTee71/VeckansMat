@@ -66,7 +66,7 @@ export async function askShoppingList(
 	dishes: ShoppingDish[],
 	ask: Ask
 ): Promise<{ items: NewShoppingItem[]; guesses: Map<string, string[]> }> {
-	const { answer: parsed, message } = await askJson(
+	const parsed = await askJson(
 		ask,
 		{
 			max_tokens: 16000,
@@ -75,12 +75,9 @@ export async function askShoppingList(
 			messages: [{ role: 'user', content: [{ type: 'text', text: shoppingContent(dishes) }] }]
 		},
 		(reason) => new ShoppingListError(reason),
-		'shopping list'
+		'shopping list',
+		'items'
 	);
-	if (!Array.isArray(parsed.items)) {
-		console.error('Claude gave no shopping list', message.stop_reason);
-		throw new ShoppingListError('failed');
-	}
 
 	// Guesses only for the dishes asked about, by the name they were given.
 	const byKey = new Map(dishes.map((dish) => [nameKey(dish.name), dish]));
