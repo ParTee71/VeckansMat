@@ -89,3 +89,54 @@ test('the arrows go between this week and the next', async ({ page }) => {
 	await arrow.click();
 	await expect(dates).not.toHaveText(first!);
 });
+
+test('Claude suggests the week, and a day is swapped with one tap', async ({ page }) => {
+	// The other week than the one the first test writes in.
+	await open(page, '/');
+	await page.locator('m3e-icon-button[href]').click();
+	await expect(page.getByRole('button', { name: 'Middag måndag: tom' })).toBeVisible();
+
+	// When Claude fails, the week can be written by hand or asked for again.
+	await page.getByLabel('Något särskilt den här veckan?').fill('Krascha');
+	await page.locator('m3e-button', { hasText: 'Föreslå veckan' }).click();
+	await expect(page.getByRole('alert')).toHaveText(/Claude kunde inte föreslå något just nu/);
+	await expect(page.getByRole('button', { name: 'Middag måndag: tom' })).toBeVisible();
+
+	// A wish stays while a day is written by hand, and the day stays when Claude suggests.
+	await page.getByLabel('Något särskilt den här veckan?').fill('Något med pumpa');
+	await page.getByRole('button', { name: /^Middag tisdag/ }).click();
+	await page.getByRole('textbox', { name: 'Middag tisdag' }).fill('Ärtsoppa');
+	await page.keyboard.press('Enter');
+	await page.keyboard.press('Escape');
+	await expect(page.getByRole('button', { name: 'Middag tisdag: Ärtsoppa' })).toBeVisible();
+	await expect(page.getByLabel('Något särskilt den här veckan?')).toHaveValue('Något med pumpa');
+	await page.locator('m3e-button', { hasText: 'Föreslå veckan' }).click();
+	const monday = (dish: string) => page.getByRole('button', { name: `Middag måndag: ${dish}` });
+	await expect(monday('Blomkålssoppa')).toBeVisible();
+	await expect(page.getByRole('alert')).toHaveCount(0);
+	await expect(monday('Blomkålssoppa')).toContainText('Senast v. 36');
+	await expect(page.getByRole('button', { name: 'Middag söndag: Pannkakor' })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Lunch lördag: Varm korv' })).toBeVisible();
+
+	// A swap takes the next dish at once, and can be undone.
+	await page.locator('m3e-icon-button[aria-label="Byt Middag måndag"]').click();
+	await expect(monday('Pytt i panna')).toBeVisible();
+	const snackbar = page.locator('m3e-snackbar');
+	await expect(snackbar).toContainText('Blomkålssoppa byttes mot Pytt i panna');
+	await snackbar.getByRole('button', { name: 'Ångra' }).click();
+	await expect(monday('Blomkålssoppa')).toBeVisible();
+
+	// Past the alternatives, Claude is asked for new dishes for the day.
+	for (const dish of ['Pytt i panna', 'Korv stroganoff', 'Fiskpinnar']) {
+		await page.locator('m3e-icon-button[aria-label="Byt Middag måndag"]').click();
+		await expect(monday(dish)).toBeVisible();
+	}
+
+	// A new suggestion for the whole week keeps what was written by hand.
+	await page.locator('m3e-icon-button[aria-label="Nytt förslag på hela veckan"]').click();
+	await expect(monday('Blomkålssoppa')).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Middag tisdag: Ärtsoppa' })).toBeVisible();
+	await page.reload();
+	await expect(page.getByRole('button', { name: 'Middag tisdag: Ärtsoppa' })).toBeVisible();
+	await expect(monday('Blomkålssoppa')).toBeVisible();
+});

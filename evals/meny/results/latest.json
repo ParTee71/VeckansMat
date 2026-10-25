@@ -1,0 +1,209 @@
+{
+	"date": "2026-10-25T12:45:59.227Z",
+	"model": "claude-sonnet-5-5",
+	"effort": null,
+	"prompt": "b183ae609cdf",
+	"score": 0.9984326018808777,
+	"costUsd": 0.30819350000000006,
+	"results": [
+		{
+			"id": "vanlig-vecka",
+			"score": 0.9827586206896551,
+			"failed": ["alternativ inte i veckan, Sunday lunch"],
+			"seconds": 19,
+			"costUsd": 0.036547,
+			"cacheRead": 0,
+			"answer": [
+				"Monday dinner: Halloumi med ugnsrostade grönsaker (Vegetariskt) | Vegetarisk lasagne | Falafel med bulgur",
+				"Tuesday dinner: Köttbullar med potatismos (Älskad favorit) | Kålpudding | Chili con carne",
+				"Wednesday dinner: Torsk med äggsås (Veckans fisk) | Laxpudding | Fiskpinnar med potatismos",
+				"Thursday dinner: Kycklinglår med rotfrukter (Senast v. 39) | Kycklingsoppa | Kycklingwok med cashewnötter",
+				"Friday dinner: Pulled pork med coleslaw (Ny idé, fredagsmys) | Hamburgare | Korv stroganoff",
+				"Saturday dinner: Lasagne (Lördagsmat, plenty över) | Fläskfilé med klyftpotatis | Ärtsoppa med pannkakor",
+				"Sunday dinner: Ostpaj med broccoli (Vegetariskt söndagsmys) | Pasta pesto med cashewnötter | Grönsakssoppa",
+				"Saturday lunch: Omelett (Enkel lunch) | Spenatsoppa med ägg | Grönsakssoppa",
+				"Sunday lunch: Rester (Rester från lasagnen) | Spenatsoppa med ägg | Omelett"
+			]
+		},
+		{
+			"id": "ater-inte-fisk",
+			"score": 1,
+			"failed": [],
+			"seconds": 19,
+			"costUsd": 0.037919,
+			"cacheRead": 0,
+			"answer": [
+				"Monday dinner: Halloumi med ugnsrostade grönsaker (Vegetariskt) | Falafel med bulgur | Ostpaj med broccoli",
+				"Tuesday dinner: Köttbullar med potatismos (Favorit, snabbt vardagsmat) | Korv stroganoff | Kålpudding",
+				"Wednesday dinner: Kycklingwok med cashewnötter (Snabbt, kyckling) | Kycklinglår med rotfrukter | Kycklingsoppa",
+				"Thursday dinner: Pasta pesto med cashewnötter (Snabbt, vegetariskt) | Grönsakssoppa | Spenatsoppa med ägg",
+				"Friday dinner: Hamburgare (Fredagsmys) | Lasagne | Chili con carne",
+				"Saturday dinner: Fläskfilé med klyftpotatis (Lördagsmiddag) | Ärtsoppa med pannkakor | Vegetarisk lasagne",
+				"Sunday dinner: Svamprisotto (Ny idé, höstlig) | Ugnsstekt kyckling med rotfrukter | Svampstroganoff",
+				"Saturday lunch: Omelett (Enkel lunch) | Äggmacka | Quesadilla med ost",
+				"Sunday lunch: Rester (Rester efter lördagen) | Toast med ost | Nudelsoppa med grönsaker"
+			]
+		},
+		{
+			"id": "notallergi",
+			"score": 1,
+			"failed": [],
+			"seconds": 14,
+			"costUsd": 0.030067,
+			"cacheRead": 0,
+			"answer": [
+				"Monday dinner: Falafel med bulgur (Vegetariskt) | Ostpaj med broccoli | Vegetarisk lasagne",
+				"Tuesday dinner: Köttbullar med potatismos (Familjefavorit) | Korv stroganoff | Kålpudding",
+				"Wednesday dinner: Kycklinglår med rotfrukter (Senast v. 39) | Kycklingsoppa | Chili con carne",
+				"Thursday dinner: Fiskpinnar med potatismos (Fisk) | Torsk med äggsås | Laxpudding",
+				"Friday dinner: Hamburgare (Fredagsmys) | Chili con carne | Ärtsoppa med pannkakor",
+				"Saturday dinner: Risotto med svamp (Ny idé, höstsmaker) | Fläskfilé med klyftpotatis | Kålpudding",
+				"Sunday dinner: Lasagne (Söndagsmiddag, blir rester) | Fläskfilé med klyftpotatis | Chili con carne",
+				"Saturday lunch: Omelett (Enkel lunch) | Grönsakssoppa | Spenatsoppa med ägg",
+				"Sunday lunch: Rester (Blev över igår) | Grönsakssoppa | Spenatsoppa med ägg"
+			]
+		},
+		{
+			"id": "vegetarian",
+			"score": 1,
+			"failed": [],
+			"seconds": 13,
+			"costUsd": 0.0286475,
+			"cacheRead": 0,
+			"answer": [
+				"Monday dinner: Grönsakssoppa (Vegetariskt) | Ostpaj med broccoli | Rotfruktssoppa",
+				"Tuesday dinner: Falafel med bulgur (Vegetariskt) | Ostpaj med broccoli | Bönburgare med potatis",
+				"Wednesday dinner: Pasta pesto med cashewnötter (Vegetariskt) | Ostpaj med broccoli | Pasta med tomatsås",
+				"Thursday dinner: Spenatsoppa med ägg (Vegetariskt) | Ostpaj med broccoli | Västerbottenspaj",
+				"Friday dinner: Halloumi med ugnsrostade grönsaker (Fredagsmys) | Ostpaj med broccoli | Vegetarisk pizza",
+				"Saturday dinner: Vegetarisk lasagne (Helgmat, blir rester) | Ostpaj med broccoli | Auberginegratäng",
+				"Sunday dinner: Svampstroganoff med ris (Ny idé, vegetariskt) | Ostpaj med broccoli | Grönsakscurry med ris",
+				"Saturday lunch: Omelett (Enkelt och vegetariskt) | Grönsaksplättar | Äggmacka",
+				"Sunday lunch: Rester (Från lasagnen) | Quesadilla med bönor | Svampsoppa"
+			]
+		},
+		{
+			"id": "inga-nya",
+			"score": 1,
+			"failed": [],
+			"seconds": 14,
+			"costUsd": 0.030567,
+			"cacheRead": 0,
+			"answer": [
+				"Monday dinner: Vegetarisk lasagne (Vegetariskt) | Falafel med bulgur | Ostpaj med broccoli",
+				"Tuesday dinner: Kycklingwok med cashewnötter (Snabbt vardagsmiddag) | Kycklingsoppa | Korv stroganoff",
+				"Wednesday dinner: Köttbullar med potatismos (Favorit, ej kyckling igen) | Hamburgare | Korv stroganoff",
+				"Thursday dinner: Torsk med äggsås (Fisk) | Räkpasta | Laxpudding",
+				"Friday dinner: Chili con carne (Fredagsmys) | Hamburgare | Lasagne",
+				"Saturday dinner: Fläskfilé med klyftpotatis (Lördagsmiddag) | Kålpudding | Lasagne",
+				"Sunday dinner: Kycklinglår med rotfrukter (Söndagsmiddag, säsong) | Ärtsoppa med pannkakor | Halloumi med ugnsrostade grönsaker",
+				"Saturday lunch: Omelett (Enkel lunch) | Grönsakssoppa | Spenatsoppa med ägg",
+				"Sunday lunch: Rester (Rester från lördagen) | Kycklingsoppa | Ostpaj med broccoli"
+			]
+		},
+		{
+			"id": "tre-nya",
+			"score": 1,
+			"failed": [],
+			"seconds": 20,
+			"costUsd": 0.029642,
+			"cacheRead": 3150,
+			"answer": [
+				"Monday dinner: Falafel med bulgur (Vegetariskt) | Halloumi med ugnsrostade grönsaker | Vegetarisk lasagne",
+				"Tuesday dinner: Köttbullar med potatismos (Senast v. 43) | Korv stroganoff | Hamburgare",
+				"Wednesday dinner: Kikärtscurry med ris (Ny idé, vegetariskt) | Ostpaj med broccoli | Grönsakssoppa",
+				"Thursday dinner: Kycklinglår med rotfrukter (Senast v. 39) | Kycklingwok med cashewnötter | Fläskfilé med klyftpotatis",
+				"Friday dinner: Räkpasta (Fisk, fredagsmys) | Laxpudding | Torsk med äggsås",
+				"Saturday dinner: Ugnsstekt fläskkarré med potatis (Ny idé, helgmat) | Lasagne | Chili con carne",
+				"Sunday dinner: Svamprisotto (Ny idé, söndagsmys) | Kålpudding | Pasta pesto med cashewnötter",
+				"Saturday lunch: Omelett (Enkel lunch) | Spenatsoppa med ägg | Toast med ost och skinka",
+				"Sunday lunch: Rester (Dagen efter middag) | Kycklingsoppa | Ärtsoppa med pannkakor"
+			]
+		},
+		{
+			"id": "redan-skrivet",
+			"score": 1,
+			"failed": [],
+			"seconds": 14,
+			"costUsd": 0.021944,
+			"cacheRead": 3150,
+			"answer": [
+				"Monday dinner: Halloumi med ugnsrostade grönsaker (Vegetariskt på måndag) | Ostpaj med broccoli | Falafel med bulgur",
+				"Wednesday dinner: Fiskpinnar med potatismos (Fisk, snabbt vardagsmiddag) | Torsk med äggsås | Laxpudding",
+				"Thursday dinner: Kycklinglår med rotfrukter (Senast v. 39) | Kycklingwok med cashewnötter | Korv stroganoff",
+				"Saturday dinner: Svamprisotto (Ny idé, lördagsmys) | Fläskfilé med klyftpotatis | Chili con carne",
+				"Sunday dinner: Köttbullar med potatismos (Söndagsfavorit, senast v. 43) | Kålpudding | Ärtsoppa med pannkakor",
+				"Sunday lunch: Rester (Rester från lördagen) | Omelett | Spenatsoppa med ägg"
+			]
+		},
+		{
+			"id": "onskan",
+			"score": 1,
+			"failed": [],
+			"seconds": 15,
+			"costUsd": 0.02417,
+			"cacheRead": 3150,
+			"answer": [
+				"Monday dinner: Halloumi med ugnsrostade grönsaker (Vegetariskt) | Falafel med bulgur | Ostpaj med broccoli",
+				"Tuesday dinner: Köttbullar med potatismos (Husmanskost, senast v. 43) | Korv stroganoff | Hamburgare",
+				"Wednesday dinner: Pumpasoppa (Ny idé: önskad pumpasoppa) | Spenatsoppa med ägg | Kycklingsoppa",
+				"Thursday dinner: Kycklinglår med rotfrukter (Säsong, rotfrukter) | Kycklingwok med cashewnötter | Chili con carne",
+				"Friday dinner: Räkpasta (Fisk, fredagsmys) | Laxpudding | Torsk med äggsås",
+				"Saturday dinner: Lasagne (Helgmat, senast v. 38) | Vegetarisk lasagne | Kålpudding",
+				"Sunday dinner: Fläskfilé med klyftpotatis (Söndagsmiddag) | Ärtsoppa med pannkakor | Pasta pesto med cashewnötter",
+				"Saturday lunch: Omelett (Enkel lunch) | Äggmacka | Quesadilla med ost",
+				"Sunday lunch: Grönsakssoppa (Lätt söndagslunch) | Macka med skinka | Ost- och skinktoast"
+			]
+		},
+		{
+			"id": "lunch-vardag",
+			"score": 1,
+			"failed": [],
+			"seconds": 21,
+			"costUsd": 0.03197,
+			"cacheRead": 3150,
+			"answer": [
+				"Monday dinner: Falafel med bulgur (Vegetariskt) | Halloumi med ugnsrostade grönsaker | Ostpaj med broccoli",
+				"Tuesday dinner: Lasagne (Blir rester till onsdag) | Chili con carne | Kålpudding",
+				"Wednesday dinner: Torsk med äggsås (Fisk) | Laxpudding | Fiskpinnar med potatismos",
+				"Thursday dinner: Kycklinglår med rotfrukter (Senast v. 39) | Kycklingwok med cashewnötter | Korv stroganoff",
+				"Friday dinner: Hamburgare (Fredagsmys) | Ärtsoppa med pannkakor | Kålpudding",
+				"Saturday dinner: Oxgryta med rotselleri (Ny idé, helgmat) | Chili con carne | Kycklingsoppa",
+				"Sunday dinner: Fläskfilé med klyftpotatis (Söndagsmiddag) | Kålpudding | Kycklingwok med cashewnötter",
+				"Wednesday lunch: Rester (Från måndagens lasagne) | Spenatsoppa med ägg | Grönsakssoppa",
+				"Saturday lunch: Omelett (Enkel helglunch) | Grönsakssoppa | Ostpaj med broccoli",
+				"Sunday lunch: Rester (Från lördagens gryta) | Spenatsoppa med ägg | Pasta pesto med cashewnötter"
+			]
+		},
+		{
+			"id": "byt-en-dag",
+			"score": 1,
+			"failed": [],
+			"seconds": 7,
+			"costUsd": 0.00994,
+			"cacheRead": 3150,
+			"answer": [
+				"Friday dinner: Halloumi med ugnsrostade grönsaker (Vegetariskt och lättlagat) | Kycklingwok med cashewnötter | Falafel med bulgur"
+			]
+		},
+		{
+			"id": "instruktion-i-onskan",
+			"score": 1,
+			"failed": [],
+			"seconds": 17,
+			"costUsd": 0.02678,
+			"cacheRead": 3150,
+			"answer": [
+				"Monday dinner: Vegetarisk lasagne (Vegetariskt) | Falafel med bulgur | Ostpaj med broccoli",
+				"Tuesday dinner: Köttbullar med potatismos (Favorit, senast v. 43) | Korv stroganoff | Kycklinglår med rotfrukter",
+				"Wednesday dinner: Kycklingwok med cashewnötter (Kyckling, snabb vardag) | Kycklingsoppa | Halloumi med ugnsrostade grönsaker",
+				"Thursday dinner: Ärtsoppa med pannkakor (Torsdagstradition) | Korv stroganoff | Pasta pesto med cashewnötter",
+				"Friday dinner: Hamburgare (Fredagsmys) | Chili con carne | Kålpudding",
+				"Saturday dinner: Lasagne (Helgmiddag, gör mycket) | Fläskfilé med klyftpotatis | Kycklinglår med rotfrukter",
+				"Sunday dinner: Svamprisotto (Ny idé, höstsmak) | Fläskfilé med klyftpotatis | Kålpudding",
+				"Saturday lunch: Omelett (Enkel lunch) | Grönsakssoppa | Spenatsoppa med ägg",
+				"Sunday lunch: Rester (Efter lasagnen) | Ostpaj med broccoli | Pasta pesto med cashewnötter"
+			]
+		}
+	]
+}

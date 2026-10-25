@@ -22,5 +22,14 @@ export default defineConfig({
 	forbidOnly: !!process.env.CI,
 	reporter: process.env.CI ? 'github' : 'list',
 	// The household uses the app on Android phones, so that is the device tested.
-	projects: [{ name: 'mobile', use: { ...devices['Pixel 7'] } }]
+	// The month's cap for Claude is spent last, so that it stops no other test.
+	projects: [
+		{ name: 'mobile', use: { ...devices['Pixel 7'] }, testIgnore: '**/manadstak.svelte.e2e.ts' },
+		{
+			name: 'manadstak',
+			use: { ...devices['Pixel 7'] },
+			testMatch: '**/manadstak.svelte.e2e.ts',
+			dependencies: ['mobile']
+		}
+	]
 });

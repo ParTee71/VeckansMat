@@ -2,7 +2,7 @@
 // docs/beslut/0013-recept-in.md.
 import type Anthropic from '@anthropic-ai/sdk';
 import { MAX_PHOTOS } from '../photos';
-import { ClaudeLimitError } from './claude/claude';
+import { ClaudeLimitError, type Ask } from './claude/claude';
 import { RECIPE_PROMPT, RECIPE_SCHEMA } from './claude/recipe-prompt';
 import { RecipeReadError, type RecipeDraft } from './recipe-draft';
 
@@ -38,11 +38,6 @@ export interface RecipeSource {
 	text?: string;
 	sourceUrl?: string;
 }
-
-/** Sends a request without its model, which the caller chooses. */
-export type Ask = (
-	params: Omit<Anthropic.MessageCreateParamsNonStreaming, 'model'>
-) => Promise<Anthropic.Message>;
 
 function base64(bytes: Uint8Array): string {
 	let text = '';
