@@ -15,6 +15,7 @@ Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ä
 - Startsidan Veckan visar veckans middagar och helgluncher och fylls i som en lapp: tryck på en dag, skriv eller välj en rätt, och Enter går vidare till nästa dag. Rester, Äta ute och Hämtmat finns som snabbval, och lunch går att lägga till en vardag. Här väljs också vilka som äter. Från onsdag visas nästa vecka. (#31)
 - Claude föreslår veckan utifrån hushållets gamla veckor och rätter, vilka som äter och veckans önskemål. Varje dag kan bytas med ett tryck, och ett byte kan ångras. Det som skrivits för hand ligger kvar när hela veckan föreslås på nytt. (#32)
 - Ny flik Handla med veckans inköpslista: ingredienserna ur veckans rätter, rätt för rätt, och egna varor. Det man bockar av hamnar i korgen, kan ångras och syns på allas telefoner. (#36)
+- Claude gör inköpslistan: räknar om till veckans portioner, slår ihop samma vara från flera rätter och sorterar efter butikens avdelningar, med det som brukar finnas hemma sist. Rätter med bara namn får gissade ingredienser, som skrivs in i rätten och kan rättas. Ändras veckan erbjuder appen att uppdatera listan. (#37)
 
 ## 0.2.0
 

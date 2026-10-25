@@ -24,3 +24,11 @@ test('no week is suggested once the month has cost the cap', async ({ page }) =>
 		'Appen har föreslagit så mycket som månadens tak tillåter. Skriv in rätterna själv, eller vänta till nästa månad.'
 	);
 });
+
+test('the shopping list is the recipe lines once the month has cost the cap', async ({ page }) => {
+	await open(page, '/handla');
+	await page.locator('m3e-icon-button[aria-label="Gör om listan från veckan"]').click();
+	await expect(page.getByText('Appen har använt Claude så mycket som månadens tak')).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Fiskgratäng' })).toBeVisible();
+	await expect(page.getByRole('checkbox', { name: '600 g torskfilé' })).toBeVisible();
+});

@@ -5,6 +5,33 @@ skrivs vad som provats, varför, och hur det gick. Nyast överst. Hur
 styrningen är uppbyggd just nu står i
 [beslut 0008](beslut/0008-claude-code-uppsattning.md).
 
+## 2026-10-25 – Inköpslistan: appen räknar portionerna, Claude slår ihop
+
+**Vad:** Claude Haiku 5.5 gör veckans inköpslista och gissar ingredienser till rätter som bara
+har ett namn (#37). Prompten står i `src/lib/server/claude/shopping-prompt.ts` och mäts med
+evalen i `evals/handla/`.
+
+**Hur prompten byggdes:**
+
+- **Appen räknar, modellen omvandlar.** Hur många portioner varje rätt ska lagas till räknas i
+  koden (vilka som äter, matlåda, två gånger i veckan) och skickas färdigt. Claude räknar bara
+  om receptets rader till det antalet och slår ihop.
+- **Gissningen och listan i samma svar.** Claude gissar först, i ett eget fält, och gör sedan
+  listan av gissningen och receptens rader. Ett anrop i stället för två, och gissningen kan
+  sparas i rätten.
+- **Avdelningarna som en lista i schemat** (enum), i den ordning appen visar dem. Claude väljer
+  bara avdelning, och ordningen kan aldrig bli fel.
+
+**Evalen** (5 fall, regler): första körningen gav 97 % med både låg och medel effort. Det enda
+som föll var ett fall där en rätts namn innehöll en instruktion; Claude struntade i den, och
+skrev därför rättens namn utan den, så att regeln "något till varje rätt" inte hittade rätten.
+Fallet ändrades till en instruktion i en receptrad, och nästa körning gav 100 % med låg effort,
+för 0,3 cent för alla fem veckorna.
+
+**Lärdom:** Ett billigt och snabbt jobb ska prövas med den minsta modellen och lägsta effort
+först. Att räkna om mängder och sortera varor kräver inte Sonnet, och evalen visar det med
+siffror i stället för en känsla.
+
 ## 2026-10-25 – Veckoförslaget: vanorna i materialet, reglerna i prompten
 
 **Vad:** Claude Sonnet 5.5 föreslår veckan (#32). Prompten står i

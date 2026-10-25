@@ -47,8 +47,13 @@
 	{#if onlyName}
 		<section class="invite">
 			<p>
-				Rätten har bara ett namn. Lägg till ingredienser när du vill, så kommer de med på
-				inköpslistan.
+				{#if recipe.ingredientsGuessed}
+					Claude har gissat ingredienserna till inköpslistan. Hämta receptet eller skriv in det när
+					du vill.
+				{:else}
+					Rätten har bara ett namn. Lägg till ingredienser när du vill, så kommer de med på
+					inköpslistan.
+				{/if}
 			</p>
 			<div class="invite-actions">
 				<m3e-button variant="filled" href="/ratter/ny?till={recipe.id}">

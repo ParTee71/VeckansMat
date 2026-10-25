@@ -189,6 +189,7 @@ describe('adding a recipe', () => {
 			instructions: null,
 			sourceUrl: null,
 			ingredients: [],
+			ingredientsGuessed: false,
 			tags: [],
 			weeks: []
 		});
@@ -241,11 +242,11 @@ describe('a recipe', () => {
 	it('can be filled in, and filled in again', async () => {
 		const id = await addRecipe(db, 'fiskgratäng');
 		await updateRecipe(db, id, full);
-		expect(await getRecipe(db, id)).toEqual({ id, ...full, weeks: [] });
+		expect(await getRecipe(db, id)).toEqual({ id, ...full, ingredientsGuessed: false, weeks: [] });
 
 		const less = { ...full, ingredients: ['1 kg potatis'], tags: [], servings: null };
 		await updateRecipe(db, id, less);
-		expect(await getRecipe(db, id)).toEqual({ id, ...less, weeks: [] });
+		expect(await getRecipe(db, id)).toEqual({ id, ...less, ingredientsGuessed: false, weeks: [] });
 	});
 
 	it('cannot take the name of another recipe, and is then left as it was', async () => {
@@ -270,7 +271,7 @@ describe('a recipe', () => {
 
 	it('can be added whole', async () => {
 		const id = await createRecipe(db, { ...full, name: ' Fiskgratäng ' });
-		expect(await getRecipe(db, id)).toEqual({ id, ...full, weeks: [] });
+		expect(await getRecipe(db, id)).toEqual({ id, ...full, ingredientsGuessed: false, weeks: [] });
 	});
 
 	it('is not added whole under a name that is taken, and the other is left as it was', async () => {

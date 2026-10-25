@@ -46,6 +46,8 @@ export interface Recipe {
 	sourceUrl: string | null;
 	/** The ingredient lines as written. */
 	ingredients: string[];
+	/** Claude guessed the ingredients for a dish that had only a name. */
+	ingredientsGuessed: boolean;
 	tags: string[];
 	/** The weeks with the dish, newest first and undated last. */
 	weeks: RecipeWeek[];
@@ -56,7 +58,8 @@ export async function getRecipe(db: D1Database, id: number): Promise<Recipe | nu
 	const [recipe, ingredients, tags, weeks] = await db.batch([
 		db
 			.prepare(
-				`SELECT id, name, servings, time_minutes AS timeMinutes, instructions, source_url AS sourceUrl
+				`SELECT id, name, servings, time_minutes AS timeMinutes, instructions, source_url AS sourceUrl,
+				 ingredients_guessed AS ingredientsGuessed
 				 FROM recipe WHERE id = ?`
 			)
 			.bind(id),
@@ -71,10 +74,15 @@ export async function getRecipe(db: D1Database, id: number): Promise<Recipe | nu
 			)
 			.bind(id)
 	]);
-	const row = recipe.results[0] as Omit<Recipe, 'ingredients' | 'tags' | 'weeks'> | undefined;
+	const row = recipe.results[0] as
+		| (Omit<Recipe, 'ingredients' | 'ingredientsGuessed' | 'tags' | 'weeks'> & {
+				ingredientsGuessed: number;
+		  })
+		| undefined;
 	if (!row) return null;
 	return {
 		...row,
+		ingredientsGuessed: Boolean(row.ingredientsGuessed),
 		ingredients: (ingredients.results as { raw: string }[]).map((r) => r.raw),
 		tags: (tags.results as { tag: string }[]).map((r) => r.tag),
 		weeks: weeks.results as unknown as RecipeWeek[]
@@ -92,7 +100,35 @@ export async function addRecipe(db: D1Database, name: string): Promise<number> {
 	return (found.results[0] as { id: number }).id;
 }
 
-export type RecipeInput = Omit<Recipe, 'id' | 'weeks'>;
+/**
+ * Writes the ingredients Claude guessed into a dish that has only a name, marked as guessed. A
+ * dish given ingredients meanwhile keeps them.
+ */
+export function guessIngredientsStatements(
+	db: D1Database,
+	recipeId: number,
+	ingredients: string[]
+): D1PreparedStatement[] {
+	return [
+		db
+			.prepare(
+				`UPDATE recipe SET ingredients_guessed = 1
+				 WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM recipe_ingredient WHERE recipe_id = ?1)`
+			)
+			.bind(recipeId),
+		...ingredients.map((raw, position) =>
+			db
+				.prepare(
+					`INSERT INTO recipe_ingredient (recipe_id, position, raw)
+					 SELECT ?1, ?2, ?3 WHERE (SELECT ingredients_guessed FROM recipe WHERE id = ?1) = 1
+					 ON CONFLICT DO NOTHING`
+				)
+				.bind(recipeId, position, raw)
+		)
+	];
+}
+
+export type RecipeInput = Omit<Recipe, 'id' | 'weeks' | 'ingredientsGuessed'>;
 
 /** Thrown when a recipe is renamed to a name another recipe has. */
 export class NameTakenError extends Error {}
@@ -114,7 +150,7 @@ export async function updateRecipe(
 		db
 			.prepare(
 				`UPDATE recipe SET name = ?, name_key = ?, servings = ?, time_minutes = ?, instructions = ?,
-				 source_url = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+				 source_url = ?, ingredients_guessed = 0, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 				 WHERE id = ?`
 			)
 			.bind(
@@ -199,7 +235,7 @@ export async function createRecipe(db: D1Database, input: RecipeInput): Promise<
 export interface RecipeMatch {
 	id: number;
 	name: string;
-	/** True when the recipe has no ingredients or steps yet, so an import may fill it in. */
+	/** True when the recipe has no steps, and no ingredients but guessed ones, so an import may fill it in. */
 	onlyName: boolean;
 	timesEaten: number;
 }
@@ -209,8 +245,8 @@ export async function findRecipeByName(db: D1Database, name: string): Promise<Re
 	const row = await db
 		.prepare(
 			`SELECT r.id, r.name,
-			   r.instructions IS NULL AND NOT EXISTS
-			     (SELECT 1 FROM recipe_ingredient WHERE recipe_id = r.id) AS onlyName,
+			   r.instructions IS NULL AND (r.ingredients_guessed = 1 OR NOT EXISTS
+			     (SELECT 1 FROM recipe_ingredient WHERE recipe_id = r.id)) AS onlyName,
 			   (SELECT count(*) FROM menu_item WHERE recipe_id = r.id) AS timesEaten
 			 FROM recipe r WHERE r.name_key = ?`
 		)

@@ -68,11 +68,35 @@ function menu(text) {
 	};
 }
 
+/** A made-up list: one item per dish, and a guess for each dish with just a name. */
+function shopping(text) {
+	const dishes = [...text.matchAll(/^- (.+): cook \d+ portions\. (No|Lines)/gm)].map(
+		([, name, lines]) => ({ name, guess: lines === 'No' })
+	);
+	return {
+		guesses: dishes
+			.filter((dish) => dish.guess)
+			.map((dish) => ({ dish: dish.name, ingredients: ['2 gula lökar', '500 g potatis'] })),
+		items: [
+			...dishes.map((dish) => ({
+				text: `Till ${dish.name.toLowerCase()}`,
+				amount: '1 st',
+				section: 'Skafferi',
+				dishes: [dish.name]
+			})),
+			{ text: 'Gul lök', amount: '2 st', section: 'Frukt och grönt', dishes: [] },
+			{ text: 'Salt', amount: '', section: 'Finns kanske hemma', dishes: [] }
+		]
+	};
+}
+
 /** What the stand-in reads from a request: a recipe by what the text says, and its cost. */
 function claude(request) {
 	const content = request.messages[0].content;
 	const text = content.map((block) => block.text ?? '').join('\n');
-	if (request.output_config.format.schema.properties.rows) return [menu(text)];
+	const { properties } = request.output_config.format.schema;
+	if (properties.rows) return [menu(text)];
+	if (properties.items) return [shopping(text)];
 	// Only photos the phone made smaller, which are always JPEG.
 	if (content.some((block) => block.source?.media_type === 'image/jpeg')) {
 		return [answer('Saffransbullar', ['50 g jäst', '5 dl mjölk'], { servings: 30 })];

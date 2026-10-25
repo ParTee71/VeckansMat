@@ -20,26 +20,30 @@ test('the week shopping list is made from the dishes and ticked off in the store
 	).toBeVisible();
 
 	await open(page, '/handla');
+	await expect(page.getByText('1 rätt har bara namn')).toBeVisible();
 	await page.locator('m3e-button', { hasText: 'Gör inköpslistan' }).click();
 
-	await expect(page.getByRole('heading', { name: 'Fiskgratäng' })).toBeVisible();
-	const cod = page.getByRole('checkbox', { name: '600 g torskfilé' });
-	await expect(cod).toBeVisible();
-	await expect(page.getByText('Bara namn, inget att lista:')).toContainText(
-		'Pyttipanna i handlaprovet'
-	);
+	// Claude's list, under the store's sections in their order, with what is likely at home last.
+	await expect(page.getByRole('heading', { level: 2 })).toHaveText([
+		'Frukt och grönt',
+		'Skafferi',
+		'Finns kanske hemma'
+	]);
+	const onion = page.getByRole('checkbox', { name: 'Gul lök' });
+	await expect(onion).toBeVisible();
+	await expect(page.getByText('Pyttipanna i handlaprovet · gissat')).toBeVisible();
 
 	// Ticked off, it moves to the basket, and stays there after a reload.
-	await cod.click();
+	await onion.click();
 	await expect(page.getByRole('heading', { name: /^I korgen/ })).toBeVisible();
-	await expect(cod).toBeChecked();
+	await expect(onion).toBeChecked();
 	await page.reload();
-	await expect(page.getByRole('checkbox', { name: '600 g torskfilé' })).toBeChecked();
+	await expect(page.getByRole('checkbox', { name: 'Gul lök' })).toBeChecked();
 
 	// Undo takes it out of the basket again.
-	await page.getByRole('checkbox', { name: '2 dl grädde' }).click();
+	await page.getByRole('checkbox', { name: 'Salt' }).click();
 	await page.locator('m3e-snackbar').getByRole('button', { name: 'Ångra' }).click();
-	await expect(page.getByRole('checkbox', { name: '2 dl grädde' })).not.toBeChecked();
+	await expect(page.getByRole('checkbox', { name: 'Salt' })).not.toBeChecked();
 
 	// An item written by hand stays when the list is made again, and can be removed.
 	await page.getByRole('textbox', { name: 'Lägg till en vara' }).fill('Kaffe');
@@ -47,7 +51,35 @@ test('the week shopping list is made from the dishes and ticked off in the store
 	await expect(page.getByRole('checkbox', { name: 'Kaffe' })).toBeVisible();
 	await page.locator('m3e-icon-button[aria-label="Gör om listan från veckan"]').click();
 	await expect(page.getByRole('checkbox', { name: 'Kaffe' })).toBeVisible();
-	await expect(page.getByRole('checkbox', { name: '600 g torskfilé' })).toBeChecked();
+	await expect(page.getByRole('checkbox', { name: 'Gul lök' })).toBeChecked();
 	await page.locator('m3e-icon-button[aria-label="Ta bort Kaffe"]').click();
 	await expect(page.getByRole('checkbox', { name: 'Kaffe' })).toHaveCount(0);
+});
+
+test('the guessed ingredients are written into the dish', async ({ page }) => {
+	await open(page, '/ratter');
+	await page.getByRole('link', { name: /Pyttipanna i handlaprovet/ }).click();
+	await expect(page.getByText('Claude har gissat ingredienserna till inköpslistan.')).toBeVisible();
+	await expect(page.getByText('500 g potatis')).toBeVisible();
+});
+
+test('a list made before the week changed offers to be updated', async ({ page }) => {
+	await open(page, '/');
+	await page.getByRole('button', { name: /^Middag onsdag/ }).click();
+	await page.getByRole('textbox', { name: 'Middag onsdag' }).fill('Linsgryta i handlaprovet');
+	await page.keyboard.press('Enter');
+	await expect(
+		page.getByRole('button', { name: 'Middag onsdag: Linsgryta i handlaprovet' })
+	).toBeVisible();
+
+	await open(page, '/handla');
+	const changed = page.getByRole('heading', { name: 'Veckan har ändrats' });
+	await expect(changed).toBeVisible();
+	await page.locator('m3e-button', { hasText: 'Inte nu' }).click();
+	await expect(changed).toHaveCount(0);
+
+	await page.reload();
+	await page.locator('m3e-button', { hasText: 'Uppdatera listan' }).click();
+	await expect(changed).toHaveCount(0);
+	await expect(page.getByRole('checkbox', { name: 'Till linsgryta i handlaprovet' })).toBeVisible();
 });
