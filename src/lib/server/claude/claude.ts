@@ -134,20 +134,24 @@ export async function ask(
 	if (!((await spentThisMonth(db)) < limit)) throw new ClaudeLimitError();
 
 	const message = await claude.messages.create(params);
+	const { usage } = message;
+	const cacheWrite = usage.cache_creation_input_tokens ?? 0;
+	const cacheRead = usage.cache_read_input_tokens ?? 0;
 	try {
 		await db
 			.prepare(
-				'INSERT INTO claude_call (purpose, model, input_tokens, output_tokens, cost_usd) VALUES (?, ?, ?, ?, ?)'
+				`INSERT INTO claude_call (purpose, model, input_tokens, cache_write_tokens, cache_read_tokens,
+				 output_tokens, cost_usd) VALUES (?, ?, ?, ?, ?, ?, ?)`
 			)
 			.bind(
 				purpose,
 				params.model,
 				// Everything read, also from and into the cache, which the cost prices apart.
-				message.usage.input_tokens +
-					(message.usage.cache_creation_input_tokens ?? 0) +
-					(message.usage.cache_read_input_tokens ?? 0),
-				message.usage.output_tokens,
-				costUsd(params.model, message.usage)
+				usage.input_tokens + cacheWrite + cacheRead,
+				cacheWrite,
+				cacheRead,
+				usage.output_tokens,
+				costUsd(params.model, usage)
 			)
 			.run();
 	} catch (e) {

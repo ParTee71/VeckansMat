@@ -234,3 +234,19 @@ hooken något på riktigt? Saknas en skill som borde finnas?
   kontrollpunkt i granskningen före varje PR fångar det som glömts.
 - **Ett prov som håller den.** E2E-proven räknar sidans dataladdningar, så ett brott syns som
   ett rött test och inte först i telefonen.
+
+## 2026-10-25 – Mät cachningen innan den behålls eller tas bort
+
+**Vad:** Varje anrop till Claude loggar nu för sig hur mycket som skrevs till och lästes från
+cachen (`cache_write_tokens`, `cache_read_tokens` i `claude_call`). Menyprompten markerar
+rättsamlingen och gamla veckor som cachebara, men det är inte säkert att det lönar sig (#44).
+
+**Varför så:** Att skriva cachen kostar en fjärdedel extra, och den lönar sig bara om nästa
+anrop inom fem minuter börjar likadant. I stället för att gissa mäts det först. Beslutet tas när
+appen använts några veckor, utifrån till exempel:
+
+    SELECT purpose, count(*), sum(cache_write_tokens), sum(cache_read_tokens)
+    FROM claude_call WHERE created_at >= '2026-11-01' GROUP BY purpose;
+
+En läsning sparar 90 % av priset och en skrivning kostar 25 % extra. Läses mindre än ungefär
+28 % av det som skrivs kostar cachen alltså mer än den sparar, och då tas `cache_control` bort.
