@@ -157,6 +157,7 @@ describe('a link', () => {
 			'recept.exempel.se/gryta',
 			'ftp://recept.exempel.se/gryta',
 			'javascript:alert(1)',
+			'http://recept.exempel.se/gryta',
 			'http://localhost:4174/gryta',
 			'http://api.localhost/gryta',
 			'http://localhost./gryta',
