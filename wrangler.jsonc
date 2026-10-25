@@ -10,6 +10,9 @@
 	},
 	"workers_dev": true,
 	"preview_urls": false,
+	// Workers Logs keeps console.error from the app, such as why a call to Claude failed, so it can
+	// be read in the dashboard afterwards. Inherited by env.preview.
+	"observability": { "enabled": true },
 	// No database_id: wrangler finds the database by name, so the public repo
 	// carries no account identifiers. CI creates it if it is missing.
 	"d1_databases": [{ "binding": "DB", "database_name": "veckansmat" }],
