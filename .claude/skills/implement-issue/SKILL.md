@@ -84,6 +84,7 @@ inte hittar något ❌. Kör kontrollerna en sista gång.
   issuet, för GUI mockup-länk och skärmdumpar. `Closes #N`.
 - Prenumerera på PR:en direkt. Rött CI → agenten **`ci-doktor`**, fixa grundorsaken och pusha.
   Kör aldrig bara om.
+- Merga bara när all CI är grön, `Plan godkänd` inräknad.
 - Lärde du något om hur Claude bör styras, skriv en rad i `docs/ai-styrning.md`.
 
 ## Anti-mönster
