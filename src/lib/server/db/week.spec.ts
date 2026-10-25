@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { clearTestDb, createTestDb } from '../../../../test/d1';
 import { createPerson } from './household';
+import { addShoppingItem } from './shopping';
 import { getWeek, listMenus, saveMenu, setWeekEaters, setWeekRow } from './menus';
 import { addRecipe, findRecipeByName, getRecipe, updateRecipe } from './recipes';
 
@@ -116,6 +117,19 @@ describe('who eats a week', () => {
 
 		await setWeekEaters(db, WEEK, []);
 		expect((await getWeek(db, WEEK)).eaters).toEqual([]);
+	});
+
+	it('are taken once, when the week is made, and never again', async () => {
+		const kim = await createPerson(db, { name: 'Kim', requirements: '' });
+		const sam = await createPerson(db, { name: 'Sam', requirements: '' });
+		await setWeekEaters(db, '2030-02-25', [kim, sam]);
+		await addShoppingItem(db, WEEK, 'Kaffe');
+		expect((await getWeek(db, WEEK)).eaters.sort()).toEqual([kim, sam].sort());
+
+		await setWeekEaters(db, WEEK, [kim]);
+		await addShoppingItem(db, WEEK, 'Te');
+		await setWeekRow(db, WEEK, dinner(2, 'Pasta'), [sam]);
+		expect((await getWeek(db, WEEK)).eaters).toEqual([kim]);
 	});
 
 	it('skip people that have been removed', async () => {

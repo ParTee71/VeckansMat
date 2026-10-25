@@ -306,6 +306,20 @@ describe('suggesting a week', () => {
 		]);
 	});
 
+	it('keeps a day written by hand while Claude was thinking', async () => {
+		const ask = vi.fn<Ask>().mockImplementation(async (params) => {
+			await setWeekRow(db, WEEK, { weekday: 1, meal: 'dinner', text: 'Tacos' }, []);
+			return answering(fullWeek('Rätt'))(params);
+		});
+		await suggestWeek(db, WEEK, '', [], ask);
+		const rows = (await getWeek(db, WEEK)).rows;
+		expect(rows.find((r) => r.weekday === 1 && r.meal === 'dinner')).toMatchObject({
+			text: 'Tacos',
+			reason: null
+		});
+		expect(rows.find((r) => r.weekday === 2 && r.meal === 'dinner')?.text).toBe('Rätt 2');
+	});
+
 	it('leaves the week as it was when Claude fails', async () => {
 		await setWeekRow(db, WEEK, { weekday: 1, meal: 'dinner', text: 'Tacos' }, []);
 		const ask = vi.fn<Ask>().mockRejectedValue(new ClaudeLimitError());

@@ -209,30 +209,36 @@ export async function ensureMenu(
 	weekStart: string,
 	eaters?: number[]
 ): Promise<number> {
-	const created = await db
-		.prepare(
-			`INSERT INTO menu (week_start, source) VALUES (?, 'app')
-			 ON CONFLICT (week_start) WHERE week_start IS NOT NULL DO NOTHING RETURNING id`
-		)
-		.bind(weekStart)
-		.first<{ id: number }>();
-	if (!created) {
-		const row = await db
-			.prepare('SELECT id FROM menu WHERE week_start = ?')
-			.bind(weekStart)
-			.first<{ id: number }>();
-		return row!.id;
-	}
-	if (!eaters) {
-		await db
+	// One batch, so a new week never shows without its eaters. The eaters are written only when
+	// the week was made by the statement just before (changes() = 1).
+	const menu = '(SELECT id FROM menu WHERE week_start = ?1)';
+	const [, , found] = await db.batch<{ id: number }>([
+		db
 			.prepare(
-				`INSERT INTO menu_person (menu_id, person_id)
-				 SELECT ?, person_id FROM menu_person WHERE menu_id = (${LATEST_EATERS_BEFORE})`
+				`INSERT INTO menu (week_start, source) VALUES (?1, 'app')
+				 ON CONFLICT (week_start) WHERE week_start IS NOT NULL DO NOTHING`
 			)
-			.bind(created.id, weekStart)
-			.run();
-	} else if (eaters.length) await db.batch(eaterStatements(db, created.id, eaters));
-	return created.id;
+			.bind(weekStart),
+		eaters
+			? db
+					.prepare(
+						`INSERT INTO menu_person (menu_id, person_id)
+						 SELECT ${menu}, id FROM person
+						 WHERE changes() = 1 AND id IN (SELECT value FROM json_each(?2))
+						 ON CONFLICT DO NOTHING`
+					)
+					.bind(weekStart, JSON.stringify(eaters))
+			: db
+					.prepare(
+						`INSERT INTO menu_person (menu_id, person_id)
+						 SELECT ${menu}, person_id FROM menu_person
+						 WHERE changes() = 1 AND menu_id = (${LATEST_EATERS_BEFORE.replace('?', '?1')})
+						 ON CONFLICT DO NOTHING`
+					)
+					.bind(weekStart),
+		db.prepare(`SELECT id FROM menu WHERE week_start = ?1`).bind(weekStart)
+	]);
+	return found.results[0].id;
 }
 
 const eaterStatements = (db: D1Database, menuId: number, eaters: number[]) =>
@@ -309,7 +315,9 @@ function rowStatements(db: D1Database, menuId: number, row: RowInput): D1Prepare
 				   text = coalesce((SELECT name FROM recipe WHERE name_key = ?4), ?5),
 				   recipe_id = (SELECT id FROM recipe WHERE name_key = ?4),
 				   reason = ?6, alternatives = ?7, passed_on = ?8
-				 WHERE menu_id = ?1 AND weekday = ?2 AND meal = ?3`
+				 WHERE menu_id = ?1 AND weekday = ?2 AND meal = ?3
+				   -- Claude's line, which has a reason, never replaces one written by hand meanwhile.
+				   AND (?6 IS NULL OR reason IS NOT NULL)`
 			)
 			.bind(...args),
 		db
