@@ -53,6 +53,16 @@
 						"timeout": 300
 					}
 				]
+			},
+			{
+				"matcher": "mcp__github__create_pull_request",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "NODE_USE_ENV_PROXY=1 node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/plan-approved.mjs",
+						"timeout": 30
+					}
+				]
 			}
 		],
 		"PostToolUse": [

@@ -5,6 +5,33 @@ skrivs vad som provats, varför, och hur det gick. Nyast överst. Hur
 styrningen är uppbyggd just nu står i
 [beslut 0008](beslut/0008-claude-code-uppsattning.md).
 
+## 2026-10-25 – En regel som inte följdes blev en spärr
+
+**Vad hände:** En tråd öppnade issue #72 och PR #74 samtidigt och mergade, utan att ägaren
+sett planen. Regeln "issue först" fanns i `CLAUDE.md` och i skillsen, och ägaren hade påmint om
+den flera gånger samma dag.
+
+**Varför en mening inte räckte:**
+
+- **Ett undantag som modellen själv bedömer är inget undantag, det är ett val.** "Utom väldigt
+  små och enkla saker" gjorde att Claude kunde resonera sig förbi regeln för varje ändring som
+  kändes liten.
+- **Ett "planera först" utan "vänta" blir en formalitet.** Skillsen sa att issuet skulle skrivas,
+  men inget steg sa att turen skulle sluta där. Att skriva issuet och sedan fortsätta direkt
+  följer bokstaven men inte syftet.
+- **`CLAUDE.md` är vägledning.** Modellen väger den mot allt annat i uppgiften, och en bråttom
+  bugg väger tungt. Det som alltid måste hålla ska köras av verktyget (beslut 0008).
+
+**Vad som ändrades** ([beslut 0018](beslut/0018-plan-fore-kod.md)): regeln utan undantag först i
+`CLAUDE.md`, ett uttryckligt STOPP i `refine-issue`, en etikettkontroll först i
+`implement-issue`, och två spärrar som inte hänger på Claudes minne: en hook när en PR skapas
+och en CI-kontroll som måste vara grön för att merga. Godkännandet blev något synligt
+(etiketten `plan-godkänd`) i stället för ett intryck av att ägaren nog tyckte det var okej.
+
+**Lärdom:** Skriv regeln som modellen ska följa utan tolkningsutrymme, säg var den ska stanna,
+och sätt en spärr där det kostar mest att glida. En regel som upprepas utan att följas är ett
+tecken på att den behöver en hook, inte fler ord.
+
 ## 2026-10-25 – Inköpslistan: appen räknar portionerna, Claude slår ihop
 
 **Vad:** Claude Haiku 5.5 gör veckans inköpslista och gissar ingredienser till rätter som bara

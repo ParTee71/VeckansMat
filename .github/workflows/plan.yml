@@ -1,0 +1,27 @@
+name: Plan
+
+# Every PR must link an issue whose plan the owner has approved (label plan-godkänd),
+# see docs/beslut/0018-plan-fore-kod.md. The check reads the labels live, so
+# re-running it after the label is set is enough.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  plan:
+    name: Plan godkänd
+    # Dependabot updates have no issue to plan in.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .claude/hooks
+      - run: node .claude/hooks/plan-approved.mjs --ci
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

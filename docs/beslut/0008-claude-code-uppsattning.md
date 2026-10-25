@@ -1,6 +1,7 @@
 # 0008. Hur Claude Code styrs i repot
 
-- **Status:** Beslutat. Raderna om skills och agenter är ersatta av 0010.
+- **Status:** Beslutat. Raderna om skills och agenter är ersatta av 0010. Hur regeln om plan
+  före kod hålls står i 0018.
 - **Datum:** 2026-10-23
 
 ## Sammanhang

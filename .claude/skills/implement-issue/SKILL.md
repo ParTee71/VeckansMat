@@ -1,12 +1,25 @@
 ---
 name: implement-issue
-description: Genomför ett planerat GitHub-issue i VeckansMat till en öppen PR – föregående PR mergad, mockup för ny GUI, tester samtidigt som koden, /simplify, agenten granskare och /code-review i rundor, PR och bevakning. Använd när någon säger genomför, implementera, kör #N, fixa buggen, bygg funktionen, eller efter /refine-issue.
+description: Genomför ett planerat GitHub-issue i VeckansMat till en öppen PR – bara med godkänd plan (etiketten plan-godkänd), föregående PR mergad, mockup för ny GUI, tester samtidigt som koden, /simplify, agenten granskare och /code-review i rundor, PR och bevakning. Använd när någon säger genomför, implementera, kör #N, fixa buggen, bygg funktionen, eller efter /refine-issue.
 ---
 
 # Genomföra ett issue
 
-Driver ett issue från plan till PR. Saknas issue, eller är det inte förfinat (inget avsnitt
-**Agent · modell · effort**): kör `/refine-issue` först – utom för väldigt små saker.
+Driver ett issue från godkänd plan till PR. Inga undantag för små saker
+([beslut 0018](../../../docs/beslut/0018-plan-fore-kod.md)).
+
+## Före allt – Godkänd plan
+
+Hämta issuets etiketter (`issue_read`, `get_labels`) innan något annat.
+
+- **`plan-godkänd` finns** → fortsätt.
+- **Saknas, eller inget issue** → stanna. Kör `/refine-issue`, som slutar med att vänta på
+  ägarens ok. Ingen gren, ingen kod.
+- **Ägaren har uttryckligen sagt att en plan inte behövs** → skriv `Utan plan: <ägarens ord,
+tid>` i PR-texten. Bara ägaren kan ge det undantaget.
+
+Hooken `plan-approved.mjs` och CI-kontrollen **Plan godkänd** stoppar en PR som saknar
+godkänd plan. Gå aldrig runt dem.
 
 ## Steg 0 – Föregående PR
 
@@ -75,6 +88,8 @@ inte hittar något ❌. Kör kontrollerna en sista gång.
 
 ## Anti-mönster
 
+- Issue och PR samtidigt, eller kod innan ägaren godkänt planen.
+- Att själv bedöma att en ändring är för liten för en plan.
 - Nästa issue innan GitHub sagt att föregående PR är mergad.
 - Kod för ny GUI utan godkänd mockup.
 - Bugfix utan regressionstest.
