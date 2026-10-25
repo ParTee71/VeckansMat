@@ -16,6 +16,7 @@ Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ä
 - Claude föreslår veckan utifrån hushållets gamla veckor och rätter, vilka som äter och veckans önskemål. Varje dag kan bytas med ett tryck, och ett byte kan ångras. Det som skrivits för hand ligger kvar när hela veckan föreslås på nytt. (#32)
 - Ny flik Handla med veckans inköpslista: ingredienserna ur veckans rätter, rätt för rätt, och egna varor. Det man bockar av hamnar i korgen, kan ångras och syns på allas telefoner. (#36)
 - Claude gör inköpslistan: räknar om till veckans portioner, slår ihop samma vara från flera rätter och sorterar efter butikens avdelningar, med det som brukar finnas hemma sist. Rätter med bara namn får gissade ingredienser, som skrivs in i rätten och kan rättas. Ändras veckan erbjuder appen att uppdatera listan. (#37)
+- Det som ligger i korgen kommer inte tillbaka när listan görs om, även om varan heter något annat den gången eller listan görs utan Claude. (#42)
 - En dag som skrivs för hand medan Claude föreslår veckan står kvar, och ändras veckan medan listan görs erbjuder appen att uppdatera den. (#49)
 - En bock, en dag, vilka som äter, en egen vara, en ny rätt eller en regel sparas i bakgrunden utan att sidan laddas om, så inget på sidan hoppar. (#43)
 - Öppnas appen igen en ny dag visar den rätt vecka direkt, och det som pågår för en vecka syns inte på den andra. (#51)

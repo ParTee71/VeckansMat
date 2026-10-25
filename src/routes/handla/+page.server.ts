@@ -9,6 +9,7 @@ import {
 	setShoppingItemChecked
 } from '#lib/server/db/shopping.ts';
 import {
+	listChanged,
 	makeShoppingListWithClaude,
 	shoppingPlan,
 	ShoppingListError
@@ -30,14 +31,12 @@ export const load: PageServerLoad = async ({ url }) => {
 		thisWeek,
 		nextWeek,
 		items,
-		dishes: plan.dishes.map(({ id, name, ingredients, ingredientsGuessed }) => ({
+		dishes: plan.dishes.map(({ id, name, ingredients }) => ({
 			id,
 			name,
-			hasIngredients: ingredients.length > 0,
-			ingredientsGuessed
+			hasIngredients: ingredients.length > 0
 		})),
-		// The dishes, portions or lines have changed since the list was made.
-		changed: basis !== null && basis !== plan.basis && items.some((item) => item.origin !== 'hand'),
+		changed: listChanged(basis, plan.basis, items),
 		basis: plan.basis
 	};
 };

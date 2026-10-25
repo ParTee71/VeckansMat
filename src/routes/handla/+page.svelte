@@ -59,14 +59,9 @@
 			(item) => (item.origin === 'hand' ? BY_HAND : (item.section ?? ''))
 		)
 	);
-	let guessed = $derived(
-		new Set(data.dishes.filter((dish) => dish.ingredientsGuessed).map((dish) => dish.name))
-	);
-	// The dishes are stored as one text, and a name may have a comma of its own.
 	const dishesOf = (item: ShoppingItem) =>
-		[...guessed].some((dish) => `, ${item.dishes}, `.includes(`, ${dish}, `))
-			? `${item.dishes} · gissat`
-			: item.dishes;
+		item.dishes.map((dish) => dish.name).join(', ') +
+		(item.dishes.some((dish) => dish.guessed) ? ' · gissat' : '');
 
 	let onlyName = $derived(data.dishes.filter((dish) => !dish.hasIngredients));
 	let isEmpty = $derived(items.length === 0 && added.length === 0);
@@ -141,7 +136,7 @@
 			></m3e-checkbox>
 			<span class="text">
 				<span>{item.text}</span>
-				{#if item.dishes}
+				{#if item.origin === 'claude' && item.dishes.length}
 					<span class="meta">{dishesOf(item)}</span>
 				{/if}
 			</span>

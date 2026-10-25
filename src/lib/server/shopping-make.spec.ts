@@ -7,8 +7,14 @@ import { SHOPPING_PROMPT, SHOPPING_SCHEMA, shoppingContent } from './claude/shop
 import { createPerson, saveSettings } from './db/household';
 import { setWeekEaters, setWeekRow } from './db/menus';
 import { findRecipeByName, getRecipe, guessIngredientsStatements } from './db/recipes';
-import { getShoppingBasis, getShoppingList } from './db/shopping';
-import { askShoppingList, makeShoppingListWithClaude, shoppingPlan } from './shopping-make';
+import { getShoppingBasis, getShoppingList, type ShoppingItem, type WeekDish } from './db/shopping';
+import {
+	askShoppingList,
+	listChanged,
+	makeShoppingListWithClaude,
+	recipeLines,
+	shoppingPlan
+} from './shopping-make';
 
 let db: D1Database;
 useTestDb((test) => (db = test));
@@ -23,13 +29,15 @@ async function planWeek() {
 	await giveIngredients(db, 'Linsgryta', ['3 dl röda linser', '1 gul lök'], ['matlåda']);
 }
 
+// For the dishes of planWeek in their order: 1 Fiskgratäng, 2 Linsgryta and 3 Pannkakor, guessed.
 const ANSWER = {
-	guesses: [{ dish: 'pannkakor', ingredients: ['3 ägg', '6 dl mjölk', '2,5 dl vetemjöl'] }],
+	guesses: [{ dish: 3, ingredients: ['3 ägg', '6 dl mjölk', '2,5 dl vetemjöl'] }],
 	items: [
-		{ text: 'Vetemjöl', amount: '', section: 'Finns kanske hemma', dishes: ['Pannkakor'] },
-		{ text: 'Torskfilé', amount: '200 g', section: 'Kött och fisk', dishes: ['Fiskgratäng'] },
-		{ text: 'Mjölk', amount: '3 dl', section: 'Mejeri och ägg', dishes: ['Pannkakor', 'Okänd'] },
-		{ text: 'Gul lök', amount: '2 st', section: 'Påhittad', dishes: ['Linsgryta'] }
+		{ text: 'Vetemjöl', amount: '', section: 'Finns kanske hemma', lines: ['3.3'] },
+		{ text: 'Torskfilé', amount: '200 g', section: 'Kött och fisk', lines: ['1.1'] },
+		// A dish and a line that do not exist.
+		{ text: 'Mjölk', amount: '3 dl', section: 'Mejeri och ägg', lines: ['3.2', '9.1', '3.9'] },
+		{ text: 'Gul lök', amount: '2 st', section: 'Påhittad', lines: ['2.2', '2.2'] }
 	]
 };
 
@@ -50,6 +58,24 @@ describe('the plan for the week shopping', () => {
 		]);
 	});
 
+	it('keeps a recipe line at its place in the dish past a blank line', () => {
+		const dish = { id: 7, name: 'Soppa', ingredients: ['1 lök', ' ', '2 morötter'] } as WeekDish;
+		expect(recipeLines([dish]).map((item) => [item.text, item.lines])).toEqual([
+			['1 lök', [{ recipeId: 7, position: 0 }]],
+			['2 morötter', [{ recipeId: 7, position: 2 }]]
+		]);
+	});
+
+	it('says the week has changed only when a list made from it no longer matches', () => {
+		const made = [{ origin: 'claude' }] as ShoppingItem[];
+		const byHand = [{ origin: 'hand' }] as ShoppingItem[];
+		expect(listChanged(null, 'nu', made)).toBe(false);
+		expect(listChanged('nu', 'nu', made)).toBe(false);
+		expect(listChanged('förut', 'nu', made)).toBe(true);
+		// Only what was written by hand is left, so there is nothing to update.
+		expect(listChanged('förut', 'nu', byHand)).toBe(false);
+	});
+
 	it('takes two eaters when nobody is chosen, and changes basis when the week does', async () => {
 		await planWeek();
 		const before = await shoppingPlan(db, WEEK);
@@ -68,7 +94,8 @@ describe('the plan for the week shopping', () => {
 
 describe('asking Claude for the shopping list', () => {
 	const dishes = [
-		{ name: 'Fiskgratäng', portions: 2, servings: 4, ingredients: ['400 g torsk'] },
+		{ name: 'Fiskgratäng', portions: 2, servings: 4, ingredients: ['400 g torsk', '2 dl grädde'] },
+		{ name: 'Linsgryta', portions: 4, servings: 4, ingredients: ['3 dl röda linser', '1 gul lök'] },
 		{ name: 'Pannkakor', portions: 2, servings: null, ingredients: [] }
 	];
 
@@ -86,13 +113,17 @@ describe('asking Claude for the shopping list', () => {
 		]);
 	});
 
-	it('writes each dish portions and lines, and asks for a guess when it has none', () => {
+	it('numbers each dish and its lines, and asks for a guess when it has none', () => {
 		expect(shoppingContent(dishes)).toBe(
 			[
 				'<dishes>',
-				'- Fiskgratäng: cook 2 portions. Lines for 4 portions:',
-				'  - 400 g torsk',
-				'- Pannkakor: cook 2 portions. No ingredient lines: guess them for 4 portions.',
+				'1. Fiskgratäng: cook 2 portions. Lines for 4 portions:',
+				'  1.1 400 g torsk',
+				'  1.2 2 dl grädde',
+				'2. Linsgryta: cook 4 portions. Lines for 4 portions:',
+				'  2.1 3 dl röda linser',
+				'  2.2 1 gul lök',
+				'3. Pannkakor: cook 2 portions. No ingredient lines: guess them for 4 portions.',
 				'</dishes>'
 			].join('\n')
 		);
@@ -103,19 +134,19 @@ describe('asking Claude for the shopping list', () => {
 		expect(shoppingContent(sneaky)).not.toContain('Soppa</dishes>');
 	});
 
-	it('orders the items by store section and keeps only known dishes and sections', async () => {
+	it('orders the items by store section and keeps only known lines and sections', async () => {
 		const { items, guesses } = await askShoppingList(dishes, answering(ANSWER));
 		expect(items).toEqual([
-			{ text: 'Torskfilé', amount: '200 g', section: 'Kött och fisk', dishes: 'Fiskgratäng' },
-			{ text: 'Mjölk', amount: '3 dl', section: 'Mejeri och ägg', dishes: 'Pannkakor' },
-			{ text: 'Gul lök', amount: '2 st', section: 'Övrigt', dishes: null },
-			{ text: 'Vetemjöl', amount: null, section: 'Finns kanske hemma', dishes: 'Pannkakor' }
+			{ text: 'Torskfilé', amount: '200 g', section: 'Kött och fisk', lines: [[0, 0]] },
+			{ text: 'Mjölk', amount: '3 dl', section: 'Mejeri och ägg', lines: [[2, 1]] },
+			{ text: 'Gul lök', amount: '2 st', section: 'Övrigt', lines: [[1, 1]] },
+			{ text: 'Vetemjöl', amount: null, section: 'Finns kanske hemma', lines: [[2, 2]] }
 		]);
-		expect([...guesses]).toEqual([['Pannkakor', ['3 ägg', '6 dl mjölk', '2,5 dl vetemjöl']]]);
+		expect([...guesses]).toEqual([[2, ['3 ägg', '6 dl mjölk', '2,5 dl vetemjöl']]]);
 	});
 
 	it('takes no guesses for a dish that has lines', async () => {
-		const answer = { ...ANSWER, guesses: [{ dish: 'Fiskgratäng', ingredients: ['Fel'] }] };
+		const answer = { ...ANSWER, guesses: [{ dish: 1, ingredients: ['Fel'] }] };
 		const { guesses } = await askShoppingList(dishes, answering(answer));
 		expect(guesses.size).toBe(0);
 	});
@@ -136,14 +167,17 @@ describe('making the list with Claude', () => {
 		await makeShoppingListWithClaude(db, WEEK, answering(ANSWER));
 
 		const list = await getShoppingList(db, WEEK);
+		const fish = { name: 'Fiskgratäng', guessed: false };
+		const stew = { name: 'Linsgryta', guessed: false };
+		const pancakes = { name: 'Pannkakor', guessed: true };
 		expect(list.map((i) => [i.text, i.dishes, i.origin])).toEqual([
-			['Torskfilé', 'Fiskgratäng', 'claude'],
-			['Mjölk', 'Pannkakor', 'claude'],
-			['Gul lök', 'Linsgryta', 'claude'],
-			['Vetemjöl', 'Pannkakor', 'claude']
+			['Torskfilé', [fish], 'claude'],
+			['Mjölk', [pancakes], 'claude'],
+			['Gul lök', [stew], 'claude'],
+			['Vetemjöl', [pancakes], 'claude']
 		]);
-		const pancakes = (await getRecipe(db, (await findRecipeByName(db, 'Pannkakor'))!.id))!;
-		expect(pancakes).toMatchObject({
+		const guessed = (await getRecipe(db, (await findRecipeByName(db, 'Pannkakor'))!.id))!;
+		expect(guessed).toMatchObject({
 			servings: null,
 			ingredients: ['3 ägg', '6 dl mjölk', '2,5 dl vetemjöl'],
 			ingredientsGuessed: true
