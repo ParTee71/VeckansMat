@@ -3,6 +3,10 @@
 Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ändringen
 (se `.claude/skills/release/SKILL.md`).
 
+## 0.3.1
+
+- Ingredienser som Claude gissat står utan de konstiga numren framför, som "3.1". (#71)
+
 ## 0.3.0
 
 - Rätterna och de gamla veckorna syns i appen, med en meny längst ner för Veckan, Rätter och Veckor. (#21)
