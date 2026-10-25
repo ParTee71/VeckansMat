@@ -14,11 +14,11 @@
 	let settingsForm: HTMLFormElement;
 	let changed = '';
 
-	// Only the field that changed is sent, so two quick saves never undo each other. The rules
-	// field keeps what is being written while the page reloads its data.
+	// Only the field that changed is sent, so two quick saves never undo each other. The page
+	// keeps what is shown, without loading again, so nothing on it moves.
 	const sendChanged: SubmitFunction = ({ formData }) => {
 		for (const key of [...formData.keys()]) if (key !== changed) formData.delete(key);
-		return async ({ update }) => update({ reset: false });
+		return async ({ update }) => update({ reset: false, invalidateAll: false });
 	};
 
 	async function save(field: string) {

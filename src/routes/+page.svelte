@@ -7,13 +7,25 @@
 	import WeekHeader from '#lib/WeekHeader.svelte';
 	import { nameKey, plural } from '#lib/names.ts';
 	import { isDish, MEAL_LABELS, NOT_DISHES, timesText } from '#lib/recipes.ts';
-	import type { Meal, RowInput } from '#lib/server/db/menus.ts';
+	import type { Meal, RowInput, Week } from '#lib/server/db/menus.ts';
+	import type { RecipeSummary } from '#lib/server/db/recipes.ts';
 	import { WEEKDAY_NAMES, WEEKDAYS, isoWeek, weekDates } from '#lib/weeks.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
-	let week = $derived(data.week);
+	// What the latest change answered with, per week, which the page shows until it loads again.
+	// An answer to an older change than one already shown is left out.
+	let answered = $state<Record<string, { week: Week; recipes: RecipeSummary[]; change: number }>>(
+		{}
+	);
+	let changes = 0;
+	$effect.pre(() => {
+		void data;
+		answered = {};
+	});
+	let week = $derived(answered[data.week.weekStart]?.week ?? data.week);
+	let recipes = $derived(answered[data.week.weekStart]?.recipes ?? data.recipes);
 	let isNext = $derived(week.weekStart === data.nextWeek);
 
 	// Text just written shows at once, before the server has answered.
@@ -70,16 +82,22 @@
 	let key = $derived(nameKey(draft));
 	let matches = $derived(
 		key
-			? data.recipes
+			? recipes
 					.filter((r) => nameKey(r.name).includes(key))
 					.toSorted((a, b) => b.timesEaten - a.timesEaten || a.name.localeCompare(b.name, 'sv'))
 					.slice(0, 5)
 			: []
 	);
-	let isNew = $derived(key && isDish(draft) && !data.recipes.some((r) => nameKey(r.name) === key));
+	let isNew = $derived(key && isDish(draft) && !recipes.some((r) => nameKey(r.name) === key));
 
 	async function post(action: string, fields: Fields): Promise<ActionResult | null> {
+		const change = ++changes;
 		const result = await postAction(action, fields);
+		if (result?.type === 'success' && result.data?.week) {
+			const fresh = result.data as { week: Week; recipes: RecipeSummary[] };
+			const weekStart = fresh.week.weekStart;
+			if (change > (answered[weekStart]?.change ?? 0)) answered[weekStart] = { ...fresh, change };
+		}
 		// A failure stays on screen until the page is loaded again. What an action itself turns
 		// down is for its caller to show.
 		if (!result || result.type === 'error') failed = true;

@@ -10,6 +10,7 @@
 	import { timesText } from '#lib/recipes.ts';
 	import { shortWeekName } from '#lib/weeks.ts';
 	import type { M3eSnackbarElement } from '@m3e/web/snackbar';
+	import type { RecipeSummary } from '#lib/server/db/recipes.ts';
 	import type { PageProps, SubmitFunction } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -23,8 +24,16 @@
 
 	const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, 'sv');
 
+	// Dishes added here, shown at once without loading the page again.
+	let added = $state<RecipeSummary[]>([]);
+	$effect.pre(() => {
+		void data;
+		added = [];
+	});
+	let recipes = $derived([...data.recipes, ...added]);
+
 	let sorted = $derived(
-		data.recipes.toSorted(
+		recipes.toSorted(
 			order === 'name'
 				? byName
 				: (a, b) =>
@@ -35,7 +44,7 @@
 	);
 	let key = $derived(nameKey(query));
 	let shown = $derived(key ? sorted.filter((r) => nameKey(r.name).includes(key)) : sorted);
-	let exact = $derived(key ? data.recipes.find((r) => nameKey(r.name) === key) : undefined);
+	let exact = $derived(key ? recipes.find((r) => nameKey(r.name) === key) : undefined);
 	// A link is not a dish's name but a recipe to read.
 	let link = $derived(!!recipeUrl(query, true));
 
@@ -54,8 +63,12 @@
 			return;
 		}
 		return async ({ result, update }) => {
-			await update();
-			if (result.type === 'success') query = '';
+			await update({ invalidateAll: false });
+			if (result.type === 'success' && result.data?.added) {
+				const { id, name } = result.data.added as { id: number; name: string };
+				added.push({ id, name, timesEaten: 0, lastWeek: null });
+				query = '';
+			}
 		};
 	};
 
@@ -117,13 +130,13 @@
 					>
 				{/each}
 			</m3e-button-group>
-			<span>{data.recipes.length} rätter</span>
+			<span>{recipes.length} rätter</span>
 		</div>
 	{:else if shown.length > 0 && !exact && !link}
 		<h2>Liknande rätter</h2>
 	{/if}
 
-	{#if data.recipes.length === 0}
+	{#if recipes.length === 0}
 		<p class="empty">Inga rätter än. Skriv namnet på en rätt ovan och lägg till den.</p>
 	{:else if shown.length > 0}
 		<m3e-list variant="segmented">

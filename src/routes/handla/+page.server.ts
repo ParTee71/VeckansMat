@@ -60,15 +60,21 @@ export const actions: Actions = {
 			throw e;
 		}
 	},
+	// A change answers with the list, so the page shows it without loading again.
 	add: async ({ request }) => {
 		const form = await request.formData();
-		await addShoppingItem(env.DB, weekOf(form), String(form.get('text') ?? '').slice(0, 200));
+		const weekStart = weekOf(form);
+		await addShoppingItem(env.DB, weekStart, String(form.get('text') ?? '').slice(0, 200));
+		return { items: await getShoppingList(env.DB, weekStart) };
 	},
 	check: async ({ request }) => {
 		const form = await request.formData();
 		await setShoppingItemChecked(env.DB, idOf(form), form.get('checked') === 'true');
+		return { items: await getShoppingList(env.DB, weekOf(form)) };
 	},
 	remove: async ({ request }) => {
-		await deleteShoppingItem(env.DB, idOf(await request.formData()));
+		const form = await request.formData();
+		await deleteShoppingItem(env.DB, idOf(form));
+		return { items: await getShoppingList(env.DB, weekOf(form)) };
 	}
 };
