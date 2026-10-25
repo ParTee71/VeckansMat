@@ -64,3 +64,18 @@ test('the nav bar leads between the main views', async ({ page }) => {
 	await page.locator('m3e-nav-item', { hasText: 'Veckor' }).click();
 	await expect(page).toHaveURL('/veckor');
 });
+
+test('the nav bar is tapped, not the dish behind it', async ({ page }) => {
+	// A short screen puts the dishes behind the nav bar, as a long list does on the phone.
+	await page.setViewportSize({ width: 412, height: 360 });
+	for (const [label, path] of [
+		['Veckan', '/'],
+		['Handla', '/handla'],
+		['Veckor', '/veckor']
+	]) {
+		await open(page, '/ratter');
+		const box = await page.locator('m3e-nav-item', { hasText: label }).boundingBox();
+		await page.touchscreen.tap(box!.x + box!.width / 2, box!.y + box!.height / 2);
+		await expect(page).toHaveURL(path);
+	}
+});
