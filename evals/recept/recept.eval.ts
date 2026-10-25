@@ -2,7 +2,7 @@
 // compares them with the last saved run. See evals/recept/README.md.
 import Anthropic from '@anthropic-ai/sdk';
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { afterAll, beforeAll, it } from 'vitest';
 import { nameKey } from '../../src/lib/names';
 import { costUsd } from '../../src/lib/server/claude/claude';
@@ -114,6 +114,7 @@ afterAll(() => {
 	console.log(
 		`Totalt ${percent(score)} (förut ${percent(previous?.score)}), ${MODEL}, $${cost.toFixed(4)}`
 	);
+	mkdirSync(new URL('.', RESULTS), { recursive: true });
 	writeFileSync(
 		RESULTS,
 		JSON.stringify(
