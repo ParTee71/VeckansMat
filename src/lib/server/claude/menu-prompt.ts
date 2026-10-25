@@ -116,9 +116,12 @@ export function menuContent(request: MenuRequest): [string, string] {
 			`- ${stripTags(person.name)}: ${stripTags(person.requirements).replace(/\n+/g, '; ') || 'no requirements'}`
 	);
 	const planned = request.planned.map((row) => `- ${slotName(row)}: ${stripTags(row.text)}`);
+	// Never more new dishes than there are dinners to fill.
+	const dinners = request.slots.filter((slot) => slot.meal === 'dinner').length;
+	const newDishes = Math.min(request.newDishes, dinners);
 	const ask = request.passedOn
 		? `Suggest ${request.slots.map(slotName).join(', ')} again. The household passed on: ${request.passedOn.map(stripTags).join(', ')}. The dish and both alternatives come from the collection and are none of those.`
-		: `Plan these, in this order: ${request.slots.map(slotName).join(', ')}.\nNew dishes among the dinners: exactly ${request.newDishes}.`;
+		: `Plan these, in this order: ${request.slots.map(slotName).join(', ')}.\nNew dishes among the dinners: exactly ${newDishes}.`;
 	const plan = [
 		`<week>${shortWeekName(request.weekStart)}, ${weekDates(request.weekStart)}</week>`,
 		`<eaters>\n${eaters.join('\n') || '(nobody chosen)'}\n</eaters>`,
