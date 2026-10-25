@@ -1,7 +1,7 @@
 // Claude suggests a week's dinners and lunches, and new dishes for a day the household swaps.
 // See docs/beslut/0014-veckoforslag.md.
 import type Anthropic from '@anthropic-ai/sdk';
-import { nameKey } from '../names';
+import { cleanText, nameKey } from '../names';
 import { ClaudeLimitError, type Ask } from './claude/claude';
 import {
 	MENU_PROMPT,
@@ -40,7 +40,7 @@ export type SuggestedRow = Slot & Choice & { alternatives: Choice[] };
 const sameSlot = (a: Slot, b: Slot) => a.weekday === b.weekday && a.meal === b.meal;
 
 const text = (value: unknown, max: number) =>
-	typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').slice(0, max) : '';
+	typeof value === 'string' ? cleanText(value).slice(0, max) : '';
 
 /** Asks Claude, and keeps each day it answered right even when another is not. */
 export async function suggestMenu(request: MenuRequest, ask: Ask): Promise<SuggestedRow[]> {

@@ -11,16 +11,13 @@ import {
 } from '#lib/server/db/menus.ts';
 import { MenuSuggestError, suggestWeek, swapRow } from '#lib/server/menu-suggest.ts';
 import { listRecipes } from '#lib/server/db/recipes.ts';
-import { addWeeks, isWeekStart, mondayOf, swedishToday, weekToPlan } from '#lib/weeks.ts';
+import { weekOf } from '#lib/server/forms.ts';
+import { shownWeek } from '#lib/weeks.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 // The weeks Veckan shows: this week and the next. Older weeks are under Veckor.
 export const load: PageServerLoad = async ({ url }) => {
-	const today = swedishToday();
-	const thisWeek = mondayOf(today);
-	const nextWeek = addWeeks(thisWeek, 1);
-	const asked = url.searchParams.get('vecka');
-	const weekStart = asked === thisWeek || asked === nextWeek ? asked : weekToPlan(today);
+	const { weekStart, thisWeek, nextWeek } = shownWeek(url.searchParams.get('vecka'));
 	const [week, people, settings, recipes] = await Promise.all([
 		getWeek(env.DB, weekStart),
 		listPeople(env.DB),
@@ -29,12 +26,6 @@ export const load: PageServerLoad = async ({ url }) => {
 	]);
 	return { week, people, settings, recipes, thisWeek, nextWeek };
 };
-
-function weekOf(form: FormData): string {
-	const weekStart = String(form.get('weekStart') ?? '');
-	if (!isWeekStart(weekStart)) error(400, 'Okänd vecka');
-	return weekStart;
-}
 
 const eatersOf = (form: FormData) =>
 	form

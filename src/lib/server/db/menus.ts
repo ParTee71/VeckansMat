@@ -1,4 +1,4 @@
-import { nameKey } from '../../names';
+import { cleanText, nameKey } from '../../names';
 import { isDish, LUNCHBOX_TAG } from '../../recipes';
 import { addWeeks } from '../../weeks';
 import { upsertRecipeStatement, type RecipeSummary } from './recipes';
@@ -150,6 +150,11 @@ export interface Week {
 	wish: string | null;
 }
 
+/** The latest week before a week with eaters chosen, who eat a new week until others are chosen. */
+const LATEST_EATERS_BEFORE = `SELECT m.id FROM menu m
+	WHERE m.week_start < ? AND EXISTS (SELECT 1 FROM menu_person p WHERE p.menu_id = m.id)
+	ORDER BY m.week_start DESC LIMIT 1`;
+
 type WeekRowRow = Omit<WeekRow, 'lunchbox' | 'alternatives' | 'passedOn'> & {
 	lunchbox: number;
 	alternatives: string | null;
@@ -176,12 +181,7 @@ export async function getWeek(db: D1Database, weekStart: string): Promise<Week> 
 			)
 			.bind(weekStart),
 		db
-			.prepare(
-				`SELECT person_id AS id FROM menu_person WHERE menu_id = (
-				   SELECT m.id FROM menu m
-				   WHERE m.week_start < ? AND EXISTS (SELECT 1 FROM menu_person p WHERE p.menu_id = m.id)
-				   ORDER BY m.week_start DESC LIMIT 1)`
-			)
+			.prepare(`SELECT person_id AS id FROM menu_person WHERE menu_id = (${LATEST_EATERS_BEFORE})`)
 			.bind(weekStart)
 	]);
 	const saved = menu.results.length > 0;
@@ -202,9 +202,13 @@ export async function getWeek(db: D1Database, weekStart: string): Promise<Week> 
 
 /**
  * The week's menu, made when the week is first written in. A new week takes the eaters it was
- * shown with.
+ * shown with, or when they are not given, those who ate the latest week before.
  */
-async function ensureMenu(db: D1Database, weekStart: string, eaters: number[]): Promise<number> {
+export async function ensureMenu(
+	db: D1Database,
+	weekStart: string,
+	eaters?: number[]
+): Promise<number> {
 	const created = await db
 		.prepare(
 			`INSERT INTO menu (week_start, source) VALUES (?, 'app')
@@ -219,7 +223,15 @@ async function ensureMenu(db: D1Database, weekStart: string, eaters: number[]): 
 			.first<{ id: number }>();
 		return row!.id;
 	}
-	if (eaters.length) await db.batch(eaterStatements(db, created.id, eaters));
+	if (!eaters) {
+		await db
+			.prepare(
+				`INSERT INTO menu_person (menu_id, person_id)
+				 SELECT ?, person_id FROM menu_person WHERE menu_id = (${LATEST_EATERS_BEFORE})`
+			)
+			.bind(created.id, weekStart)
+			.run();
+	} else if (eaters.length) await db.batch(eaterStatements(db, created.id, eaters));
 	return created.id;
 }
 
@@ -267,7 +279,7 @@ export async function setWeekRows(
 }
 
 function rowStatements(db: D1Database, menuId: number, row: RowInput): D1PreparedStatement[] {
-	const text = row.text.trim().replace(/\s+/g, ' ');
+	const text = cleanText(row.text);
 	if (!text) {
 		return [
 			db

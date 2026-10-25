@@ -39,6 +39,9 @@ alltid, sällan veckodagar och ibland rader som inte är rätter ("Rester",
 - En migrering måste fungera med koden som redan kör, eftersom den körs före
   driftsättningen.
 - Personer, krav och menyregler får egna tabeller när de behövs.
+- Inköpslistan (`shopping_item`) hör till en vecka i `menu`, så att alla i hushållet ser samma
+  lista och samma bockar. En vara minns om den kom ur ett recept, från Claude eller skrevs för
+  hand, så att listan kan göras om utan att det skrivna eller det i korgen försvinner.
 - Enhetstester kör mot en riktig lokal D1 i minnet (`test/d1.ts`), med samma
   migreringar som drift.
 - Förhandsadressen behöver Cloudflare Access precis som drift.

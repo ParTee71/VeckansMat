@@ -12,9 +12,10 @@
 
 	let { children }: LayoutProps = $props();
 
-	// The three main views have the nav bar; a dish and its form have a back button instead.
+	// The main views have the nav bar; a dish and its form have a back button instead.
 	const destinations = [
 		{ href: '/', label: 'Veckan', icon: 'week' },
+		{ href: '/handla', label: 'Handla', icon: 'shop' },
 		{ href: '/ratter', label: 'Rätter', icon: 'dishes' },
 		{ href: '/veckor', label: 'Veckor', icon: 'history' }
 	] as const;

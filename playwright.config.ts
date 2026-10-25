@@ -22,14 +22,25 @@ export default defineConfig({
 	forbidOnly: !!process.env.CI,
 	reporter: process.env.CI ? 'github' : 'list',
 	// The household uses the app on Android phones, so that is the device tested.
-	// The month's cap for Claude is spent last, so that it stops no other test.
+	// Handla writes the same weeks as Veckan, so it runs after. The month's cap for Claude is spent
+	// last, so that it stops no other test.
 	projects: [
-		{ name: 'mobile', use: { ...devices['Pixel 7'] }, testIgnore: '**/manadstak.svelte.e2e.ts' },
+		{
+			name: 'mobile',
+			use: { ...devices['Pixel 7'] },
+			testIgnore: ['**/manadstak.svelte.e2e.ts', '**/handla.svelte.e2e.ts']
+		},
+		{
+			name: 'handla',
+			use: { ...devices['Pixel 7'] },
+			testMatch: '**/handla.svelte.e2e.ts',
+			dependencies: ['mobile']
+		},
 		{
 			name: 'manadstak',
 			use: { ...devices['Pixel 7'] },
 			testMatch: '**/manadstak.svelte.e2e.ts',
-			dependencies: ['mobile']
+			dependencies: ['handla']
 		}
 	]
 });
