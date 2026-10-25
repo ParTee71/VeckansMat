@@ -59,6 +59,65 @@ function client(): Anthropic {
 	});
 }
 
+const MODELS = {
+	recipe: 'RECIPE_MODEL',
+	menu: 'MENU_MODEL',
+	shopping: 'SHOPPING_MODEL'
+} as const satisfies Record<Purpose, keyof Env>;
+
+/**
+ * Asks with the model the app is set to use for the purpose. The app's env is read at each call,
+ * since a route builds its Ask when it loads, before env is there.
+ */
+export const askFor =
+	(purpose: Purpose, db?: D1Database, claude?: Anthropic): Ask =>
+	(params) =>
+		ask(db ?? env.DB, purpose, { ...params, model: env[MODELS[purpose]] }, claude);
+
+/** Untyped like JSON.parse's, so the caller checks each field it reads; a named list is a list. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type JsonAnswer<List extends string> = Record<string, any> & Record<List, any[]>;
+
+/**
+ * Asks for an answer in a JSON schema and gives it parsed, with a list under `list` when one is
+ * named. A spent cap is thrown as `fail('limit')`, and any other failure, an answer cut short or
+ * refused too, is logged and thrown as `fail('failed')`. What else the answer holds is for the
+ * caller to check.
+ */
+export async function askJson<List extends string = never>(
+	send: Ask,
+	params: Parameters<Ask>[0],
+	fail: (reason: 'failed' | 'limit') => Error,
+	what: string,
+	list?: List
+): Promise<JsonAnswer<List>> {
+	let message: Anthropic.Message;
+	try {
+		message = await send(params);
+	} catch (e) {
+		if (e instanceof ClaudeLimitError) throw fail('limit');
+		console.error(`Claude could not answer: ${what}`, e);
+		throw fail('failed');
+	}
+	const text = message.content.find((block) => block.type === 'text')?.text;
+	let answer: unknown;
+	try {
+		answer = text === undefined ? null : JSON.parse(text);
+	} catch {
+		// Cut short or refused; the answer is not the schema's.
+	}
+	if (
+		typeof answer !== 'object' ||
+		answer === null ||
+		Array.isArray(answer) ||
+		(list !== undefined && !Array.isArray((answer as Record<string, unknown>)[list]))
+	) {
+		console.error(`Claude gave no answer: ${what}`, message.stop_reason);
+		throw fail('failed');
+	}
+	return answer as JsonAnswer<List>;
+}
+
 /**
  * Sends one request and logs what it cost. Two calls at the same moment may both pass the cap
  * check, and a call that times out may still be billed without being logged, so a month can

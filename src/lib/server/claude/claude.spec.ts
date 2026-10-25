@@ -2,7 +2,15 @@ import type Anthropic from '@anthropic-ai/sdk';
 import { env } from 'cloudflare:workers';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearTestDb, createTestDb } from '../../../../test/d1';
-import { ask, ClaudeLimitError, costUsd, spentThisMonth } from './claude';
+import {
+	ask,
+	askFor,
+	askJson,
+	ClaudeLimitError,
+	costUsd,
+	spentThisMonth,
+	type Ask
+} from './claude';
 
 let db: D1Database;
 let dispose: () => Promise<void>;
@@ -116,5 +124,63 @@ describe('the cost', () => {
 		expect(costUsd('claude-okand', usage(1e6, 0))).toBeGreaterThan(
 			costUsd('claude-sonnet-5-5', usage(1e6, 0))
 		);
+	});
+});
+
+describe('a call for a purpose', () => {
+	it('uses the model the app is set to for it', async () => {
+		env.MENU_MODEL = 'claude-sonnet-5-5';
+		env.SHOPPING_MODEL = 'claude-haiku-5-5';
+		const { client, create } = fakeClaude();
+		const unmodelled = { max_tokens: 100, messages: params.messages };
+		await askFor('menu', db, client)(unmodelled);
+		await askFor('shopping', db, client)(unmodelled);
+		expect(create.mock.calls.map(([sent]) => sent.model)).toEqual([
+			'claude-sonnet-5-5',
+			'claude-haiku-5-5'
+		]);
+		expect((await logged()).map((row) => [row.purpose, row.model])).toEqual([
+			['menu', 'claude-sonnet-5-5'],
+			['shopping', 'claude-haiku-5-5']
+		]);
+	});
+});
+
+describe('an answer in JSON', () => {
+	class Failed extends Error {
+		constructor(readonly reason: string) {
+			super(reason);
+		}
+	}
+	const answering = (text: string) =>
+		vi.fn<Ask>().mockResolvedValue({
+			content: [{ type: 'text', text }],
+			stop_reason: 'end_turn',
+			usage: usage(1, 1)
+		} as unknown as Anthropic.Message);
+	const reason = (send: Ask, list?: string) =>
+		askJson(send, { max_tokens: 1, messages: [] }, (r) => new Failed(r), 'test', list).then(
+			() => 'ok',
+			(e: Failed) => e.reason
+		);
+
+	it('is given parsed', async () => {
+		const answer = await askJson(
+			answering('{"rows":[1]}'),
+			{ max_tokens: 1, messages: [] },
+			(r) => new Failed(r),
+			'test',
+			'rows'
+		);
+		expect(answer).toEqual({ rows: [1] });
+	});
+
+	it('fails when it is not an object, or lacks the list asked for', async () => {
+		vi.spyOn(console, 'error').mockImplementation(() => {});
+		expect(await reason(answering('[{"rows":[]}]'))).toBe('failed');
+		expect(await reason(answering('{"rows":'))).toBe('failed');
+		expect(await reason(answering('{"rows":{}}'), 'rows')).toBe('failed');
+		expect(await reason(vi.fn<Ask>().mockRejectedValue(new ClaudeLimitError()))).toBe('limit');
+		expect(await reason(vi.fn<Ask>().mockRejectedValue(new Error('down')))).toBe('failed');
 	});
 });

@@ -5,8 +5,8 @@
 	import { resolve } from '$app/paths';
 	import Icon from '#lib/Icon.svelte';
 	import WeekHeader from '#lib/WeekHeader.svelte';
-	import { nameKey } from '#lib/names.ts';
-	import { isDish, NOT_DISHES, timesText } from '#lib/recipes.ts';
+	import { nameKey, plural } from '#lib/names.ts';
+	import { isDish, MEAL_LABELS, NOT_DISHES, timesText } from '#lib/recipes.ts';
 	import type { Meal, RowInput } from '#lib/server/db/menus.ts';
 	import { WEEKDAY_NAMES, WEEKDAYS, isoWeek, weekDates } from '#lib/weeks.ts';
 	import type { PageProps } from './$types';
@@ -181,7 +181,7 @@
 		edit(weekday, 'lunch');
 	}
 
-	const extraText = (n: number) => `Matlåda · ${n} ${n === 1 ? 'portion' : 'portioner'} extra`;
+	const extraText = (n: number) => `Matlåda · ${plural(n, 'portion', 'portioner')} extra`;
 	// Why Claude chose the dish, and how much extra to cook of a lunch-box dish.
 	const metaText = (row: { reason: string | null; lunchbox: boolean }) =>
 		[row.reason, row.lunchbox && extraText(extra)].filter(Boolean).join(' · ');
@@ -195,7 +195,7 @@
 {#snippet row(weekday: number, meal: Meal)}
 	{@const text = textOf(weekday, meal)}
 	{@const label = WEEKDAYS[weekday - 1]}
-	{@const name = `${meal === 'dinner' ? 'Middag' : 'Lunch'} ${WEEKDAY_NAMES[weekday - 1]}`}
+	{@const name = `${MEAL_LABELS[meal]} ${WEEKDAY_NAMES[weekday - 1]}`}
 	{#if editing === keyOf(weekday, meal)}
 		<li class="row editing">
 			<div class="line">

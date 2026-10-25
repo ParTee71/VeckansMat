@@ -1,8 +1,7 @@
 // Claude suggests a week's dinners and lunches, and new dishes for a day the household swaps.
 // See docs/beslut/0014-veckoforslag.md.
-import type Anthropic from '@anthropic-ai/sdk';
 import { answerText, nameKey } from '../names';
-import { ClaudeLimitError, type Ask } from './claude/claude';
+import { askJson, type Ask } from './claude/claude';
 import {
 	MENU_PROMPT,
 	MENU_SCHEMA,
@@ -42,9 +41,9 @@ const sameSlot = (a: Slot, b: Slot) => a.weekday === b.weekday && a.meal === b.m
 /** Asks Claude, and keeps each day it answered right even when another is not. */
 export async function suggestMenu(request: MenuRequest, ask: Ask): Promise<SuggestedRow[]> {
 	const [material, plan] = menuContent(request);
-	let message: Anthropic.Message;
-	try {
-		message = await ask({
+	const answer = await askJson(
+		ask,
+		{
 			max_tokens: 16000,
 			system: MENU_PROMPT,
 			output_config: { effort: 'medium', format: { type: 'json_schema', schema: MENU_SCHEMA } },
@@ -58,24 +57,12 @@ export async function suggestMenu(request: MenuRequest, ask: Ask): Promise<Sugge
 					]
 				}
 			]
-		});
-	} catch (e) {
-		if (e instanceof ClaudeLimitError) throw new MenuSuggestError('limit');
-		console.error('Claude could not suggest a menu', e);
-		throw new MenuSuggestError('failed');
-	}
-
-	const answer = message.content.find((block) => block.type === 'text')?.text;
-	let rows: unknown;
-	try {
-		rows = answer === undefined ? null : JSON.parse(answer).rows;
-	} catch {
-		// Cut short or refused; the answer is not the schema's.
-	}
-	if (!Array.isArray(rows)) {
-		console.error('Claude gave no menu answer', message.stop_reason);
-		throw new MenuSuggestError('failed');
-	}
+		},
+		(reason) => new MenuSuggestError(reason),
+		'menu',
+		'rows'
+	);
+	const { rows } = answer;
 
 	const passedOn = new Set((request.passedOn ?? []).map(nameKey));
 	const suggested: SuggestedRow[] = [];

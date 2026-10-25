@@ -1,4 +1,4 @@
-import { nameKey } from './names';
+import { nameKey, plural } from './names';
 import type { Meal } from './server/db/menus';
 
 /** The tag on a dish that is good for lunch boxes, so a little extra is cooked. */
@@ -7,7 +7,7 @@ export const LUNCHBOX_TAG = 'matlåda';
 export const MEAL_LABELS: Record<Meal, string> = { dinner: 'Middag', lunch: 'Lunch' };
 
 /** "1 gång", "3 gånger". */
-export const timesText = (n: number) => (n === 1 ? '1 gång' : `${n} gånger`);
+export const timesText = (n: number) => plural(n, 'gång', 'gånger');
 
 /** A dish without steps, and without ingredients or with only guessed ones: an import may fill it in. */
 export const hasOnlyName = (recipe: {

@@ -1,6 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
 import { env } from 'cloudflare:workers';
-import { ask, type Ask } from '#lib/server/claude/claude.ts';
+import { askFor } from '#lib/server/claude/claude.ts';
 import {
 	addShoppingItem,
 	deleteShoppingItem,
@@ -42,8 +42,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	};
 };
 
-const askShopping: Ask = (params) =>
-	ask(env.DB, 'shopping', { ...params, model: env.SHOPPING_MODEL });
+const askShopping = askFor('shopping');
 
 function idOf(form: FormData): number {
 	const id = Number(form.get('id') || NaN);

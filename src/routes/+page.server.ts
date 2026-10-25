@@ -1,7 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import { env } from 'cloudflare:workers';
 import { getSettings, listPeople } from '#lib/server/db/household.ts';
-import { ask, type Ask } from '#lib/server/claude/claude.ts';
+import { askFor } from '#lib/server/claude/claude.ts';
 import {
 	getWeek,
 	setWeekEaters,
@@ -62,7 +62,7 @@ function suggestFailed(e: unknown) {
 	throw e;
 }
 
-const askMenu: Ask = (params) => ask(env.DB, 'menu', { ...params, model: env.MENU_MODEL });
+const askMenu = askFor('menu');
 
 export const actions: Actions = {
 	row: async ({ request }) => {
