@@ -1,13 +1,8 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { open } from '../../../test/e2e';
 
 // The made-up data comes from test/e2e-seed.sql. Tests that change it use names of their own,
 // that sort after the seeded dishes.
-
-// The m3e components are registered after hydration, and do nothing before that.
-async function open(page: Page, path: string) {
-	await page.goto(path);
-	await expect.poll(() => page.evaluate(() => !!customElements.get('m3e-nav-item'))).toBe(true);
-}
 
 test('dishes are listed by how often they were eaten', async ({ page }) => {
 	await open(page, '/ratter');

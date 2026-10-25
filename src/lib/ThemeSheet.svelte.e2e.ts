@@ -1,12 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
+import { open } from '../../test/e2e';
 
 // Svelte sets the property of a custom element, so the attribute keeps the server's value.
 const themeColor = (page: Page) =>
 	page.evaluate(() => document.querySelector<HTMLElement & { color: string }>('m3e-theme')?.color);
 
 test('a chosen colour stays after a reload, on this phone only', async ({ page, browser }) => {
-	await page.goto('/ratter');
-	await expect.poll(() => page.evaluate(() => !!customElements.get('m3e-bottom-sheet'))).toBe(true);
+	await open(page, '/ratter');
 	await expect.poll(() => themeColor(page)).toBe('#c26b4e');
 
 	await page.getByRole('button', { name: 'Byt färg' }).click();
@@ -27,8 +27,7 @@ test('a chosen colour stays after a reload, on this phone only', async ({ page, 
 });
 
 test('a colour of ones own can be chosen', async ({ page }) => {
-	await page.goto('/ratter');
-	await expect.poll(() => page.evaluate(() => !!customElements.get('m3e-bottom-sheet'))).toBe(true);
+	await open(page, '/ratter');
 	await page.getByRole('button', { name: 'Byt färg' }).click();
 	await page.getByLabel('Egen färg').fill('#3366cc');
 	await expect.poll(() => themeColor(page)).toBe('#3366cc');
