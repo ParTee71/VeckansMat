@@ -39,12 +39,18 @@
 		}
 	});
 
-	// Opening another snackbar also closes this one, so only reload when the
-	// action was tapped.
+	// Opening another snackbar, such as an undo, closes this one, so it reloads only when the
+	// action was tapped, and comes back once the other one has closed.
 	function reloadOnAction(event: ToggleEvent & { currentTarget: M3eSnackbarElement }) {
-		if (event.newState === 'closed' && event.currentTarget.isActionTaken) {
-			location.reload();
-		}
+		if (event.newState !== 'closed') return;
+		const notice = event.currentTarget;
+		if (notice.isActionTaken) return location.reload();
+		const other = (customElements.get('m3e-snackbar') as typeof M3eSnackbarElement).current;
+		other?.addEventListener('toggle', function reopen(e) {
+			if ((e as ToggleEvent).newState !== 'closed') return;
+			other.removeEventListener('toggle', reopen);
+			notice.open = true;
+		});
 	}
 </script>
 
