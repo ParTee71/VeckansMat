@@ -7,8 +7,11 @@ export function cleanText(text: string): string {
 export const answerText = (value: unknown, max: number) =>
 	typeof value === 'string' ? cleanText(value).slice(0, max) : '';
 
-/** Material for a prompt, which cannot close the tag it is in and write outside it. */
-export const stripTags = (text: string) => text.replace(/<\/?[a-z_]+>/gi, '').trim();
+/**
+ * Material for a prompt, which cannot close the tag it is in and write outside it, however the
+ * tag is spaced. Text such as "< 5 min" has no tag in it and is kept.
+ */
+export const stripTags = (text: string) => text.replace(/<\s*\/?\s*[a-z_]+\b[^<>]*>/gi, '').trim();
 
 /** The same dish written with other spacing or case gets the same key. */
 export function nameKey(name: string): string {

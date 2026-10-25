@@ -18,6 +18,7 @@ Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ä
 - Claude gör inköpslistan: räknar om till veckans portioner, slår ihop samma vara från flera rätter och sorterar efter butikens avdelningar, med det som brukar finnas hemma sist. Rätter med bara namn får gissade ingredienser, som skrivs in i rätten och kan rättas. Ändras veckan erbjuder appen att uppdatera listan. (#37)
 - Rutan om att en ny version finns kommer tillbaka när en ångra-ruta har tagit dess plats en stund. (#52)
 - Tillbaka till Nytt recept efter att ett recept sparats läser inte in länken en gång till. (#52)
+- Recept läses bara in från länkar som börjar med https://, så att sidan inte kan ändras på vägen. (#53)
 
 ## 0.2.0
 
