@@ -17,6 +17,16 @@ const MONTHS = [
 
 export const WEEKDAYS = ['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'];
 
+export const WEEKDAY_NAMES = [
+	'måndag',
+	'tisdag',
+	'onsdag',
+	'torsdag',
+	'fredag',
+	'lördag',
+	'söndag'
+];
+
 const DAY = 24 * 60 * 60 * 1000;
 
 function addDays(weekStart: string, days: number): Date {
@@ -55,4 +65,34 @@ export function weekDates(weekStart: string): string {
 			? `${monday.getUTCDate()}`
 			: `${monday.getUTCDate()} ${month(monday)}`;
 	return `${first} – ${sunday.getUTCDate()} ${month(sunday)}`;
+}
+
+const iso = (date: Date) => date.toISOString().slice(0, 10);
+
+/** Today's date in Sweden, YYYY-MM-DD, whatever time zone the server runs in. */
+export function swedishToday(now = new Date()): string {
+	return now.toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' });
+}
+
+/** The Monday of the week a date is in. */
+export function mondayOf(date: string): string {
+	const weekday = (new Date(date).getUTCDay() + 6) % 7;
+	return iso(addDays(date, -weekday));
+}
+
+export function addWeeks(weekStart: string, weeks: number): string {
+	return iso(addDays(weekStart, weeks * 7));
+}
+
+/** Whether the text is a Monday written YYYY-MM-DD. */
+export function isWeekStart(text: string): boolean {
+	return (
+		/^\d{4}-\d{2}-\d{2}$/.test(text) && iso(new Date(text)) === text && mondayOf(text) === text
+	);
+}
+
+/** The week to plan: this week, and next week from Wednesday on. */
+export function weekToPlan(today: string): string {
+	const thisWeek = mondayOf(today);
+	return today >= iso(addDays(thisWeek, 2)) ? addWeeks(thisWeek, 1) : thisWeek;
 }

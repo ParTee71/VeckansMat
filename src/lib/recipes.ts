@@ -1,3 +1,4 @@
+import { nameKey } from './names';
 import type { Meal } from './server/db/menus';
 
 /** The tag on a dish that is good for lunch boxes, so a little extra is cooked. */
@@ -11,3 +12,9 @@ export const timesText = (n: number) => (n === 1 ? '1 gång' : `${n} gånger`);
 /** A dish without ingredients or steps, which an import may fill in. */
 export const hasOnlyName = (recipe: { ingredients: string[]; instructions: string | null }) =>
 	recipe.ingredients.length === 0 && !recipe.instructions;
+
+/** Lines on a note that are not a dish, offered as quick choices for a day. */
+export const NOT_DISHES = ['Rester', 'Äta ute', 'Hämtmat'];
+
+export const isDish = (text: string) =>
+	!NOT_DISHES.some((other) => nameKey(other) === nameKey(text));

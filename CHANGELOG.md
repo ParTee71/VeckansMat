@@ -12,6 +12,7 @@ Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ä
 - Ett recept kan läggas till från en länk: appen läser in det från receptsidan, och man kollar och sparar. Har rätten bara ett namn fylls den i, och veckorna den ätits ligger kvar. (#25)
 - Ett recept kan också läsas in från foton, till exempel två sidor ur en kokbok, från inklistrad text och från receptsidor som appen inte kunde läsa förut. Claude läser det, och man kollar och sparar. (#26)
 - Hushållet: personerna med det de inte äter, regler för varje vecka, hur många nya rätter en vecka får ha och hur många extra portioner som lagas till matlådor. Det används när veckomenyn kommer. (#30)
+- Startsidan Veckan visar veckans middagar och helgluncher och fylls i som en lapp: tryck på en dag, skriv eller välj en rätt, och Enter går vidare till nästa dag. Rester, Äta ute och Hämtmat finns som snabbval, och lunch går att lägga till en vardag. Här väljs också vilka som äter. Från onsdag visas nästa vecka. (#31)
 
 ## 0.2.0
 

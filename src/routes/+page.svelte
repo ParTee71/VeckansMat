@@ -1,9 +1,312 @@
+<script lang="ts">
+	import { deserialize } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import Icon from '#lib/Icon.svelte';
+	import { nameKey } from '#lib/names.ts';
+	import { isDish, NOT_DISHES, timesText } from '#lib/recipes.ts';
+	import type { Meal } from '#lib/server/db/menus.ts';
+	import { WEEKDAY_NAMES, WEEKDAYS, isoWeek, weekDates } from '#lib/weeks.ts';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
+
+	let week = $derived(data.week);
+	let isNext = $derived(week.weekStart === data.nextWeek);
+
+	// Text just written shows at once, before the server has answered.
+	let pending = $state<Record<string, string>>({});
+	// Weekday lunches added but not written in yet, per week.
+	let addedLunches = $state<Record<string, number[]>>({});
+	let choosingLunch = $state(false);
+	let editing = $state<string | null>(null);
+	let draft = $state('');
+	let failed = $state(false);
+	// Who eats, as just tapped, before the server has answered.
+	let pendingEaters = $state<Record<string, number[]>>({});
+	let eaterIds = $derived(pendingEaters[week.weekStart] ?? week.eaters);
+
+	const keyOf = (weekday: number, meal: Meal) => `${week.weekStart}-${meal}-${weekday}`;
+	const stored = (weekday: number, meal: Meal) =>
+		week.rows.find((r) => r.weekday === weekday && r.meal === meal);
+	const textOf = (weekday: number, meal: Meal) =>
+		pending[keyOf(weekday, meal)] ?? stored(weekday, meal)?.text ?? '';
+
+	const DAYS = [1, 2, 3, 4, 5, 6, 7];
+	// Lunch on Saturday and Sunday, and on any weekday that has one.
+	let lunchDays = $derived(
+		DAYS.filter(
+			(d) =>
+				d >= 6 ||
+				stored(d, 'lunch') ||
+				textOf(d, 'lunch') ||
+				addedLunches[week.weekStart]?.includes(d)
+		)
+	);
+	let freeLunchDays = $derived(DAYS.filter((d) => !lunchDays.includes(d)));
+
+	let eaters = $derived(data.people.filter((p) => eaterIds.includes(p.id)));
+	let extra = $derived(data.settings.lunchboxExtraPortions);
+
+	// Dishes matching what is written, the most eaten first.
+	let key = $derived(nameKey(draft));
+	let matches = $derived(
+		key
+			? data.recipes
+					.filter((r) => nameKey(r.name).includes(key))
+					.toSorted((a, b) => b.timesEaten - a.timesEaten || a.name.localeCompare(b.name, 'sv'))
+					.slice(0, 5)
+			: []
+	);
+	let isNew = $derived(key && isDish(draft) && !data.recipes.some((r) => nameKey(r.name) === key));
+
+	async function post(action: string, fields: Record<string, string | number | number[]>) {
+		const body = new FormData();
+		for (const [name, value] of Object.entries(fields)) {
+			for (const v of Array.isArray(value) ? value : [value]) body.append(name, String(v));
+		}
+		try {
+			const response = await fetch(`?/${action}`, {
+				method: 'POST',
+				body,
+				headers: { 'x-sveltekit-action': 'true' }
+			});
+			const result = deserialize(await response.text());
+			// A failure stays on screen until the page is loaded again.
+			if (result.type === 'failure' || result.type === 'error') failed = true;
+		} catch {
+			failed = true;
+		}
+		await invalidateAll();
+	}
+
+	function edit(weekday: number, meal: Meal) {
+		editing = keyOf(weekday, meal);
+		draft = textOf(weekday, meal);
+		choosingLunch = false;
+	}
+
+	async function write(weekday: number, meal: Meal, text: string) {
+		editing = null;
+		const k = keyOf(weekday, meal);
+		if (text.trim() === textOf(weekday, meal)) return;
+		pending[k] = text.trim();
+		await post('row', {
+			weekStart: week.weekStart,
+			weekday,
+			meal,
+			text,
+			eaters: eaterIds
+		});
+		// A newer text for the same day stays until its own answer comes.
+		if (pending[k] === text.trim()) delete pending[k];
+	}
+
+	// Enter writes the day and goes on to the next one, as on the note.
+	function keydown(event: KeyboardEvent, weekday: number, meal: Meal) {
+		if (event.key === 'Escape') editing = null;
+		if (event.key !== 'Enter') return;
+		event.preventDefault();
+		write(weekday, meal, draft);
+		const days = meal === 'dinner' ? DAYS : lunchDays;
+		const next = days[days.indexOf(weekday) + 1];
+		if (next) edit(next, meal);
+	}
+
+	// The text field loses focus when a suggestion is tapped, so suggestions keep it.
+	const keepFocus = (event: Event) => event.preventDefault();
+
+	let eaterRequests = 0;
+
+	async function toggleEater(id: number, selected: boolean) {
+		const weekStart = week.weekStart;
+		const request = ++eaterRequests;
+		const ids = selected ? [...eaterIds, id] : eaterIds.filter((e) => e !== id);
+		pendingEaters[weekStart] = ids;
+		await post('eaters', { weekStart, eaters: ids });
+		if (request === eaterRequests) delete pendingEaters[weekStart];
+	}
+
+	function addLunch(weekday: number) {
+		addedLunches[week.weekStart] = [...(addedLunches[week.weekStart] ?? []), weekday];
+		edit(weekday, 'lunch');
+	}
+
+	const extraText = (n: number) => `Matlåda · ${n} ${n === 1 ? 'portion' : 'portioner'} extra`;
+	const focus = (input: HTMLInputElement) => input.focus();
+</script>
+
+<svelte:head>
+	<title>Veckan – Veckans mat</title>
+</svelte:head>
+
+{#snippet row(weekday: number, meal: Meal)}
+	{@const text = textOf(weekday, meal)}
+	{@const label = WEEKDAYS[weekday - 1]}
+	{@const name = `${meal === 'dinner' ? 'Middag' : 'Lunch'} ${WEEKDAY_NAMES[weekday - 1]}`}
+	{#if editing === keyOf(weekday, meal)}
+		<li class="row editing">
+			<div class="line">
+				<span class="day">{label}</span>
+				<input
+					aria-label={name}
+					autocomplete="off"
+					enterkeyhint="next"
+					bind:value={draft}
+					onkeydown={(e) => keydown(e, weekday, meal)}
+					onblur={() => editing === keyOf(weekday, meal) && write(weekday, meal, draft)}
+					{@attach focus}
+				/>
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-icon-button is a button with its own keyboard handling) -->
+				<m3e-icon-button
+					aria-label="Töm raden"
+					onpointerdown={keepFocus}
+					onclick={() => write(weekday, meal, '')}
+				>
+					<Icon name="close" />
+				</m3e-icon-button>
+			</div>
+			{#if matches.length || isNew}
+				<ul class="suggestions">
+					{#each matches as recipe (recipe.id)}
+						<li>
+							<button
+								type="button"
+								onpointerdown={keepFocus}
+								onclick={() => write(weekday, meal, recipe.name)}
+							>
+								<span>{recipe.name}</span>
+								<span class="meta">{recipe.timesEaten ? timesText(recipe.timesEaten) : ''}</span>
+							</button>
+						</li>
+					{/each}
+					{#if isNew}
+						<li>
+							<button
+								type="button"
+								class="new"
+								onpointerdown={keepFocus}
+								onclick={() => write(weekday, meal, draft)}
+							>
+								<Icon name="add" />Ny rätt: ”{draft.trim()}”
+							</button>
+						</li>
+					{/if}
+				</ul>
+			{/if}
+			<div class="quick">
+				{#each NOT_DISHES as other (other)}
+					<button
+						type="button"
+						class="chip"
+						onpointerdown={keepFocus}
+						onclick={() => write(weekday, meal, other)}>{other}</button
+					>
+				{/each}
+			</div>
+		</li>
+	{:else}
+		<li class="row">
+			<button
+				type="button"
+				class="show"
+				aria-label="{name}: {text || 'tom'}"
+				onclick={() => edit(weekday, meal)}
+			>
+				<span class="day">{label}</span>
+				<span class="text">
+					<span class={text ? '' : 'empty'}>{text || 'Skriv en rätt'}</span>
+					{#if stored(weekday, meal)?.lunchbox && text === stored(weekday, meal)?.text}
+						<span class="meta">{extraText(extra)}</span>
+					{/if}
+				</span>
+			</button>
+		</li>
+	{/if}
+{/snippet}
+
 <main>
-	<h1>Veckans mat</h1>
-	<m3e-card variant="filled">
-		<p>Här kommer veckans förslag på middagar. Appen byggs just nu.</p>
-	</m3e-card>
-	<m3e-button variant="tonal" href="/hushallet">Personer och regler</m3e-button>
+	<div class="title">
+		<div>
+			<h1>Vecka {isoWeek(week.weekStart).week}</h1>
+			<p class="dates">{weekDates(week.weekStart)} · {isNext ? 'nästa vecka' : 'den här veckan'}</p>
+		</div>
+		<div class="nav">
+			<m3e-icon-button
+				href={isNext ? `?vecka=${data.thisWeek}` : undefined}
+				disabled={!isNext || undefined}
+				aria-label="Den här veckan"
+			>
+				<Icon name="previous" />
+			</m3e-icon-button>
+			<m3e-icon-button
+				href={isNext ? undefined : `?vecka=${data.nextWeek}`}
+				disabled={isNext || undefined}
+				aria-label="Nästa vecka"
+			>
+				<Icon name="next" />
+			</m3e-icon-button>
+		</div>
+	</div>
+
+	<section class="eaters">
+		<h2>Vilka äter?</h2>
+		{#if data.people.length === 0}
+			<p class="hint">Lägg till de som brukar äta, med det de inte äter.</p>
+		{:else}
+			<div class="chips">
+				{#each data.people as person (person.id)}
+					<m3e-filter-chip
+						selected={eaterIds.includes(person.id) || undefined}
+						onchange={(e: Event & { currentTarget: HTMLElement & { selected: boolean } }) =>
+							toggleEater(person.id, e.currentTarget.selected)}>{person.name}</m3e-filter-chip
+					>
+				{/each}
+			</div>
+			{#each eaters.filter((p) => p.requirements) as person (person.id)}
+				<p class="hint">{person.name}: {person.requirements.replace(/\n+/g, ', ')}</p>
+			{/each}
+		{/if}
+		{#if data.settings.menuRules}
+			<p class="hint">{data.settings.menuRules.replace(/\n+/g, ' ')}</p>
+		{/if}
+		<a href={resolve('/hushallet')}>Ändra personer och regler</a>
+	</section>
+
+	{#if failed}
+		<p class="error" role="alert">Det gick inte att spara. Kontrollera nätet och försök igen.</p>
+	{/if}
+
+	<h2 class="meal">Middag</h2>
+	<ul class="days">
+		{#each DAYS as weekday (weekday)}
+			{@render row(weekday, 'dinner')}
+		{/each}
+	</ul>
+
+	<div class="meal">
+		<h2>Lunch</h2>
+		{#if freeLunchDays.length}
+			<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
+			<m3e-button variant="text" onclick={() => (choosingLunch = !choosingLunch)}>
+				<span slot="icon" class="slot-icon"><Icon name="add" /></span>Lunch en vardag
+			</m3e-button>
+		{/if}
+	</div>
+	{#if choosingLunch}
+		<div class="quick" role="group" aria-label="Välj dag för lunch">
+			{#each freeLunchDays as weekday (weekday)}
+				<button type="button" class="chip" onclick={() => addLunch(weekday)}
+					>{WEEKDAYS[weekday - 1]}</button
+				>
+			{/each}
+		</div>
+	{/if}
+	<ul class="days">
+		{#each lunchDays as weekday (weekday)}
+			{@render row(weekday, 'lunch')}
+		{/each}
+	</ul>
 </main>
 
 <style>
@@ -13,7 +316,234 @@
 		padding: 1rem;
 		display: flex;
 		flex-direction: column;
-		align-items: flex-start;
-		gap: 1rem;
+		gap: 0.75rem;
+	}
+
+	.title {
+		margin: 0.25rem 0 0 0.25rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	h1 {
+		margin: 0;
+		font-size: 2.25rem;
+		line-height: 2.75rem;
+		font-weight: 800;
+		letter-spacing: -0.03em;
+	}
+
+	.dates {
+		margin: 0;
+		font-size: 0.875rem;
+		color: var(--md-sys-color-on-surface-variant);
+	}
+
+	.nav {
+		display: flex;
+	}
+
+	h2 {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 700;
+	}
+
+	.eaters {
+		padding: 1rem;
+		border-radius: 1.75rem;
+		background: var(--md-sys-color-surface-container);
+		display: flex;
+		flex-direction: column;
+		gap: 0.625rem;
+	}
+
+	.eaters a {
+		align-self: flex-start;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--md-sys-color-primary);
+	}
+
+	.chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.hint {
+		margin: 0;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		color: var(--md-sys-color-on-surface-variant);
+	}
+
+	.error {
+		margin: 0;
+		padding: 0.75rem 1rem;
+		border-radius: 1rem;
+		background: var(--md-sys-color-error-container);
+		color: var(--md-sys-color-on-error-container);
+	}
+
+	.meal {
+		margin: 0.5rem 0 0 0.25rem;
+		min-height: 2.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		font-size: 0.875rem;
+		color: var(--md-sys-color-on-surface-variant);
+	}
+
+	.meal h2 {
+		font-size: inherit;
+	}
+
+	.days {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.row {
+		border-radius: 0.25rem;
+		background: var(--md-sys-color-surface-container);
+	}
+
+	.row:first-child {
+		border-top-left-radius: 1.25rem;
+		border-top-right-radius: 1.25rem;
+	}
+
+	.row:last-child {
+		border-bottom-left-radius: 1.25rem;
+		border-bottom-right-radius: 1.25rem;
+	}
+
+	.show {
+		width: 100%;
+		min-height: 3.5rem;
+		padding: 0.375rem 1rem 0.375rem 0.75rem;
+		border: 0;
+		border-radius: inherit;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		cursor: pointer;
+	}
+
+	.day {
+		width: 2.25rem;
+		flex-shrink: 0;
+		font-size: 0.8125rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--md-sys-color-primary);
+	}
+
+	.text {
+		display: flex;
+		flex-direction: column;
+		font-size: 1rem;
+	}
+
+	.empty {
+		color: var(--md-sys-color-on-surface-variant);
+	}
+
+	.meta {
+		font-size: 0.8125rem;
+		color: var(--md-sys-color-on-surface-variant);
+	}
+
+	.editing {
+		padding: 0.5rem 0.5rem 0.75rem 0.75rem;
+		background: var(--md-sys-color-surface-container-high);
+		outline: 2px solid var(--md-sys-color-primary);
+		outline-offset: -2px;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.line {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.line input {
+		flex-grow: 1;
+		min-width: 0;
+		padding: 0.625rem 0;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		font-size: 1rem;
+		outline: none;
+	}
+
+	.suggestions {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		border-radius: 0.75rem;
+		overflow: hidden;
+		background: var(--md-sys-color-surface);
+	}
+
+	.suggestions li + li {
+		border-top: 1px solid var(--md-sys-color-outline-variant);
+	}
+
+	.suggestions button {
+		width: 100%;
+		min-height: 3rem;
+		padding: 0 1rem;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		cursor: pointer;
+	}
+
+	.suggestions .new {
+		justify-content: flex-start;
+		color: var(--md-sys-color-primary);
+	}
+
+	.quick {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.chip {
+		min-height: 2.25rem;
+		padding: 0 0.875rem;
+		border: 1px solid var(--md-sys-color-outline);
+		border-radius: 0.5rem;
+		background: transparent;
+		color: var(--md-sys-color-on-surface-variant);
+		font: inherit;
+		font-size: 0.875rem;
+		font-weight: 500;
+		cursor: pointer;
 	}
 </style>
