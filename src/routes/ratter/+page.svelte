@@ -4,6 +4,7 @@
 	import { resolve } from '$app/paths';
 	import Icon from '#lib/Icon.svelte';
 	import SubmitButton from '#lib/SubmitButton.svelte';
+	import ThemeSheet from '#lib/ThemeSheet.svelte';
 	import { nameKey } from '#lib/names.ts';
 	import { timesText } from '#lib/recipes.ts';
 	import { shortWeekName } from '#lib/weeks.ts';
@@ -68,7 +69,12 @@
 </svelte:head>
 
 <main>
-	<h1>Rätter</h1>
+	<div class="title">
+		<h1>Rätter</h1>
+		<m3e-icon-button aria-label="Byt färg">
+			<m3e-bottom-sheet-trigger for="theme"><Icon name="palette" /></m3e-bottom-sheet-trigger>
+		</m3e-icon-button>
+	</div>
 
 	<form method="POST" action="?/add" use:enhance={add}>
 		<m3e-search-bar clearable clear-label="Rensa">
@@ -129,6 +135,8 @@
 	{/if}
 </main>
 
+<ThemeSheet id="theme" />
+
 {#key form?.added}
 	{#if form?.added}
 		<m3e-snackbar action="Öppna" duration="6000" open ontoggle={openAdded}>
@@ -147,8 +155,15 @@
 		gap: 0.875rem;
 	}
 
-	h1 {
+	.title {
 		margin: 0.75rem 0 0 0.25rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	h1 {
+		margin: 0;
 		font-size: 2.25rem;
 		line-height: 2.75rem;
 		font-weight: 800;
