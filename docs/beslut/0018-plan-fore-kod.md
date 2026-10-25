@@ -23,13 +23,13 @@ bedömer. Planen är godkänd när issuet har etiketten `plan-godkänd`. Claude 
 
 Regeln hålls på flera ställen, från mjukt till hårt:
 
-| Lager                        | Vad                                                                                   |
-| ---------------------------- | ------------------------------------------------------------------------------------- |
-| `CLAUDE.md`                  | Regeln, först bland reglerna som aldrig bryts                                         |
-| `refine-issue`               | Slutar med ett stopp: visa issuet och vänta på ägarens ok                             |
-| `implement-issue`            | Börjar med att läsa issuets etiketter                                                 |
-| Hook `plan-approved.mjs`     | Stoppar Claude när en PR skapas mot ett issue utan etiketten                          |
-| CI-kontrollen `Plan godkänd` | Samma kontroll på varje PR, oberoende av Claude; obligatorisk för att merga till main |
+| Lager                        | Vad                                                                                        |
+| ---------------------------- | ------------------------------------------------------------------------------------------ |
+| `CLAUDE.md`                  | Regeln, först bland reglerna som aldrig bryts                                              |
+| `refine-issue`               | Slutar med ett stopp: visa issuet och vänta på ägarens ok                                  |
+| `implement-issue`            | Börjar med att läsa issuets etiketter                                                      |
+| Hook `plan-approved.mjs`     | Stoppar Claude när en PR skapas mot ett issue utan etiketten                               |
+| CI-kontrollen `Plan godkänd` | Samma kontroll på varje PR, oberoende av Claude; Claude mergar aldrig en PR där den är röd |
 
 Bara ägaren kan släppa på regeln för en enskild ändring. Då står `Utan plan: <ägarens ord, tid>`
 i PR-texten, och både hook och CI godtar det. Dependabot-PR:er har inget issue och undantas.
@@ -45,5 +45,7 @@ i PR-texten, och både hook och CI godtar det. Dependabot-PR:er har inget issue 
   exempel med `gh pr create`, stoppas av CI-kontrollen.
 - Hooken frågar GitHub. Når den inte fram släpper den igenom med en varning, och CI-kontrollen
   avgör i stället.
+- Ingen branch protection sätts på `main` (ägarens beslut 2026-10-25). GitHub stoppar alltså
+  inte en merge som görs för hand trots rött; spärren vid merge är att Claude bara mergar grönt.
 - Spärren sitter vid PR och merge, inte vid commit: det går inte att veta vilket issue en commit
   hör till utan att gissa. Skillsen stoppar tidigare.
