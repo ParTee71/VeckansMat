@@ -52,7 +52,8 @@
 			</p>
 			<div class="invite-actions">
 				<m3e-button variant="filled" href="/ratter/ny?till={recipe.id}">
-					<span slot="icon" class="slot-icon"><Icon name="link" /></span>Hämta från en länk
+					<span slot="icon" class="slot-icon"><Icon name="camera" /></span>Hämta från länk, foto
+					eller text
 				</m3e-button>
 				<m3e-button variant="tonal" href="/ratter/{recipe.id}/redigera">Skriv in själv</m3e-button>
 			</div>

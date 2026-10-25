@@ -9,12 +9,11 @@ import {
 	type Recipe,
 	type RecipeMatch
 } from '#lib/server/db/recipes.ts';
-import {
-	fetchRecipe,
-	RecipeLinkError,
-	recipeUrl,
-	type RecipeDraft
-} from '#lib/server/recipe-link.ts';
+import { ask } from '#lib/server/claude/claude.ts';
+import { recipeUrl, siteName } from '#lib/links.ts';
+import { RecipeReadError, type RecipeDraft } from '#lib/server/recipe-draft.ts';
+import { fetchPage, pageText, recipeFromHtml } from '#lib/server/recipe-link.ts';
+import { photosOf, readRecipe, type RecipeSource } from '#lib/server/recipe-parse.ts';
 import { hasOnlyName, LUNCHBOX_TAG } from '#lib/recipes.ts';
 import { parseRecipeForm } from '#lib/server/recipe-form.ts';
 import type { Actions, PageServerLoad } from './$types';
@@ -40,10 +39,43 @@ export const load: PageServerLoad = async ({ url }) => ({
 	link: url.searchParams.get('url') ?? ''
 });
 
-const READ_ERRORS: Record<RecipeLinkError['reason'], string> = {
-	fetch: 'Sidan gick inte att hämta. Fyll i receptet själv, med länken sparad.',
-	none: 'Sidan har inget recept som appen kan läsa. Fyll i det själv, med länken sparad.'
-};
+type Kind = 'link' | 'text' | 'photo';
+
+function readError(reason: RecipeReadError['reason'], kind: Kind): string {
+	switch (reason) {
+		case 'fetch':
+			return 'Sidan gick inte att hämta. Fyll i receptet själv, med länken sparad.';
+		case 'none':
+			if (kind === 'link') {
+				return 'Sidan har inget recept som appen kan läsa. Fyll i det själv, med länken sparad.';
+			}
+			return kind === 'text'
+				? 'Det gick inte att hitta något recept i texten. Fyll i det själv.'
+				: 'Det gick inte att hitta något recept på bilderna. Ta ett skarpare foto, eller fyll i det själv.';
+		case 'failed':
+			return 'Receptet gick inte att läsa just nu. Försök igen om en stund, eller fyll i det själv.';
+		case 'limit':
+			return 'Appen har läst så många recept som månadens tak tillåter. Fyll i det själv, eller vänta till nästa månad.';
+	}
+}
+
+// Far more than a recipe; a longer paste is something else.
+const MAX_TEXT = 20_000;
+
+/** Reads with Claude, using the model the app is set to. */
+const withClaude = (source: RecipeSource) =>
+	readRecipe(source, (params) => ask(env.DB, 'recipe', { ...params, model: env.RECIPE_MODEL }));
+
+/** A page's JSON-LD when it has one, otherwise Claude reads the page's text. */
+async function readLink(link: URL, allowLocal: boolean): Promise<RecipeDraft> {
+	const html = await fetchPage(link, fetch, allowLocal);
+	const draft = recipeFromHtml(html, link.href);
+	if (draft) return draft;
+	const text = pageText(html);
+	// A page that only its scripts fill in has no text for Claude either.
+	if (!text) throw new RecipeReadError('none');
+	return withClaude({ text, sourceUrl: link.href });
+}
 
 /**
  * The form's fields for a draft. When it fills in a stored dish, what the dish already has and
@@ -68,8 +100,7 @@ async function existingOf(name: string, targetId: number | undefined): Promise<R
 }
 
 /** What the review starts from: the draft, under the name of the dish being filled in if any. */
-async function review(draft: Partial<RecipeDraft>, url: URL, source: string | null) {
-	const target = await targetOf(url);
+async function review(draft: Partial<RecipeDraft>, target: Recipe | null, source: string | null) {
 	const name = target?.name ?? draft.name ?? '';
 	const existing = await existingOf(name, target?.id);
 	const stored = target ?? (existing?.onlyName ? await getRecipe(env.DB, existing.id) : null);
@@ -86,32 +117,51 @@ async function review(draft: Partial<RecipeDraft>, url: URL, source: string | nu
 
 export const actions: Actions = {
 	read: async ({ request, url }) => {
-		const text = String((await request.formData()).get('link') ?? '').trim();
-		if (!text) return fail(400, { link: text, readError: 'Klistra in en länk till ett recept.' });
-		const allowLocal = env.ALLOW_LOCAL_FETCH === 'true';
-		const link = recipeUrl(text, allowLocal);
-		if (!link) {
-			const readError = /^\w+:\/\//.test(text)
-				? 'Länken ska vara en webbsida som börjar med https://'
-				: 'Än så länge går bara länkar att läsa. Text och foton kommer snart.';
-			return fail(400, { link: text, readError, canFillIn: false });
+		// Before anything is fetched or paid for, since a link to fill in may be out of date.
+		const target = await targetOf(url);
+		const form = await request.formData();
+		const text = String(form.get('text') ?? '').trim();
+		const photos = await photosOf(form);
+		const invalid = (readError: string) => fail(400, { text, readError, kind: null });
+		if (typeof photos === 'string') return invalid(photos);
+		if (!text && !photos.length) {
+			return invalid('Klistra in en länk eller texten till ett recept, eller ta ett foto.');
 		}
+		if (text.length > MAX_TEXT) return invalid('Texten är för lång för ett recept.');
+
+		const allowLocal = env.ALLOW_LOCAL_FETCH === 'true';
+		const isLink = !!recipeUrl(text, true);
+		const link = isLink ? recipeUrl(text, allowLocal) : null;
+		if (isLink && !link) {
+			return invalid('Länken ska vara en webbsida på internet, som börjar med https://');
+		}
+		const kind: Kind = photos.length ? 'photo' : link ? 'link' : 'text';
 		try {
-			return await review(
-				await fetchRecipe(link, fetch, allowLocal),
-				url,
-				link.hostname.replace(/^www\./, '')
-			);
+			let draft: RecipeDraft;
+			let source: string;
+			if (kind === 'link') {
+				draft = await readLink(link!, allowLocal);
+				source = `Hämtat från ${siteName(link!)}`;
+			} else {
+				// A link sent with photos is kept as the recipe's link, not read as its text.
+				draft = await withClaude(link ? { photos, sourceUrl: link.href } : { photos, text });
+				source =
+					kind === 'text'
+						? 'Läst ur texten'
+						: `Läst från ${photos.length > 1 ? 'fotona' : 'fotot'}`;
+			}
+			return await review(draft, target, source);
 		} catch (e) {
-			if (!(e instanceof RecipeLinkError)) throw e;
-			return fail(422, { link: text, readError: READ_ERRORS[e.reason], canFillIn: true });
+			if (!(e instanceof RecipeReadError)) throw e;
+			return fail(422, { text, readError: readError(e.reason, kind), kind });
 		}
 	},
 
-	// After a failed read, the form with only the link. Saving checks the link like any other.
+	// After a failed read, the form with the link saved, or the text kept to copy from.
 	fillIn: async ({ request, url }) => {
-		const link = String((await request.formData()).get('link') ?? '').trim();
-		return review({ sourceUrl: link }, url, null);
+		const text = String((await request.formData()).get('text') ?? '').trim();
+		const draft = recipeUrl(text, true) ? { sourceUrl: text } : { instructions: text || null };
+		return review(draft, await targetOf(url), null);
 	},
 
 	save: async ({ request, url }) => {

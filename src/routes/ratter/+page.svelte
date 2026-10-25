@@ -5,6 +5,7 @@
 	import Icon from '#lib/Icon.svelte';
 	import SubmitButton from '#lib/SubmitButton.svelte';
 	import ThemeSheet from '#lib/ThemeSheet.svelte';
+	import { recipeUrl } from '#lib/links.ts';
 	import { nameKey } from '#lib/names.ts';
 	import { timesText } from '#lib/recipes.ts';
 	import { shortWeekName } from '#lib/weeks.ts';
@@ -36,7 +37,7 @@
 	let shown = $derived(key ? sorted.filter((r) => nameKey(r.name).includes(key)) : sorted);
 	let exact = $derived(key ? data.recipes.find((r) => nameKey(r.name) === key) : undefined);
 	// A link is not a dish's name but a recipe to read.
-	let link = $derived(/^https?:\/\/\S+$/i.test(query.trim()));
+	let link = $derived(!!recipeUrl(query, true));
 
 	function meta(timesEaten: number, lastWeek: string | null) {
 		if (timesEaten === 0) return 'Inte ätit än';

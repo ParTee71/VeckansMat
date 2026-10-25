@@ -23,5 +23,9 @@ export async function createTestDb() {
 
 /** Empties the database, so each test starts clean. The other tables follow by cascade. */
 export async function clearTestDb(db: D1Database) {
-	await db.batch([db.prepare('DELETE FROM menu'), db.prepare('DELETE FROM recipe')]);
+	await db.batch([
+		db.prepare('DELETE FROM menu'),
+		db.prepare('DELETE FROM recipe'),
+		db.prepare('DELETE FROM claude_call')
+	]);
 }

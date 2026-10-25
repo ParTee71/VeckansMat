@@ -1,4 +1,5 @@
-// A made-up recipe site for the Playwright tests, so reading a link never leaves the machine.
+// A made-up recipe site for the Playwright tests, so reading a link never leaves the machine,
+// and a stand-in for Claude's API under /claude, so no test calls the real one.
 import { createServer } from 'node:http';
 
 const recipe = (name, extra = {}) => ({
@@ -20,8 +21,54 @@ const pages = {
 	'/linssoppa': recipe('Linssoppa', { recipeIngredient: ['3 dl röda linser', '1 gul lök'] }),
 	'/frallor': recipe('Frallor med ost', { recipeIngredient: ['5 dl vetemjöl', '2 dl riven ost'] }),
 	'/fiskgratang': recipe('Fiskgratäng'),
-	'/inget-recept': '<html><body>Inget här</body></html>'
+	'/inget-recept': '<html><body>Inget här</body></html>',
+	'/utan-jsonld': '<html><body><h1>Kålsoppa</h1><ul><li>1 vitkål</li></ul></body></html>'
 };
+
+const answer = (name, ingredients = [], extra = {}) => ({
+	name,
+	servings: null,
+	timeMinutes: null,
+	ingredients,
+	instructions: ingredients.length ? ['Blanda och laga.'] : [],
+	...extra
+});
+
+/** What the stand-in reads from a request: a recipe by what the text says, and its cost. */
+function claude(request) {
+	const content = request.messages[0].content;
+	const text = content.map((block) => block.text ?? '').join('\n');
+	// Only photos the phone made smaller, which are always JPEG.
+	if (content.some((block) => block.source?.media_type === 'image/jpeg')) {
+		return [answer('Saffransbullar', ['50 g jäst', '5 dl mjölk'], { servings: 30 })];
+	}
+	if (text.includes('Pannkakor')) return [answer('Pannkakor', ['3 dl vetemjöl', '6 dl mjölk'])];
+	if (text.includes('Kålsoppa')) return [answer('Kålsoppa', ['1 vitkål'])];
+	// Costs more than the month's cap of $5 at Haiku's $0.10 per million input tokens.
+	if (text.includes('Dyr gryta')) return [answer('Dyr gryta', ['1 kg oxkött']), 60_000_000];
+	return [answer('')];
+}
+
+function messages(request, response) {
+	let body = '';
+	request.on('data', (chunk) => (body += chunk));
+	request.on('end', () => {
+		const params = JSON.parse(body);
+		const [recipe, inputTokens = 1500] = claude(params);
+		response.writeHead(200, { 'content-type': 'application/json' }).end(
+			JSON.stringify({
+				id: 'msg_e2e',
+				type: 'message',
+				role: 'assistant',
+				model: params.model,
+				content: [{ type: 'text', text: JSON.stringify(recipe) }],
+				stop_reason: 'end_turn',
+				stop_sequence: null,
+				usage: { input_tokens: inputTokens, output_tokens: 300 }
+			})
+		);
+	});
+}
 
 const html = (data) =>
 	typeof data === 'string'
@@ -29,6 +76,9 @@ const html = (data) =>
 		: `<html><head><script type="application/ld+json">${JSON.stringify(data)}</script></head><body></body></html>`;
 
 createServer((request, response) => {
+	if (request.method === 'POST' && request.url === '/claude/v1/messages') {
+		return messages(request, response);
+	}
 	const data = pages[new URL(request.url, 'http://localhost').pathname];
 	if (data) response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(html(data));
 	else response.writeHead(403).end('Nekad');

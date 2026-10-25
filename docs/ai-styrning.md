@@ -5,6 +5,41 @@ skrivs vad som provats, varför, och hur det gick. Nyast överst. Hur
 styrningen är uppbyggd just nu står i
 [beslut 0008](beslut/0008-claude-code-uppsattning.md).
 
+## 2026-10-25 – Appens första prompt, och en eval som mäter den
+
+**Vad:** Claude Haiku 5.5 läser recept ur foton och inklistrad text (#26). Prompten står i
+`src/lib/server/claude/recipe-prompt.ts` och mäts med evalen i `evals/recept/`.
+
+**Hur prompten byggdes:**
+
+- **Formen styrs av ett schema, inte av prompten.** Svaret är strukturerad data (structured
+  outputs) med formulärets fält. Modellen kan inte svara i fel form, och prompten kan handla
+  om innehållet i stället för om JSON.
+- **Varje fält säger vad som gäller när källan är tyst**: `null` för portioner och tid som inte
+  står, tomt namn när det inte är ett recept. Det mesta som går fel när text plockas ut är
+  gissningar där källan inte säger något.
+- **"Skriv av, hitta inte på" först**, med exempel på vad som inte hör till receptet:
+  berättelser, kommentarer, reklam.
+- **Det inklistrade är material, inte instruktioner.** Texten ligger inom taggar
+  (`<recipe_text>`, `<web_page>`) och prompten säger det rakt ut. Evalen har ett fall där texten
+  försöker byta namn på rätten.
+- **Låg effort.** Att skriva av är inte svårt att resonera om, och Haiku 5.5 tänker annars på
+  medel.
+- **Evalen bedömer med regler, inte med en annan modell**: namnet, varje förväntad rad, inga
+  påhittade rader, stegen. Regler är billiga, ger samma svar varje gång och går att läsa.
+  Resultatet sparas så att en promptändring jämförs med förra körningen.
+
+**Första körningen** (Haiku 5.5, två körningar, under en cent var): 98 % och 99 % av 11 fall.
+Nio fall blev fulla båda gångerna. `text-meddelande` fick en gång tiden 20 minuter ur "låt
+puttra i 20 min". `text-blogg` missade tiden båda gångerna: bloggen säger att rätten "går på en
+kvart" och modellen skriver 15 minuter där evalen väntar sig `null`. Det är snarare en tveksam
+förväntan i fallet än ett fel i prompten, så prompten är orörd tills det är bestämt vad som ska
+gälla. Resultatet ligger i `evals/recept/results/latest.json`.
+
+**Lärdom:** Foton kom aldrig fram, fast enhetsproven var gröna. SvelteKits `use:enhance`
+skickar formuläret som vanlig formulärdata om formuläret inte är `multipart/form-data`, och då
+försvinner filer som lagts till med JavaScript utan något fel. Webbläsarprovet fångade det, igen.
+
 ## 2026-10-25 – Webbläsarprovet hittade det som ramverkets minne missade
 
 **Vad:** _Nytt recept_ (#25) bär med sig vilken rätt som fylls i som `?till=` i adressen. Claude

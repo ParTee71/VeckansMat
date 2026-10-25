@@ -1,24 +1,14 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { open, read, SITE } from '../../../../test/e2e';
 
-// Links point at the made-up recipe site in test/e2e-recipe-site.mjs. The dishes come from
-// test/e2e-seed.sql; new ones have names that sort after the seeded dishes.
-const SITE = 'http://localhost:4174';
-
-async function open(page: Page, path: string) {
-	await page.goto(path);
-	await expect.poll(() => page.evaluate(() => !!customElements.get('m3e-fab'))).toBe(true);
-}
-
-async function readLink(page: Page, link: string) {
-	await page.getByLabel('Länk till receptet').fill(link);
-	await page.getByRole('button', { name: 'Läs in receptet' }).click();
-}
+// The dishes come from test/e2e-seed.sql; new ones have names that sort after the seeded
+// dishes. Pages without JSON-LD are read by Claude, so those tests are in claude.svelte.e2e.ts.
 
 test('a recipe is read from a link, checked and saved', async ({ page }) => {
 	await open(page, '/ratter');
 	await page.locator('m3e-fab', { hasText: 'Nytt recept' }).click();
 	await expect(page).toHaveURL('/ratter/ny');
-	await readLink(page, `${SITE}/pumpasoppa`);
+	await read(page, `${SITE}/pumpasoppa`);
 
 	await expect(
 		page.getByText('Hämtat från localhost. Kolla att det stämmer och spara.')
@@ -64,11 +54,15 @@ test('a dish with only a name is filled in from its own page and keeps its name'
 	await page.getByRole('button', { name: 'Spara' }).click();
 	await expect(page).toHaveURL('/ratter/3');
 
-	await page.locator('m3e-button', { hasText: 'Hämta från en länk' }).click();
-	await readLink(page, `${SITE}/nekad`);
+	await page.locator('m3e-button', { hasText: 'Hämta från länk, foto eller text' }).click();
+	await read(page, `${SITE}/nekad`);
 	await expect(page.getByRole('alert')).toBeVisible();
-	await expect(page.getByText('Klistra in en länk till receptet på Ostfrallor.')).toBeVisible();
-	await readLink(page, `${SITE}/frallor`);
+	await expect(
+		page.getByText(
+			'Klistra in en länk eller texten till receptet på Ostfrallor, eller fotografera det.'
+		)
+	).toBeVisible();
+	await read(page, `${SITE}/frallor`);
 
 	await expect(page.getByText('Fyller i Ostfrallor.')).toBeVisible();
 	await expect(page.getByLabel('Namn')).toHaveValue('Ostfrallor');
@@ -87,38 +81,17 @@ test('a dish with only a name is filled in from its own page and keeps its name'
 
 test('a recipe is not saved over a dish that already has ingredients', async ({ page }) => {
 	await open(page, '/ratter/ny');
-	await readLink(page, `${SITE}/fiskgratang`);
+	await read(page, `${SITE}/fiskgratang`);
 	await expect(page.getByText('Fiskgratäng finns redan')).toBeVisible();
+	// The notice is there before the save too, so the answer is awaited: it fills the form
+	// again, and would undo a name written before it came.
+	const saved = page.waitForResponse((response) => response.url().includes('?/save'));
 	await page.getByRole('button', { name: 'Spara' }).click();
+	await saved;
 	await expect(page.getByText('Fiskgratäng finns redan')).toBeVisible();
 	await expect(page).toHaveURL(/\/ratter\/ny/);
 
 	await page.getByLabel('Namn').fill('Rödspätta i ugn');
 	await page.getByRole('button', { name: 'Spara' }).click();
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Rödspätta i ugn');
-});
-
-test('a page that cannot be read can still be filled in with the link', async ({ page }) => {
-	await open(page, '/ratter/ny');
-	await readLink(page, `${SITE}/nekad`);
-	await expect(page.getByRole('alert')).toHaveText(
-		'Sidan gick inte att hämta. Fyll i receptet själv, med länken sparad.'
-	);
-	await readLink(page, `${SITE}/inget-recept`);
-	await expect(page.getByRole('alert')).toContainText('Sidan har inget recept');
-
-	await page.getByRole('button', { name: 'Fyll i själv, med länken sparad' }).click();
-	await expect(page.getByLabel('Länk till receptet')).toHaveValue(`${SITE}/inget-recept`);
-	await page.getByLabel('Namn').fill('Rotfruktsgratäng');
-	await page.getByRole('button', { name: 'Spara' }).click();
-	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Rotfruktsgratäng');
-});
-
-test('text that is not a link is not read yet', async ({ page }) => {
-	await open(page, '/ratter/ny');
-	await readLink(page, 'Pannkakor\n3 dl vetemjöl');
-	await expect(page.getByRole('alert')).toHaveText(
-		'Än så länge går bara länkar att läsa. Text och foton kommer snart.'
-	);
-	await expect(page.getByLabel('Länk till receptet')).toHaveValue('Pannkakor\n3 dl vetemjöl');
 });

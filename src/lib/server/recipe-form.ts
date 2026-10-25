@@ -1,6 +1,6 @@
 import { nameKey } from '../names';
 import { LUNCHBOX_TAG } from '../recipes';
-import { recipeUrl } from './recipe-link';
+import { recipeUrl } from '../links';
 import type { RecipeInput } from './db/recipes';
 
 const FIELDS = [

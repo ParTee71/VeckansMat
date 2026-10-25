@@ -8,8 +8,9 @@ export default defineConfig({
 				'npm run build',
 				'npx wrangler d1 migrations apply DB --local --persist-to .wrangler/e2e',
 				'npx wrangler d1 execute DB --local --persist-to .wrangler/e2e --file test/e2e-seed.sql',
-				// Recipe links in the tests point at the made-up site below, on localhost.
-				'npx wrangler dev .svelte-kit/cloudflare/_worker.js --port 4173 --persist-to .wrangler/e2e --var ALLOW_LOCAL_FETCH:true'
+				// Recipe links in the tests point at the made-up site below, on localhost, which also
+				// stands in for Claude's API.
+				'npx wrangler dev .svelte-kit/cloudflare/_worker.js --port 4173 --persist-to .wrangler/e2e --var ALLOW_LOCAL_FETCH:true ANTHROPIC_API_KEY:e2e CLAUDE_BASE_URL:http://localhost:4174/claude'
 			].join(' && '),
 			port: 4173
 		},

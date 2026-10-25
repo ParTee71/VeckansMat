@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { env } from 'cloudflare:workers';
 import { nameKey } from '#lib/names.ts';
 import { addRecipe, listRecipes } from '#lib/server/db/recipes.ts';
-import { recipeUrl } from '#lib/server/recipe-link.ts';
+import { recipeUrl } from '#lib/links.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => ({ recipes: await listRecipes(env.DB) });
