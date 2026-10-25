@@ -6,9 +6,8 @@ test.describe.configure({ mode: 'serial' });
 
 test('a person is added with what they do not eat, changed and removed', async ({ page }) => {
 	await open(page, '/');
-	await page.locator('m3e-button', { hasText: 'Personer och regler' }).click();
+	await page.getByRole('link', { name: 'Ändra personer och regler' }).click();
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hushållet');
-	await expect(page.getByText('Inga personer än.')).toBeVisible();
 
 	await page.locator('m3e-button', { hasText: 'Lägg till person' }).click();
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ny person');
@@ -30,7 +29,8 @@ test('a person is added with what they do not eat, changed and removed', async (
 
 	await page.locator('m3e-list-action', { hasText: 'Kim Test' }).click();
 	await page.getByRole('button', { name: 'Ta bort Kim Test' }).click();
-	await expect(page.getByText('Inga personer än.')).toBeVisible();
+	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hushållet');
+	await expect(page.locator('m3e-list-action', { hasText: 'Kim Test' })).toHaveCount(0);
 });
 
 test('the rules for every week are saved as they are changed', async ({ page }) => {

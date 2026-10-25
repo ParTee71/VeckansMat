@@ -56,7 +56,8 @@ test('the old weeks show dishes and lines without a dish', async ({ page }) => {
 	await open(page, '/veckor');
 	await expect(page.getByText('Vecka 3 2030')).toBeVisible();
 	await expect(page.getByText('14 – 20 januari')).toBeVisible();
-	await expect(page.getByText('Rester')).toBeVisible();
+	// Other tests may add weeks of their own, so this looks in the seeded week.
+	await expect(page.locator('#vecka-1').getByText('Rester')).toBeVisible();
 	await page.getByRole('link', { name: 'Fiskgratäng' }).first().click();
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Fiskgratäng');
 });

@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 import pkg from '../../package.json' with { type: 'json' };
 
-test('start page shows the app name', async ({ page }) => {
+test('start page shows the week', async ({ page }) => {
 	await page.goto('/');
-	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Veckans mat');
+	await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Vecka \d+$/);
 });
 
 test('material components are registered in the browser', async ({ page }) => {

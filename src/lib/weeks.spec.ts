@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { isoWeek, shortWeekName, weekDates, weekName } from './weeks';
+import {
+	addWeeks,
+	isWeekStart,
+	isoWeek,
+	mondayOf,
+	shortWeekName,
+	swedishToday,
+	weekDates,
+	weekName,
+	weekToPlan
+} from './weeks';
 
 describe('weeks', () => {
 	it.each([
@@ -22,5 +32,31 @@ describe('weeks', () => {
 		expect(weekDates('2026-04-27')).toBe('27 april – 3 maj');
 		expect(weekDates('2024-09-02')).toBe('2 – 8 september');
 		expect(weekDates('2025-12-29')).toBe('29 december – 4 januari');
+	});
+});
+
+describe('the week to plan', () => {
+	it('is this week until Tuesday, and next week from Wednesday', () => {
+		expect(weekToPlan('2026-10-26')).toBe('2026-10-26');
+		expect(weekToPlan('2026-10-27')).toBe('2026-10-26');
+		expect(weekToPlan('2026-10-28')).toBe('2026-11-02');
+		expect(weekToPlan('2026-11-01')).toBe('2026-11-02');
+	});
+
+	it('starts on a Monday, also across a year', () => {
+		expect(mondayOf('2027-01-01')).toBe('2026-12-28');
+		expect(addWeeks('2026-12-28', 1)).toBe('2027-01-04');
+	});
+
+	it('is told from other text', () => {
+		expect(isWeekStart('2026-10-26')).toBe(true);
+		expect(isWeekStart('2026-10-27')).toBe(false);
+		expect(isWeekStart('2026-02-30')).toBe(false);
+		expect(isWeekStart('vecka 44')).toBe(false);
+	});
+
+	it('follows the date in Sweden', () => {
+		// 23:30 UTC on a Tuesday is already Wednesday in Sweden.
+		expect(swedishToday(new Date('2026-10-27T23:30:00Z'))).toBe('2026-10-28');
 	});
 });
