@@ -130,23 +130,33 @@ async function request(
 }
 
 /**
- * Fills the week with Claude's suggestion for those who eat. What was written by hand stays, and
- * Claude's earlier suggestion is replaced. Nothing is written when Claude fails.
+ * Fills the week with Claude's suggestion for those who eat, replacing Claude's earlier one. What
+ * was written by hand stays, unless the whole week is asked for. Nothing is written when Claude
+ * fails.
  */
 export async function suggestWeek(
 	db: D1Database,
 	weekStart: string,
 	wish: string,
 	eaters: number[],
-	ask: Ask
+	ask: Ask,
+	wholeWeek = false
 ): Promise<void> {
 	const week = await getWeek(db, weekStart);
 	const byHand = week.rows.filter((r) => r.reason === null);
-	const fill = weekSlots(week).filter((slot) => !byHand.some((r) => sameSlot(r, slot)));
+	const kept = wholeWeek ? [] : byHand;
+	const fill = weekSlots(week).filter((slot) => !kept.some((r) => sameSlot(r, slot)));
 	if (!fill.length) return;
-	const rows = await suggestMenu(await request(db, week, fill, byHand, eaters, wish), ask);
+	const rows = await suggestMenu(await request(db, week, fill, kept, eaters, wish), ask);
 	await setWeekWish(db, weekStart, wish, eaters);
-	await setWeekRows(db, weekStart, rows, eaters);
+	// A day written by hand is replaced only when the whole week is asked for.
+	const replaces = (slot: Slot) => byHand.find((r) => sameSlot(r, slot))?.text;
+	await setWeekRows(
+		db,
+		weekStart,
+		wholeWeek ? rows.map((row) => ({ ...row, replaces: replaces(row) })) : rows,
+		eaters
+	);
 }
 
 /** A swap: the day as it was, so it can be put back, and the dish it got. */

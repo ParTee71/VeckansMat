@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ActionResult } from '$app/forms';
+	import type { M3eDialogElement } from '@m3e/web/dialog';
 	import type { M3eSnackbarElement } from '@m3e/web/snackbar';
 	import { postAction, type Fields } from '#lib/actions.ts';
 	import DayEditor from '#lib/DayEditor.svelte';
@@ -10,7 +11,15 @@
 	import { MEAL_LABELS } from '#lib/recipes.ts';
 	import type { Meal, RowInput, Week } from '#lib/server/db/menus.ts';
 	import type { RecipeSummary } from '#lib/server/db/recipes.ts';
-	import { WEEK_DAYS, WEEKDAY_NAMES, WEEKDAYS, hasLunch, isoWeek, weekDates } from '#lib/weeks.ts';
+	import {
+		WEEK_DAYS,
+		WEEKDAY_NAMES,
+		WEEKDAYS,
+		dayList,
+		hasLunch,
+		isoWeek,
+		weekDates
+	} from '#lib/weeks.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -55,6 +64,10 @@
 		null
 	);
 	let hasSuggestion = $derived(week.rows.some((r) => r.reason !== null));
+	// Days written by hand, which a new suggestion keeps unless the whole week is asked for.
+	let byHand = $derived(dayList(week.rows.filter((r) => r.reason === null)));
+	// The question before a week that has a menu is suggested again.
+	let asking = $state(false);
 
 	const keyOf = (weekday: number, meal: Meal) => `${week.weekStart}-${meal}-${weekday}`;
 	const stored = (weekday: number, meal: Meal) =>
@@ -98,12 +111,26 @@
 		return result;
 	}
 
-	async function suggest() {
+	async function suggest(wholeWeek = false) {
 		editing = null;
 		const weekStart = week.weekStart;
 		suggestingWeeks[weekStart] = true;
-		await postSuggest('suggest', { wish, eaters: eaterIds });
+		await postSuggest('suggest', { wish, eaters: eaterIds, wholeWeek: String(wholeWeek) });
 		delete suggestingWeeks[weekStart];
+	}
+
+	// A week with nothing in it is suggested at once; otherwise the dialog asks first.
+	function askSuggest() {
+		if (week.rows.length) asking = true;
+		else suggest();
+	}
+
+	function onAnswer(event: Event & { currentTarget: M3eDialogElement }) {
+		const dialog = event.currentTarget;
+		const answer = dialog.returnValue;
+		dialog.returnValue = '';
+		asking = false;
+		if (answer) suggest(answer === 'week');
 	}
 
 	async function swap(weekday: number, meal: Meal) {
@@ -261,7 +288,7 @@
 				<m3e-icon-button
 					aria-label="Nytt förslag på hela veckan"
 					disabled={busy || undefined}
-					onclick={suggest}
+					onclick={askSuggest}
 				>
 					<Icon name="suggest" />
 				</m3e-icon-button>
@@ -280,7 +307,12 @@
 				/>
 			</m3e-form-field>
 			<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
-			<m3e-button class="suggest" variant="filled" disabled={busy || undefined} onclick={suggest}>
+			<m3e-button
+				class="suggest"
+				variant="filled"
+				disabled={busy || undefined}
+				onclick={askSuggest}
+			>
 				<span slot="icon" class="slot-icon"><Icon name="suggest" /></span>Föreslå veckan
 			</m3e-button>
 		{/if}
@@ -340,6 +372,34 @@
 	{/if}
 </main>
 
+<m3e-dialog open={asking || undefined} onclosed={onAnswer}>
+	<span slot="header" class="dialog-header">
+		{hasSuggestion ? 'Föreslå veckan igen?' : 'Föreslå veckan?'}<Icon name="suggest" />
+	</span>
+	{#if byHand}
+		Du har skrivit in {byHand} själv. Ska Claude {hasSuggestion
+			? 'byta bara sina rätter, eller hela veckan'
+			: 'fylla i resten, eller föreslå hela veckan'}?
+	{:else}
+		Claudes rätter för vecka {isoWeek(week.weekStart).week} byts mot nya förslag.
+	{/if}
+	<div slot="actions" class="dialog-actions">
+		{#if byHand}
+			<m3e-button>
+				<m3e-dialog-action return-value="rest">
+					{hasSuggestion ? 'Bara Claudes rätter' : 'Fyll i resten'}
+				</m3e-dialog-action>
+			</m3e-button>
+		{/if}
+		<m3e-button>
+			<m3e-dialog-action return-value="week"
+				>{byHand ? 'Hela veckan' : 'Föreslå igen'}</m3e-dialog-action
+			>
+		</m3e-button>
+		<m3e-button><m3e-dialog-action>Avbryt</m3e-dialog-action></m3e-button>
+	</div>
+</m3e-dialog>
+
 {#key swapped}
 	{#if swapped}
 		<m3e-snackbar action="Ångra" duration="6000" open ontoggle={undoSwap}>
@@ -349,6 +409,25 @@
 {/key}
 
 <style>
+	.dialog-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		color: var(--md-sys-color-on-surface);
+	}
+
+	.dialog-header :global(svg) {
+		flex-shrink: 0;
+		color: var(--md-sys-color-primary);
+	}
+
+	.dialog-actions {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+	}
+
 	.list-heading h2 {
 		font-size: inherit;
 	}

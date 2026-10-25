@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	addWeeks,
+	dayList,
 	isWeekStart,
 	isoWeek,
 	mondayOf,
@@ -33,6 +34,16 @@ describe('weeks', () => {
 		expect(weekDates('2026-04-27')).toBe('27 april – 3 maj');
 		expect(weekDates('2024-09-02')).toBe('2 – 8 september');
 		expect(weekDates('2025-12-29')).toBe('29 december – 4 januari');
+	});
+
+	it('name days in a sentence, in week order', () => {
+		const dinner = (weekday: number) => ({ weekday, meal: 'dinner' as const });
+		expect(dayList([])).toBe('');
+		expect(dayList([dinner(2)])).toBe('tisdag');
+		expect(dayList([dinner(5), dinner(2)])).toBe('tisdag och fredag');
+		expect(dayList([{ weekday: 6, meal: 'lunch' }, dinner(6), dinner(1)])).toBe(
+			'måndag, lördag och lunch lördag'
+		);
 	});
 });
 

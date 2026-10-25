@@ -89,7 +89,8 @@ export const actions: Actions = {
 		const wish = String(form.get('wish') ?? '');
 		const weekStart = weekOf(form);
 		try {
-			await suggestWeek(env.DB, weekStart, wish, eatersOf(form), askMenu);
+			const wholeWeek = form.get('wholeWeek') === 'true';
+			await suggestWeek(env.DB, weekStart, wish, eatersOf(form), askMenu, wholeWeek);
 			return changed(weekStart);
 		} catch (e) {
 			return suggestFailed(e);
