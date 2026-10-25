@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { open, saved } from '../../../test/e2e';
+import { countLoads, open, saved } from '../../../test/e2e';
 
 // Runs after the tests of Veckan, in its own Playwright project, since both write the weeks Veckan
 // shows. The made-up dishes come from test/e2e-seed.sql.
@@ -41,6 +41,9 @@ test('the week shopping list is made from the dishes and ticked off in the store
 	await page.reload();
 	await expect(page.getByRole('checkbox', { name: 'Gul lök' })).toBeChecked();
 
+	// Nothing in the store loads the page again, so nothing on it jumps.
+	const loads = countLoads(page);
+
 	// Undo takes it out of the basket again.
 	await page.getByRole('checkbox', { name: 'Salt' }).click();
 	await page.locator('m3e-snackbar').getByRole('button', { name: 'Ångra' }).click();
@@ -50,6 +53,8 @@ test('the week shopping list is made from the dishes and ticked off in the store
 	await page.getByRole('textbox', { name: 'Lägg till en vara' }).fill('Kaffe');
 	await page.keyboard.press('Enter');
 	await expect(page.getByRole('checkbox', { name: 'Kaffe' })).toBeVisible();
+	await saved(page);
+	expect(loads()).toBe(0);
 	await page.locator('m3e-icon-button[aria-label="Gör om listan från veckan"]').click();
 	await expect(page.getByRole('checkbox', { name: 'Kaffe' })).toBeVisible();
 	await expect(page.getByRole('checkbox', { name: 'Gul lök' })).toBeChecked();

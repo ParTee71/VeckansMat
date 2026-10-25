@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { M3eSnackbarElement } from '@m3e/web/snackbar';
+	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { postAction, type Fields } from '#lib/actions.ts';
 	import Icon from '#lib/Icon.svelte';
@@ -11,6 +12,16 @@
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+
+	// The list as the latest change answered with it, per week, which the page shows until it
+	// loads again. An answer to an older change than one already shown is left out.
+	let answered = $state<Record<string, { items: ShoppingItem[]; change: number }>>({});
+	let changes = 0;
+	$effect.pre(() => {
+		void data;
+		answered = {};
+	});
+	let items = $derived(answered[data.weekStart]?.items ?? data.items);
 
 	let isNext = $derived(data.weekStart === data.nextWeek);
 
@@ -34,8 +45,8 @@
 	let listError = $derived(listErrors[data.weekStart]);
 
 	const isChecked = (item: ShoppingItem) => pendingChecked[item.id] ?? item.checked;
-	let toBuy = $derived(data.items.filter((item) => !isChecked(item)));
-	let basket = $derived(data.items.filter(isChecked));
+	let toBuy = $derived(items.filter((item) => !isChecked(item)));
+	let basket = $derived(items.filter(isChecked));
 	let added = $derived(adding[data.weekStart] ?? []);
 
 	// Written by hand first, under the field they are written in, then the store's sections in
@@ -58,10 +69,17 @@
 			: item.dishes;
 
 	let onlyName = $derived(data.dishes.filter((dish) => !dish.hasIngredients));
-	let isEmpty = $derived(data.items.length === 0 && added.length === 0);
+	let isEmpty = $derived(items.length === 0 && added.length === 0);
 
 	async function post(action: string, fields: Fields) {
-		const result = await postAction(action, { weekStart: data.weekStart, ...fields });
+		const weekStart = data.weekStart;
+		const change = ++changes;
+		const result = await postAction(action, { weekStart, ...fields });
+		if (result?.type === 'success' && result.data?.items) {
+			const fresh = result.data.items as ShoppingItem[];
+			if (change > (answered[weekStart]?.change ?? 0))
+				answered[weekStart] = { items: fresh, change };
+		}
 		if (!result || result.type === 'error') failed = true;
 		return result;
 	}
@@ -74,6 +92,8 @@
 		if (result?.type === 'failure') {
 			listErrors[weekStart] = result.data?.shoppingError as 'failed' | 'limit';
 		}
+		// A new list changes the whole page, so it loads again.
+		await invalidateAll();
 		delete makingWeeks[weekStart];
 	}
 

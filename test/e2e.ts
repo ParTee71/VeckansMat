@@ -21,3 +21,12 @@ export async function read(page: Page, text: string) {
 	await page.getByLabel('Länk eller recepttext').fill(text);
 	await page.getByRole('button', { name: 'Läs in receptet' }).click();
 }
+
+/** Counts from now on how often the page loads its data again. */
+export function countLoads(page: Page) {
+	let loads = 0;
+	page.on('request', (request) => {
+		if (request.url().includes('__data.json')) loads++;
+	});
+	return () => loads;
+}

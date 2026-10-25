@@ -64,29 +64,43 @@ function suggestFailed(e: unknown) {
 
 const askMenu = askFor('menu');
 
+/** What a change answers with, so the page shows it without loading again. */
+async function changed(weekStart: string) {
+	const [week, recipes] = await Promise.all([getWeek(env.DB, weekStart), listRecipes(env.DB)]);
+	return { week, recipes };
+}
+
 export const actions: Actions = {
 	row: async ({ request }) => {
 		const form = await request.formData();
 		const text = String(form.get('text') ?? '');
-		await setWeekRow(env.DB, weekOf(form), { ...slotOf(form), text }, eatersOf(form));
+		const weekStart = weekOf(form);
+		await setWeekRow(env.DB, weekStart, { ...slotOf(form), text }, eatersOf(form));
+		return changed(weekStart);
 	},
 	eaters: async ({ request }) => {
 		const form = await request.formData();
-		await setWeekEaters(env.DB, weekOf(form), eatersOf(form));
+		const weekStart = weekOf(form);
+		await setWeekEaters(env.DB, weekStart, eatersOf(form));
+		return changed(weekStart);
 	},
 	suggest: async ({ request }) => {
 		const form = await request.formData();
 		const wish = String(form.get('wish') ?? '');
+		const weekStart = weekOf(form);
 		try {
-			await suggestWeek(env.DB, weekOf(form), wish, eatersOf(form), askMenu);
+			await suggestWeek(env.DB, weekStart, wish, eatersOf(form), askMenu);
+			return changed(weekStart);
 		} catch (e) {
 			return suggestFailed(e);
 		}
 	},
 	swap: async ({ request }) => {
 		const form = await request.formData();
+		const weekStart = weekOf(form);
 		try {
-			return (await swapRow(env.DB, weekOf(form), slotOf(form), askMenu)) ?? {};
+			const swapped = await swapRow(env.DB, weekStart, slotOf(form), askMenu);
+			return { ...swapped, ...(await changed(weekStart)) };
 		} catch (e) {
 			return suggestFailed(e);
 		}
@@ -104,6 +118,8 @@ export const actions: Actions = {
 			})),
 			passedOn: listOf(form, 'passedOn', isText)
 		};
-		await setWeekRow(env.DB, weekOf(form), row, eatersOf(form));
+		const weekStart = weekOf(form);
+		await setWeekRow(env.DB, weekStart, row, eatersOf(form));
+		return changed(weekStart);
 	}
 };

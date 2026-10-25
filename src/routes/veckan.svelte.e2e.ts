@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { open, saved } from '../../test/e2e';
+import { countLoads, open, saved } from '../../test/e2e';
 
 // The made-up dishes come from test/e2e-seed.sql. Veckan shows this week or the next, so the
 // tests do not depend on which day they run.
@@ -11,6 +11,9 @@ test('a week is written as quickly as on a note', async ({ page }) => {
 	await page.getByRole('textbox', { name: 'Middag måndag' }).fill('fiskgr');
 	await page.getByRole('button', { name: /^Fiskgratäng/ }).click();
 	await expect(page.getByRole('button', { name: 'Middag måndag: Fiskgratäng' })).toBeVisible();
+
+	// Writing a day does not load the page again, so nothing on it jumps.
+	const loads = countLoads(page);
 
 	// Enter writes the day and goes on to the next.
 	await page.getByRole('button', { name: /^Middag tisdag/ }).click();
@@ -28,6 +31,7 @@ test('a week is written as quickly as on a note', async ({ page }) => {
 	await expect(page.getByRole('button', { name: 'Lunch torsdag: Ostfrallor' })).toBeVisible();
 
 	await saved(page);
+	expect(loads()).toBe(0);
 	await page.reload();
 	await expect(page.getByRole('button', { name: 'Middag måndag: Fiskgratäng' })).toBeVisible();
 	await expect(

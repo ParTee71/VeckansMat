@@ -1,5 +1,4 @@
 import { deserialize, type ActionResult } from '$app/forms';
-import { invalidateAll } from '$app/navigation';
 
 export type Fields = Record<string, string | number | number[]>;
 
@@ -19,8 +18,9 @@ if (typeof window !== 'undefined') {
 }
 
 /**
- * Posts to one of the page's form actions and loads the page's data again. Null when no answer
- * came, because the network is down.
+ * Posts to one of the page's form actions. The page is not loaded again, so nothing on it moves:
+ * what the action answers is for the page to show. Null when no answer came, because the
+ * network is down.
  */
 export async function postAction(action: string, fields: Fields): Promise<ActionResult | null> {
 	const body = new FormData();
@@ -41,10 +41,6 @@ export async function postAction(action: string, fields: Fields): Promise<Action
 	} catch {
 		// No answer.
 	}
-	try {
-		await invalidateAll();
-	} finally {
-		track(-1);
-	}
+	track(-1);
 	return result;
 }
