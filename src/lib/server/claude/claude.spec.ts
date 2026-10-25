@@ -56,6 +56,19 @@ describe('a call to Claude', () => {
 		]);
 	});
 
+	it('logs what was written to and read from the cache apart', async () => {
+		const { client } = fakeClaude({
+			usage: { ...usage(100, 200), cache_creation_input_tokens: 3000, cache_read_input_tokens: 500 }
+		});
+		await ask(db, 'menu', params, client);
+		const { results } = await db
+			.prepare('SELECT input_tokens, cache_write_tokens, cache_read_tokens FROM claude_call')
+			.all();
+		expect(results).toEqual([
+			{ input_tokens: 3600, cache_write_tokens: 3000, cache_read_tokens: 500 }
+		]);
+	});
+
 	it('is not made once the month has cost the cap', async () => {
 		await db
 			.prepare(
