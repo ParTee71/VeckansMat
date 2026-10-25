@@ -35,6 +35,8 @@
 	let key = $derived(nameKey(query));
 	let shown = $derived(key ? sorted.filter((r) => nameKey(r.name).includes(key)) : sorted);
 	let exact = $derived(key ? data.recipes.find((r) => nameKey(r.name) === key) : undefined);
+	// A link is not a dish's name but a recipe to read.
+	let link = $derived(/^https?:\/\/\S+$/i.test(query.trim()));
 
 	function meta(timesEaten: number, lastWeek: string | null) {
 		if (timesEaten === 0) return 'Inte ätit än';
@@ -42,7 +44,8 @@
 		return lastWeek ? `${times} · senast ${shortWeekName(lastWeek)}` : times;
 	}
 
-	// A dish that already exists is opened instead of added again.
+	// A dish that already exists is opened instead of added again. A link is sent on, and the
+	// server sends it to Nytt recept.
 	const add: SubmitFunction = ({ cancel }) => {
 		if (exact) {
 			cancel();
@@ -89,7 +92,9 @@
 				bind:value={query}
 			/>
 		</m3e-search-bar>
-		{#if key && !exact}
+		{#if link}
+			<SubmitButton variant="filled" size="medium" icon="link">Hämta receptet</SubmitButton>
+		{:else if key && !exact}
 			<SubmitButton variant="filled" size="medium" icon="add"
 				>Lägg till ”{query.trim()}”</SubmitButton
 			>
@@ -113,7 +118,7 @@
 			</m3e-button-group>
 			<span>{data.recipes.length} rätter</span>
 		</div>
-	{:else if shown.length > 0 && !exact}
+	{:else if shown.length > 0 && !exact && !link}
 		<h2>Liknande rätter</h2>
 	{/if}
 
@@ -135,6 +140,11 @@
 	{/if}
 </main>
 
+<m3e-fab extended variant="primary-container" href="/ratter/ny">
+	<Icon name="add" />
+	<span slot="label">Nytt recept</span>
+</m3e-fab>
+
 <ThemeSheet id="theme" />
 
 {#key form?.added}
@@ -149,7 +159,8 @@
 	main {
 		max-width: 40rem;
 		margin: 0 auto;
-		padding: 1rem;
+		/* Room below the list for the floating button. */
+		padding: 1rem 1rem 5.5rem;
 		display: flex;
 		flex-direction: column;
 		gap: 0.875rem;
@@ -199,6 +210,14 @@
 
 	m3e-list {
 		--m3e-segmented-list-item-container-color: var(--md-sys-color-surface-container);
+	}
+
+	m3e-fab {
+		position: fixed;
+		right: 1rem;
+		/* Above the nav bar, which is 5rem high. */
+		bottom: calc(5rem + 1rem + env(safe-area-inset-bottom));
+		z-index: 1;
 	}
 
 	.empty {

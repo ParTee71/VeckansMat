@@ -1,5 +1,6 @@
 import { nameKey } from '../names';
 import { LUNCHBOX_TAG } from '../recipes';
+import { recipeUrl } from './recipe-link';
 import type { RecipeInput } from './db/recipes';
 
 const FIELDS = [
@@ -42,8 +43,7 @@ export function parseRecipeForm(form: FormData): RecipeForm {
 	if (timeMinutes === undefined) return invalid('Tiden ska vara ett antal minuter.');
 	// Only web pages, so a stored link can never run script when it is opened.
 	const sourceUrl = values.sourceUrl.trim() || null;
-	if (sourceUrl && !/^https?:$/.test(URL.parse(sourceUrl)?.protocol ?? ''))
-		return invalid('Länken ska börja med https://');
+	if (sourceUrl && !recipeUrl(sourceUrl, true)) return invalid('Länken ska börja med https://');
 
 	const tags = new Set(
 		values.tags

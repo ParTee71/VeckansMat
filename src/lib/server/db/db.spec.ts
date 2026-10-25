@@ -4,6 +4,8 @@ import { nameKey } from '../../names';
 import { listMenus, saveMenu } from './menus';
 import {
 	addRecipe,
+	createRecipe,
+	findRecipeByName,
 	getRecipe,
 	listRecipes,
 	NameTakenError,
@@ -204,17 +206,17 @@ describe('adding a recipe', () => {
 	});
 });
 
-describe('a recipe', () => {
-	const full: RecipeInput = {
-		name: 'Fiskgratäng',
-		servings: 4,
-		timeMinutes: 45,
-		instructions: 'Koka potatisen.\nGratinera.',
-		sourceUrl: 'https://recept.exempel.se/fisk',
-		ingredients: ['600 g torskfilé', '2 dl grädde'],
-		tags: ['fisk', 'vardag']
-	};
+const full: RecipeInput = {
+	name: 'Fiskgratäng',
+	servings: 4,
+	timeMinutes: 45,
+	instructions: 'Koka potatisen.\nGratinera.',
+	sourceUrl: 'https://recept.exempel.se/fisk',
+	ingredients: ['600 g torskfilé', '2 dl grädde'],
+	tags: ['fisk', 'vardag']
+};
 
+describe('a recipe', () => {
 	it('is unknown when no recipe has the id', async () => {
 		expect(await getRecipe(db, 999)).toBeNull();
 	});
@@ -264,5 +266,45 @@ describe('a recipe', () => {
 		const id = await addRecipe(db, 'fiskgratäng');
 		await updateRecipe(db, id, full);
 		expect((await getRecipe(db, id))?.name).toBe('Fiskgratäng');
+	});
+
+	it('can be added whole', async () => {
+		const id = await createRecipe(db, { ...full, name: ' Fiskgratäng ' });
+		expect(await getRecipe(db, id)).toEqual({ id, ...full, weeks: [] });
+	});
+
+	it('is not added whole under a name that is taken, and the other is left as it was', async () => {
+		const id = await addRecipe(db, 'Fiskgratäng');
+		await expect(createRecipe(db, { ...full, name: 'FISKGRATÄNG' })).rejects.toThrow(
+			NameTakenError
+		);
+		expect(await recipes()).toEqual([{ id, name: 'Fiskgratäng' }]);
+		expect((await getRecipe(db, id))?.ingredients).toEqual([]);
+	});
+});
+
+describe('finding a recipe by name', () => {
+	it('tells whether it has only a name and how often it was eaten', async () => {
+		await saveMenu(db, week('2030-01-07', 'Linssoppa'));
+		await saveMenu(db, week('2030-01-14', 'Linssoppa'));
+		expect(await findRecipeByName(db, ' LINSSOPPA')).toEqual({
+			id: expect.any(Number),
+			name: 'Linssoppa',
+			onlyName: true,
+			timesEaten: 2
+		});
+	});
+
+	it('does not count a recipe with ingredients or steps as only a name', async () => {
+		const withIngredients = await addRecipe(db, 'Fiskgratäng');
+		await updateRecipe(db, withIngredients, { ...full, instructions: null });
+		const withSteps = await addRecipe(db, 'Linssoppa');
+		await updateRecipe(db, withSteps, { ...full, name: 'Linssoppa', ingredients: [] });
+		expect((await findRecipeByName(db, 'fiskgratäng'))?.onlyName).toBe(false);
+		expect((await findRecipeByName(db, 'linssoppa'))?.onlyName).toBe(false);
+	});
+
+	it('is null when there is none', async () => {
+		expect(await findRecipeByName(db, 'Ärtsoppa')).toBeNull();
 	});
 });

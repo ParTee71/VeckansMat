@@ -9,6 +9,7 @@ Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ä
 - En ny rätt läggs till med namnet och ett tryck, och fylls på med ingredienser, steg och taggar när man vill. En rätt kan markeras som att den passar till matlådor. (#21)
 - Appen har bytt färg till terrakotta på vit bakgrund. (#21)
 - Var och en kan byta appens färg på sin egen telefon: terrakotta, skiffer, salvia, eukalyptus, oliv eller en egen färg. (#22)
+- Ett recept kan läggas till från en länk: appen läser in det från receptsidan, och man kollar och sparar. Har rätten bara ett namn fylls den i, och veckorna den ätits ligger kvar. (#25)
 
 ## 0.2.0
 

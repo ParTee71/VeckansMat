@@ -5,6 +5,18 @@ skrivs vad som provats, varför, och hur det gick. Nyast överst. Hur
 styrningen är uppbyggd just nu står i
 [beslut 0008](beslut/0008-claude-code-uppsattning.md).
 
+## 2026-10-25 – Webbläsarprovet hittade det som ramverkets minne missade
+
+**Vad:** _Nytt recept_ (#25) bär med sig vilken rätt som fylls i som `?till=` i adressen. Claude
+skickade det i ett dolt fält i formuläret, som i SvelteKit 2.
+
+**Lärdom:** Enhetsproven var gröna, men webbläsarprovet föll: efter ett misslyckat försök hade
+sidan glömt rätten. SvelteKit 3 gör som webbläsaren och landar på formulärets adress efter
+inskickning, och `?/read` har ingen annan fråga. Ett dolt fält räckte alltså inte; frågan måste
+stå i formulärets adress. Ett prov som går hela vägen i en riktig webbläsare, gärna med ett
+misslyckat steg före det lyckade, fångar sådant som en modell med ett äldre ramverk i minnet
+skriver fel med full säkerhet.
+
 ## 2026-10-24 – Fyra granskare med var sin vinkel hittar olika saker
 
 **Vad:** Rätterna (#21) gick genom `/simplify` (fyra agenter: återbruk, förenkling, effektivitet,
