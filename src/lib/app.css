@@ -1,0 +1,148 @@
+/* What several views share. A view's own styles are scoped, so they win over these. */
+
+h2 {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 700;
+}
+
+/* A second line under a row's text. */
+.meta {
+	font-size: 0.8125rem;
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+/* The column of a view about the week. */
+.page {
+	max-width: 40rem;
+	margin: 0 auto;
+	padding: 1rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+/* A form that is a view of its own, under its FormHeader. */
+.form-page {
+	max-width: 40rem;
+	margin: 0 auto;
+	padding: 0 1rem 1rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.hint {
+	margin: 0;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+/* A small line under a form or a list. */
+.note {
+	margin: 0 0.25rem;
+	font-size: 0.8125rem;
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+/* What went wrong, as a box of its own. */
+.error {
+	margin: 0;
+	padding: 0.75rem 1rem;
+	border-radius: 1rem;
+	background: var(--md-sys-color-error-container);
+	color: var(--md-sys-color-on-error-container);
+}
+
+/* What went wrong, as a line under a field. */
+.error-text {
+	margin: 0;
+	color: var(--md-sys-color-error);
+}
+
+/* A list of rows that sit close together, rounded at its ends. */
+.segmented {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.segment {
+	border-radius: 0.25rem;
+	background: var(--md-sys-color-surface-container);
+	display: flex;
+	align-items: center;
+}
+
+.segment:first-child {
+	border-top-left-radius: 1.25rem;
+	border-top-right-radius: 1.25rem;
+}
+
+.segment:last-child {
+	border-bottom-left-radius: 1.25rem;
+	border-bottom-right-radius: 1.25rem;
+}
+
+/* The day at the start of a row on Veckan. */
+.weekday {
+	width: 2.25rem;
+	flex-shrink: 0;
+	font-size: 0.8125rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--md-sys-color-primary);
+}
+
+.choices {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+/* A quick choice, smaller than an m3e chip. */
+.chip {
+	min-height: 2.25rem;
+	padding: 0 0.875rem;
+	border: 1px solid var(--md-sys-color-outline);
+	border-radius: 0.5rem;
+	background: transparent;
+	color: var(--md-sys-color-on-surface-variant);
+	font: inherit;
+	font-size: 0.875rem;
+	font-weight: 500;
+	cursor: pointer;
+}
+
+/* The title of a view in the nav bar. */
+.view-title {
+	margin: 0;
+	font-size: 2.25rem;
+	line-height: 2.75rem;
+	font-weight: 800;
+	letter-spacing: -0.03em;
+}
+
+/* The heading above a list, with room for a button at its end. */
+.list-heading {
+	margin: 0.5rem 0 0 0.25rem;
+	min-height: 2.5rem;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	font-size: 0.875rem;
+	color: var(--md-sys-color-on-surface-variant);
+}
+
+m3e-form-field {
+	width: 100%;
+}
+
+m3e-list {
+	--m3e-segmented-list-item-container-color: var(--md-sys-color-surface-container);
+}

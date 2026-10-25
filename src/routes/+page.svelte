@@ -2,11 +2,12 @@
 	import type { ActionResult } from '$app/forms';
 	import type { M3eSnackbarElement } from '@m3e/web/snackbar';
 	import { postAction, type Fields } from '#lib/actions.ts';
-	import { resolve } from '$app/paths';
+	import DayEditor from '#lib/DayEditor.svelte';
 	import Icon from '#lib/Icon.svelte';
 	import WeekHeader from '#lib/WeekHeader.svelte';
-	import { nameKey, plural } from '#lib/names.ts';
-	import { isDish, MEAL_LABELS, NOT_DISHES, timesText } from '#lib/recipes.ts';
+	import WhoEats from '#lib/WhoEats.svelte';
+	import { plural } from '#lib/names.ts';
+	import { MEAL_LABELS } from '#lib/recipes.ts';
 	import type { Meal, RowInput, Week } from '#lib/server/db/menus.ts';
 	import type { RecipeSummary } from '#lib/server/db/recipes.ts';
 	import { WEEK_DAYS, WEEKDAY_NAMES, WEEKDAYS, hasLunch, isoWeek, weekDates } from '#lib/weeks.ts';
@@ -26,7 +27,6 @@
 	});
 	let week = $derived(answered[data.week.weekStart]?.week ?? data.week);
 	let recipes = $derived(answered[data.week.weekStart]?.recipes ?? data.recipes);
-	let isNext = $derived(week.weekStart === data.nextWeek);
 
 	// Text just written shows at once, before the server has answered.
 	let pending = $state<Record<string, string>>({});
@@ -72,20 +72,7 @@
 	);
 	let freeLunchDays = $derived(WEEK_DAYS.filter((d) => !lunchDays.includes(d)));
 
-	let eaters = $derived(data.people.filter((p) => eaterIds.includes(p.id)));
 	let extra = $derived(data.settings.lunchboxExtraPortions);
-
-	// Dishes matching what is written, the most eaten first.
-	let key = $derived(nameKey(draft));
-	let matches = $derived(
-		key
-			? recipes
-					.filter((r) => nameKey(r.name).includes(key))
-					.toSorted((a, b) => b.timesEaten - a.timesEaten || a.name.localeCompare(b.name, 'sv'))
-					.slice(0, 5)
-			: []
-	);
-	let isNew = $derived(key && isDish(draft) && !recipes.some((r) => nameKey(r.name) === key));
 
 	async function post(action: string, fields: Fields): Promise<ActionResult | null> {
 		const change = ++changes;
@@ -181,9 +168,6 @@
 		if (next) edit(next, meal);
 	}
 
-	// The text field loses focus when a suggestion is tapped, so suggestions keep it.
-	const keepFocus = (event: Event) => event.preventDefault();
-
 	// The latest tap per week, whose answer clears what is shown.
 	const eaterRequests: Record<string, number> = {};
 
@@ -205,7 +189,6 @@
 	// Why Claude chose the dish, and how much extra to cook of a lunch-box dish.
 	const metaText = (row: { reason: string | null; lunchbox: boolean }) =>
 		[row.reason, row.lunchbox && extraText(extra)].filter(Boolean).join(' · ');
-	const focus = (input: HTMLInputElement) => input.focus();
 </script>
 
 <svelte:head>
@@ -217,84 +200,27 @@
 	{@const label = WEEKDAYS[weekday - 1]}
 	{@const name = `${MEAL_LABELS[meal]} ${WEEKDAY_NAMES[weekday - 1]}`}
 	{#if editing === keyOf(weekday, meal)}
-		<!-- Leaving the row writes the day; moving within it, as to a suggestion with Tab, does not. -->
-		<li
-			class="row editing"
-			onfocusout={(e) =>
-				!e.currentTarget.contains(e.relatedTarget as Node | null) &&
-				editing === keyOf(weekday, meal) &&
-				write(weekday, meal, draft)}
-		>
-			<div class="line">
-				<span class="day">{label}</span>
-				<input
-					aria-label={name}
-					autocomplete="off"
-					enterkeyhint="next"
-					bind:value={draft}
-					onkeydown={(e) => keydown(e, weekday, meal)}
-					{@attach focus}
-				/>
-				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-icon-button is a button with its own keyboard handling) -->
-				<m3e-icon-button
-					aria-label="Töm raden"
-					onpointerdown={keepFocus}
-					onclick={() => write(weekday, meal, '')}
-				>
-					<Icon name="close" />
-				</m3e-icon-button>
-			</div>
-			{#if matches.length || isNew}
-				<ul class="suggestions">
-					{#each matches as recipe (recipe.id)}
-						<li>
-							<button
-								type="button"
-								onpointerdown={keepFocus}
-								onclick={() => write(weekday, meal, recipe.name)}
-							>
-								<span>{recipe.name}</span>
-								<span class="meta">{recipe.timesEaten ? timesText(recipe.timesEaten) : ''}</span>
-							</button>
-						</li>
-					{/each}
-					{#if isNew}
-						<li>
-							<button
-								type="button"
-								class="new"
-								onpointerdown={keepFocus}
-								onclick={() => write(weekday, meal, draft)}
-							>
-								<Icon name="add" />Ny rätt: ”{draft.trim()}”
-							</button>
-						</li>
-					{/if}
-				</ul>
-			{/if}
-			<div class="quick">
-				{#each NOT_DISHES as other (other)}
-					<button
-						type="button"
-						class="chip"
-						onpointerdown={keepFocus}
-						onclick={() => write(weekday, meal, other)}>{other}</button
-					>
-				{/each}
-			</div>
-		</li>
+		<DayEditor
+			{label}
+			{name}
+			bind:draft
+			{recipes}
+			onwrite={(text) => write(weekday, meal, text)}
+			onleave={() => editing === keyOf(weekday, meal) && write(weekday, meal, draft)}
+			onkeydown={(e) => keydown(e, weekday, meal)}
+		/>
 	{:else}
 		{@const current = stored(weekday, meal)}
 		{@const saved = current && text === current.text ? current : null}
 		{@const meta = saved ? metaText(saved) : ''}
-		<li class={['row', swapped?.key === keyOf(weekday, meal) && 'swapped']}>
+		<li class={['segment', swapped?.key === keyOf(weekday, meal) && 'swapped']}>
 			<button
 				type="button"
 				class="show"
 				aria-label="{name}: {text || 'tom'}"
 				onclick={() => edit(weekday, meal)}
 			>
-				<span class="day">{label}</span>
+				<span class="weekday">{label}</span>
 				<span class="text">
 					<span class={text ? '' : 'empty'}>{text || 'Skriv en rätt'}</span>
 					{#if meta}
@@ -321,10 +247,10 @@
 	{/if}
 {/snippet}
 
-<main>
+<main class="page">
 	<WeekHeader
 		title="Vecka {isoWeek(week.weekStart).week}"
-		subtitle="{weekDates(week.weekStart)} · {isNext ? 'nästa vecka' : 'den här veckan'}"
+		before={weekDates(week.weekStart)}
 		weekStart={week.weekStart}
 		thisWeek={data.thisWeek}
 		nextWeek={data.nextWeek}
@@ -343,28 +269,7 @@
 		{/snippet}
 	</WeekHeader>
 
-	<section class="eaters">
-		<h2>Vilka äter?</h2>
-		{#if data.people.length === 0}
-			<p class="hint">Lägg till de som brukar äta, med det de inte äter.</p>
-		{:else}
-			<div class="chips">
-				{#each data.people as person (person.id)}
-					<m3e-filter-chip
-						selected={eaterIds.includes(person.id) || undefined}
-						onchange={(e: Event & { currentTarget: HTMLElement & { selected: boolean } }) =>
-							toggleEater(person.id, e.currentTarget.selected)}>{person.name}</m3e-filter-chip
-					>
-				{/each}
-			</div>
-			{#each eaters.filter((p) => p.requirements) as person (person.id)}
-				<p class="hint">{person.name}: {person.requirements.replace(/\n+/g, ', ')}</p>
-			{/each}
-		{/if}
-		{#if data.settings.menuRules}
-			<p class="hint">{data.settings.menuRules.replace(/\n+/g, ' ')}</p>
-		{/if}
-		<a href={resolve('/hushallet')}>Ändra personer och regler</a>
+	<WhoEats people={data.people} {eaterIds} rules={data.settings.menuRules} ontoggle={toggleEater}>
 		{#if !hasSuggestion && !suggesting}
 			<m3e-form-field variant="filled">
 				<label slot="label" for="wish">Något särskilt den här veckan? (frivilligt)</label>
@@ -375,11 +280,11 @@
 				/>
 			</m3e-form-field>
 			<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
-			<m3e-button variant="filled" disabled={busy || undefined} onclick={suggest}>
+			<m3e-button class="suggest" variant="filled" disabled={busy || undefined} onclick={suggest}>
 				<span slot="icon" class="slot-icon"><Icon name="suggest" /></span>Föreslå veckan
 			</m3e-button>
 		{/if}
-	</section>
+	</WhoEats>
 
 	{#if failed}
 		<p class="error" role="alert">Det gick inte att spara. Kontrollera nätet och försök igen.</p>
@@ -402,14 +307,14 @@
 			<p class="hint">Utgår från era gamla veckor och rätter. Brukar ta 10–20 sekunder.</p>
 		</div>
 	{:else}
-		<h2 class="meal">Middag</h2>
-		<ul class="days">
+		<div class="list-heading"><h2>Middag</h2></div>
+		<ul class="segmented">
 			{#each WEEK_DAYS as weekday (weekday)}
 				{@render row(weekday, 'dinner')}
 			{/each}
 		</ul>
 
-		<div class="meal">
+		<div class="list-heading">
 			<h2>Lunch</h2>
 			{#if freeLunchDays.length}
 				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
@@ -419,7 +324,7 @@
 			{/if}
 		</div>
 		{#if choosingLunch}
-			<div class="quick" role="group" aria-label="Välj dag för lunch">
+			<div class="choices" role="group" aria-label="Välj dag för lunch">
 				{#each freeLunchDays as weekday (weekday)}
 					<button type="button" class="chip" onclick={() => addLunch(weekday)}
 						>{WEEKDAYS[weekday - 1]}</button
@@ -427,7 +332,7 @@
 				{/each}
 			</div>
 		{/if}
-		<ul class="days">
+		<ul class="segmented">
 			{#each lunchDays as weekday (weekday)}
 				{@render row(weekday, 'lunch')}
 			{/each}
@@ -444,89 +349,11 @@
 {/key}
 
 <style>
-	main {
-		max-width: 40rem;
-		margin: 0 auto;
-		padding: 1rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	h2 {
-		margin: 0;
-		font-size: 1rem;
-		font-weight: 700;
-	}
-
-	.eaters {
-		padding: 1rem;
-		border-radius: 1.75rem;
-		background: var(--md-sys-color-surface-container);
-		display: flex;
-		flex-direction: column;
-		gap: 0.625rem;
-	}
-
-	.eaters a {
-		align-self: flex-start;
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: var(--md-sys-color-primary);
-	}
-
-	.chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-	}
-
-	.hint {
-		margin: 0;
-		font-size: 0.875rem;
-		line-height: 1.25rem;
-		color: var(--md-sys-color-on-surface-variant);
-	}
-
-	.error {
-		margin: 0;
-		padding: 0.75rem 1rem;
-		border-radius: 1rem;
-		background: var(--md-sys-color-error-container);
-		color: var(--md-sys-color-on-error-container);
-	}
-
-	.meal {
-		margin: 0.5rem 0 0 0.25rem;
-		min-height: 2.5rem;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		font-size: 0.875rem;
-		color: var(--md-sys-color-on-surface-variant);
-	}
-
-	.meal h2 {
+	.list-heading h2 {
 		font-size: inherit;
 	}
 
-	.days {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-	}
-
-	.row {
-		border-radius: 0.25rem;
-		background: var(--md-sys-color-surface-container);
-		display: flex;
-		align-items: center;
-	}
-
-	.row.swapped {
+	.swapped {
 		background: var(--md-sys-color-primary-container);
 	}
 
@@ -553,22 +380,8 @@
 		margin: 0;
 	}
 
-	.eaters m3e-button {
+	.suggest {
 		align-self: flex-start;
-	}
-
-	m3e-form-field {
-		width: 100%;
-	}
-
-	.row:first-child {
-		border-top-left-radius: 1.25rem;
-		border-top-right-radius: 1.25rem;
-	}
-
-	.row:last-child {
-		border-bottom-left-radius: 1.25rem;
-		border-bottom-right-radius: 1.25rem;
 	}
 
 	.show {
@@ -588,16 +401,6 @@
 		cursor: pointer;
 	}
 
-	.day {
-		width: 2.25rem;
-		flex-shrink: 0;
-		font-size: 0.8125rem;
-		font-weight: 700;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--md-sys-color-primary);
-	}
-
 	.text {
 		display: flex;
 		flex-direction: column;
@@ -606,91 +409,5 @@
 
 	.empty {
 		color: var(--md-sys-color-on-surface-variant);
-	}
-
-	.meta {
-		font-size: 0.8125rem;
-		color: var(--md-sys-color-on-surface-variant);
-	}
-
-	.editing {
-		padding: 0.5rem 0.5rem 0.75rem 0.75rem;
-		background: var(--md-sys-color-surface-container-high);
-		outline: 2px solid var(--md-sys-color-primary);
-		outline-offset: -2px;
-		flex-direction: column;
-		align-items: stretch;
-		gap: 0.5rem;
-	}
-
-	.line {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-	}
-
-	.line input {
-		flex-grow: 1;
-		min-width: 0;
-		padding: 0.625rem 0;
-		border: 0;
-		background: transparent;
-		color: inherit;
-		font: inherit;
-		font-size: 1rem;
-		outline: none;
-	}
-
-	.suggestions {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-		border-radius: 0.75rem;
-		overflow: hidden;
-		background: var(--md-sys-color-surface);
-	}
-
-	.suggestions li + li {
-		border-top: 1px solid var(--md-sys-color-outline-variant);
-	}
-
-	.suggestions button {
-		width: 100%;
-		min-height: 3rem;
-		padding: 0 1rem;
-		border: 0;
-		background: transparent;
-		color: inherit;
-		font: inherit;
-		text-align: left;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.5rem;
-		cursor: pointer;
-	}
-
-	.suggestions .new {
-		justify-content: flex-start;
-		color: var(--md-sys-color-primary);
-	}
-
-	.quick {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-	}
-
-	.chip {
-		min-height: 2.25rem;
-		padding: 0 0.875rem;
-		border: 1px solid var(--md-sys-color-outline);
-		border-radius: 0.5rem;
-		background: transparent;
-		color: var(--md-sys-color-on-surface-variant);
-		font: inherit;
-		font-size: 0.875rem;
-		font-weight: 500;
-		cursor: pointer;
 	}
 </style>

@@ -33,7 +33,7 @@
 
 <main>
 	<div class="title">
-		<h1>Veckor</h1>
+		<h1 class="view-title">Veckor</h1>
 		<span>{data.menus.length} veckor</span>
 	</div>
 
@@ -93,11 +93,6 @@
 	}
 
 	h1 {
-		margin: 0;
-		font-size: 2.25rem;
-		line-height: 2.75rem;
-		font-weight: 800;
-		letter-spacing: -0.03em;
 		color: var(--md-sys-color-on-surface);
 	}
 

@@ -13,8 +13,7 @@ export const actions: Actions = {
 		try {
 			if (!(await updateRecipe(env.DB, id, parsed.input))) error(404, 'Rätten finns inte');
 		} catch (e) {
-			if (e instanceof NameTakenError)
-				return invalid(`Det finns redan en rätt som heter ${parsed.input.name.trim()}.`);
+			if (e instanceof NameTakenError) return invalid(e.message);
 			throw e;
 		}
 		redirect(303, `/ratter/${id}`);

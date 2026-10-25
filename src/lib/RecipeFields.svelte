@@ -41,10 +41,6 @@
 </m3e-form-field>
 
 <style>
-	m3e-form-field {
-		width: 100%;
-	}
-
 	.pair {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));

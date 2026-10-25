@@ -23,8 +23,6 @@
 	});
 	let items = $derived(answered[data.weekStart]?.items ?? data.items);
 
-	let isNext = $derived(data.weekStart === data.nextWeek);
-
 	// A tap shows at once, before the server has answered.
 	let pendingChecked = $state<Record<number, boolean>>({});
 	// Items written in but not yet saved, per week.
@@ -125,7 +123,7 @@
 </svelte:head>
 
 {#snippet itemRow(item: ShoppingItem)}
-	<li class="item">
+	<li class="segment item">
 		<!-- svelte-ignore a11y_label_has_associated_control (m3e-checkbox is the control; a tap anywhere on the row ticks it) -->
 		<label>
 			<m3e-checkbox
@@ -156,12 +154,11 @@
 	</li>
 {/snippet}
 
-<main>
+<main class="page">
 	<WeekHeader
 		title="Handla"
-		subtitle="Vecka {isoWeek(data.weekStart).week} · {isNext
-			? 'nästa vecka'
-			: 'den här veckan'}{toBuy.length ? ` · ${plural(toBuy.length, 'vara', 'varor')} kvar` : ''}"
+		before="Vecka {isoWeek(data.weekStart).week}"
+		after={toBuy.length ? ` · ${plural(toBuy.length, 'vara', 'varor')} kvar` : ''}
 		weekStart={data.weekStart}
 		thisWeek={data.thisWeek}
 		nextWeek={data.nextWeek}
@@ -259,15 +256,15 @@
 		</section>
 	{:else}
 		{#if added.length}
-			<ul class="items" aria-label="Sparas">
+			<ul class="segmented" aria-label="Sparas">
 				{#each added as text, i (i)}
-					<li class="item pending"><span class="text">{text}</span></li>
+					<li class="segment item pending"><span class="text">{text}</span></li>
 				{/each}
 			</ul>
 		{/if}
 		{#each groups as [title, items] (title)}
-			<h2 class="section">{title}</h2>
-			<ul class="items">
+			<div class="list-heading"><h2>{title}</h2></div>
+			<ul class="segmented">
 				{#each items as item (item.id)}
 					{@render itemRow(item)}
 				{/each}
@@ -275,7 +272,7 @@
 		{/each}
 
 		{#if basket.length}
-			<div class="section basket">
+			<div class="list-heading">
 				<h2>I korgen · {basket.length}</h2>
 				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
 				<m3e-button variant="text" onclick={() => (showBasket = !showBasket)}>
@@ -283,7 +280,7 @@
 				</m3e-button>
 			</div>
 			{#if showBasket}
-				<ul class="items done">
+				<ul class="segmented done">
 					{#each basket as item (item.id)}
 						{@render itemRow(item)}
 					{/each}
@@ -312,21 +309,6 @@
 {/key}
 
 <style>
-	main {
-		max-width: 40rem;
-		margin: 0 auto;
-		padding: 1rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	h2 {
-		margin: 0;
-		font-size: 1rem;
-		font-weight: 700;
-	}
-
 	.add {
 		min-height: 3.25rem;
 		padding: 0 0.25rem 0 1rem;
@@ -348,14 +330,6 @@
 		outline: none;
 	}
 
-	.error {
-		margin: 0;
-		padding: 0.75rem 1rem;
-		border-radius: 1rem;
-		background: var(--md-sys-color-error-container);
-		color: var(--md-sys-color-on-error-container);
-	}
-
 	.empty {
 		padding: 1.25rem;
 		border-radius: 1.75rem;
@@ -375,13 +349,6 @@
 		font-weight: 500;
 	}
 
-	.hint {
-		margin: 0;
-		font-size: 0.875rem;
-		line-height: 1.25rem;
-		color: var(--md-sys-color-on-surface-variant);
-	}
-
 	.only-name {
 		margin: 0.25rem 0.25rem 0;
 	}
@@ -398,46 +365,12 @@
 		margin: 0;
 	}
 
-	.section {
-		margin: 0.5rem 0 0 0.25rem;
-		min-height: 2.5rem;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
+	.list-heading h2 {
 		font-size: 0.875rem;
-		color: var(--md-sys-color-on-surface-variant);
-	}
-
-	.section h2,
-	h2.section {
-		font-size: 0.875rem;
-	}
-
-	.items {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
 	}
 
 	.item {
 		min-height: 3.25rem;
-		border-radius: 0.25rem;
-		background: var(--md-sys-color-surface-container);
-		display: flex;
-		align-items: center;
-	}
-
-	.item:first-child {
-		border-top-left-radius: 1.25rem;
-		border-top-right-radius: 1.25rem;
-	}
-
-	.item:last-child {
-		border-bottom-left-radius: 1.25rem;
-		border-bottom-right-radius: 1.25rem;
 	}
 
 	.item label {
@@ -468,7 +401,6 @@
 
 	.meta {
 		font-size: 0.75rem;
-		color: var(--md-sys-color-on-surface-variant);
 	}
 
 	.amount {
