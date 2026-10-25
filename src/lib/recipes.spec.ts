@@ -5,7 +5,9 @@ const dish = (name: string, timesEaten = 0, lastWeek: string | null = null) => (
 	id: 0,
 	name,
 	timesEaten,
-	lastWeek
+	lastWeek,
+	category: null,
+	base: null
 });
 
 describe('finding a dish', () => {

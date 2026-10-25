@@ -8,6 +8,7 @@ Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ä
 - Menyknapparna längst ner leder rätt även i Rätter, i stället för att ibland öppna rätten bakom menyn. (#72)
 - Ingredienser som Claude gissat står utan de konstiga numren framför, som "3.1". (#71)
 - Appen frågar innan en vecka som redan har rätter föreslås om, och om dagar man skrivit in själv ska ligga kvar eller bytas. (#77)
+- Varje rätt får en sort, som Soppor, Kött, Fisk eller Vegetariskt, och vad den äts med, som potatis eller pasta. Claude gissar för rätterna som saknar dem, och man kan ändra på rätten. (#82)
 
 ## 0.3.0
 

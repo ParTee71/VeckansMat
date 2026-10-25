@@ -90,6 +90,17 @@ function shopping(text) {
 	};
 }
 
+/** Soups are soups and the rest is fish, eaten with potatoes, so a test can tell they were sorted. */
+function categories(text) {
+	return {
+		dishes: [...text.matchAll(/^(\d+)\. ([^:\n]+)/gm)].map(([, number, name]) => ({
+			dish: Number(number),
+			category: /soppa/i.test(name) ? 'soppa' : 'fisk',
+			base: /soppa/i.test(name) ? 'annat' : 'potatis'
+		}))
+	};
+}
+
 /** What the stand-in reads from a request: a recipe by what the text says, and its cost. */
 function claude(request) {
 	const content = request.messages[0].content;
@@ -97,6 +108,7 @@ function claude(request) {
 	const { properties } = request.output_config.format.schema;
 	if (properties.rows) return [menu(text)];
 	if (properties.items) return [shopping(text)];
+	if (properties.dishes) return [categories(text)];
 	// Only photos the phone made smaller, which are always JPEG.
 	if (content.some((block) => block.source?.media_type === 'image/jpeg')) {
 		return [answer('Saffransbullar', ['50 g jäst', '5 dl mjölk'], { servings: 30 })];

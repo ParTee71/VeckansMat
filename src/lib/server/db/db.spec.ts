@@ -10,15 +10,20 @@ import {
 	createRecipe,
 	findRecipeByName,
 	getRecipe,
+	guessCategoryStatement,
 	guessIngredientsStatements,
 	listRecipes,
 	NameTakenError,
+	unsortedRecipes,
 	updateRecipe,
 	type RecipeInput
 } from './recipes';
 
 let db: D1Database;
 useTestDb((test) => (db = test));
+
+/** A dish Claude has not sorted yet. */
+const unsorted = { category: null, base: null, categoryGuessed: false };
 
 const recipes = async () =>
 	(await db.prepare('SELECT id, name FROM recipe ORDER BY id').all<{ id: number; name: string }>())
@@ -169,9 +174,30 @@ describe('the recipe list', () => {
 
 		const list = await listRecipes(db);
 		expect(list.sort((a, b) => a.name.localeCompare(b.name, 'sv'))).toEqual([
-			{ id: expect.any(Number), name: 'Kålpudding', timesEaten: 0, lastWeek: null },
-			{ id: expect.any(Number), name: 'Linssoppa', timesEaten: 3, lastWeek: '2030-01-14' },
-			{ id: expect.any(Number), name: 'Ostfrallor', timesEaten: 1, lastWeek: '2030-01-07' }
+			{
+				id: expect.any(Number),
+				name: 'Kålpudding',
+				timesEaten: 0,
+				lastWeek: null,
+				category: null,
+				base: null
+			},
+			{
+				id: expect.any(Number),
+				name: 'Linssoppa',
+				timesEaten: 3,
+				lastWeek: '2030-01-14',
+				category: null,
+				base: null
+			},
+			{
+				id: expect.any(Number),
+				name: 'Ostfrallor',
+				timesEaten: 1,
+				lastWeek: '2030-01-07',
+				category: null,
+				base: null
+			}
 		]);
 	});
 });
@@ -189,6 +215,7 @@ describe('adding a recipe', () => {
 			ingredients: [],
 			ingredientsGuessed: false,
 			tags: [],
+			...unsorted,
 			weeks: []
 		});
 	});
@@ -240,11 +267,23 @@ describe('a recipe', () => {
 	it('can be filled in, and filled in again', async () => {
 		const id = await addRecipe(db, 'fiskgratäng');
 		await updateRecipe(db, id, full);
-		expect(await getRecipe(db, id)).toEqual({ id, ...full, ingredientsGuessed: false, weeks: [] });
+		expect(await getRecipe(db, id)).toEqual({
+			id,
+			...full,
+			...unsorted,
+			ingredientsGuessed: false,
+			weeks: []
+		});
 
 		const less = { ...full, ingredients: ['1 kg potatis'], tags: [], servings: null };
 		await updateRecipe(db, id, less);
-		expect(await getRecipe(db, id)).toEqual({ id, ...less, ingredientsGuessed: false, weeks: [] });
+		expect(await getRecipe(db, id)).toEqual({
+			id,
+			...less,
+			...unsorted,
+			ingredientsGuessed: false,
+			weeks: []
+		});
 	});
 
 	it('cannot take the name of another recipe, and is then left as it was', async () => {
@@ -269,7 +308,13 @@ describe('a recipe', () => {
 
 	it('can be added whole', async () => {
 		const id = await createRecipe(db, { ...full, name: ' Fiskgratäng ' });
-		expect(await getRecipe(db, id)).toEqual({ id, ...full, ingredientsGuessed: false, weeks: [] });
+		expect(await getRecipe(db, id)).toEqual({
+			id,
+			...full,
+			...unsorted,
+			ingredientsGuessed: false,
+			weeks: []
+		});
 	});
 
 	it('is not added whole under a name that is taken, and the other is left as it was', async () => {
@@ -279,6 +324,57 @@ describe('a recipe', () => {
 		);
 		expect(await recipes()).toEqual([{ id, name: 'Fiskgratäng' }]);
 		expect((await getRecipe(db, id))?.ingredients).toEqual([]);
+	});
+});
+
+describe('the sort and base of a recipe', () => {
+	const sortOf = async (id: number) => {
+		const { category, base, categoryGuessed } = (await getRecipe(db, id))!;
+		return { category, base, categoryGuessed };
+	};
+
+	it('are guessed for dishes without a sort, oldest first, with their lines', async () => {
+		const fish = await createRecipe(db, full);
+		const soup = await addRecipe(db, 'Linssoppa');
+		await addRecipe(db, 'Tacos');
+		await db.batch([guessCategoryStatement(db, soup, 'soppa', 'annat')]);
+		expect(await sortOf(soup)).toEqual({ category: 'soppa', base: 'annat', categoryGuessed: true });
+		expect(await unsortedRecipes(db, 1)).toEqual([
+			{ id: fish, name: 'Fiskgratäng', ingredients: ['600 g torskfilé', '2 dl grädde'] }
+		]);
+		expect((await unsortedRecipes(db, 10)).map((r) => r.name)).toEqual(['Fiskgratäng', 'Tacos']);
+	});
+
+	it('chosen by the household are never replaced by a guess', async () => {
+		const id = await createRecipe(db, { ...full, category: 'fisk', base: 'potatis' });
+		await db.batch([guessCategoryStatement(db, id, 'ovrigt', 'annat')]);
+		expect(await sortOf(id)).toEqual({ category: 'fisk', base: 'potatis', categoryGuessed: false });
+	});
+
+	it('keep a base the household chose when the sort is guessed', async () => {
+		const id = await createRecipe(db, { ...full, base: 'ris' });
+		await db.batch([guessCategoryStatement(db, id, 'fisk', 'potatis')]);
+		expect(await sortOf(id)).toEqual({ category: 'fisk', base: 'ris', categoryGuessed: true });
+	});
+
+	it('stay a guess when saved as guessed, and are chosen once another is picked', async () => {
+		const id = await addRecipe(db, 'Fiskgratäng');
+		await db.batch([guessCategoryStatement(db, id, 'fisk', 'potatis')]);
+		await updateRecipe(db, id, { ...full, category: 'fisk', base: 'potatis' });
+		expect(await sortOf(id)).toEqual({ category: 'fisk', base: 'potatis', categoryGuessed: true });
+		await updateRecipe(db, id, { ...full, category: 'fisk', base: 'ris' });
+		expect(await sortOf(id)).toEqual({ category: 'fisk', base: 'ris', categoryGuessed: false });
+	});
+
+	it('are kept when a form leaves them out', async () => {
+		const id = await createRecipe(db, { ...full, category: 'fisk', base: 'potatis' });
+		await updateRecipe(db, id, full);
+		expect(await sortOf(id)).toEqual({ category: 'fisk', base: 'potatis', categoryGuessed: false });
+	});
+
+	it('are shown in the recipe list', async () => {
+		await createRecipe(db, { ...full, category: 'fisk', base: 'potatis' });
+		expect(await listRecipes(db)).toMatchObject([{ category: 'fisk', base: 'potatis' }]);
 	});
 });
 

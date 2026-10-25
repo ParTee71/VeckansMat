@@ -55,7 +55,7 @@
 			await update({ invalidateAll: false });
 			if (result.type === 'success' && result.data?.added) {
 				const { id, name } = result.data.added as { id: number; name: string };
-				added.push({ id, name, timesEaten: 0, lastWeek: null });
+				added.push({ id, name, timesEaten: 0, lastWeek: null, category: null, base: null });
 				query = '';
 			}
 		};

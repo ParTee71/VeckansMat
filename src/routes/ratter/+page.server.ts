@@ -1,11 +1,19 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { env } from 'cloudflare:workers';
+import { env, waitUntil } from 'cloudflare:workers';
 import { nameKey } from '#lib/names.ts';
+import { askFor } from '#lib/server/claude/claude.ts';
 import { addRecipe, listRecipes } from '#lib/server/db/recipes.ts';
+import { sortRecipes } from '#lib/server/recipe-category.ts';
 import { recipeUrl } from '#lib/links.ts';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async () => ({ recipes: await listRecipes(env.DB) });
+export const load: PageServerLoad = async () => {
+	const recipes = await listRecipes(env.DB);
+	// Claude sorts the new dishes after the page has answered; the next load shows their sorts.
+	if (recipes.some((recipe) => !recipe.category))
+		waitUntil(sortRecipes(env.DB, askFor('category')));
+	return { recipes };
+};
 
 export const actions: Actions = {
 	add: async ({ request }) => {

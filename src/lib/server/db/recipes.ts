@@ -1,4 +1,5 @@
 import { nameKey } from '../../names';
+import type { Base, Category } from '../../recipes';
 import type { Meal } from './menus';
 
 /** Inserts a recipe with just a name, unless one with the same key exists. */
@@ -15,13 +16,17 @@ export interface RecipeSummary {
 	timesEaten: number;
 	/** The Monday of the latest dated week with the dish, or null. */
 	lastWeek: string | null;
+	/** Null until Claude has guessed, or when the household left it empty. */
+	category: Category | null;
+	base: Base | null;
 }
 
 /** All recipes with how often and when they were last eaten, in no particular order. */
 export async function listRecipes(db: D1Database): Promise<RecipeSummary[]> {
 	const { results } = await db
 		.prepare(
-			`SELECT r.id, r.name, count(i.id) AS timesEaten, max(m.week_start) AS lastWeek
+			`SELECT r.id, r.name, count(i.id) AS timesEaten, max(m.week_start) AS lastWeek, r.category,
+			   r.base
 			 FROM recipe r
 			 LEFT JOIN menu_item i ON i.recipe_id = r.id
 			 LEFT JOIN menu m ON m.id = i.menu_id
@@ -49,6 +54,10 @@ export interface Recipe {
 	/** Claude guessed the ingredients for a dish that had only a name. */
 	ingredientsGuessed: boolean;
 	tags: string[];
+	category: Category | null;
+	base: Base | null;
+	/** The sort and base are Claude's guess, not chosen by the household. */
+	categoryGuessed: boolean;
 	/** The weeks with the dish, newest first and undated last. */
 	weeks: RecipeWeek[];
 }
@@ -59,7 +68,7 @@ export async function getRecipe(db: D1Database, id: number): Promise<Recipe | nu
 		db
 			.prepare(
 				`SELECT id, name, servings, time_minutes AS timeMinutes, instructions, source_url AS sourceUrl,
-				 ingredients_guessed AS ingredientsGuessed
+				 ingredients_guessed AS ingredientsGuessed, category, base, category_guessed AS categoryGuessed
 				 FROM recipe WHERE id = ?`
 			)
 			.bind(id),
@@ -75,14 +84,16 @@ export async function getRecipe(db: D1Database, id: number): Promise<Recipe | nu
 			.bind(id)
 	]);
 	const row = recipe.results[0] as
-		| (Omit<Recipe, 'ingredients' | 'ingredientsGuessed' | 'tags' | 'weeks'> & {
+		| (Omit<Recipe, 'ingredients' | 'ingredientsGuessed' | 'categoryGuessed' | 'tags' | 'weeks'> & {
 				ingredientsGuessed: number;
+				categoryGuessed: number;
 		  })
 		| undefined;
 	if (!row) return null;
 	return {
 		...row,
 		ingredientsGuessed: Boolean(row.ingredientsGuessed),
+		categoryGuessed: Boolean(row.categoryGuessed),
 		ingredients: (ingredients.results as { raw: string }[]).map((r) => r.raw),
 		tags: (tags.results as { tag: string }[]).map((r) => r.tag),
 		weeks: weeks.results as unknown as RecipeWeek[]
@@ -131,7 +142,48 @@ export function guessIngredientsStatements(
 	];
 }
 
-export type RecipeInput = Omit<Recipe, 'id' | 'weeks' | 'ingredientsGuessed'>;
+/** The dishes Claude has not sorted yet, with their ingredient lines, oldest first. */
+export async function unsortedRecipes(
+	db: D1Database,
+	limit: number
+): Promise<{ id: number; name: string; ingredients: string[] }[]> {
+	const { results } = await db
+		.prepare(
+			`SELECT r.id, r.name,
+			   (SELECT json_group_array(raw) FROM
+			     (SELECT raw FROM recipe_ingredient WHERE recipe_id = r.id ORDER BY position)) AS ingredients
+			 FROM recipe r WHERE r.category IS NULL ORDER BY r.id LIMIT ?`
+		)
+		.bind(limit)
+		.all<{ id: number; name: string; ingredients: string }>();
+	return results.map((row) => ({ ...row, ingredients: JSON.parse(row.ingredients) as string[] }));
+}
+
+/**
+ * Writes Claude's sort and base into a dish that has no sort yet, marked as guessed. A base the
+ * household chose is kept.
+ */
+export const guessCategoryStatement = (
+	db: D1Database,
+	recipeId: number,
+	category: Category,
+	base: Base | null
+) =>
+	db
+		.prepare(
+			`UPDATE recipe SET category = ?, base = coalesce(base, ?), category_guessed = 1
+			 WHERE id = ? AND category IS NULL`
+		)
+		.bind(category, base, recipeId);
+
+/**
+ * A recipe as the household writes it. The sort and base are left as they are when undefined,
+ * since a form need not have them.
+ */
+export type RecipeInput = Omit<
+	Recipe,
+	'id' | 'weeks' | 'ingredientsGuessed' | 'category' | 'base' | 'categoryGuessed'
+> & { category?: Category | null; base?: Base | null };
 
 /** Thrown when a recipe is renamed to a name another recipe has. */
 /** Another dish has the name. The message is for the household. */
@@ -158,8 +210,12 @@ export async function updateRecipe(
 		db
 			.prepare(
 				`UPDATE recipe SET name = ?, name_key = ?, servings = ?, time_minutes = ?, instructions = ?,
-				 source_url = ?, ingredients_guessed = 0, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-				 WHERE id = ?`
+				 source_url = ?, ingredients_guessed = 0, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
+				 category = coalesce(?8, category), base = coalesce(?9, base),
+				 -- Still Claude's guess only while what was saved is what Claude guessed.
+				 category_guessed = category_guessed AND coalesce(?8, category) IS category
+				   AND coalesce(?9, base) IS base
+				 WHERE id = ?7`
 			)
 			.bind(
 				input.name.trim(),
@@ -168,7 +224,9 @@ export async function updateRecipe(
 				input.timeMinutes,
 				input.instructions,
 				input.sourceUrl,
-				id
+				id,
+				input.category ?? null,
+				input.base ?? null
 			),
 		...detailStatements(db, key, input)
 	]);
@@ -206,8 +264,9 @@ export async function createRecipe(db: D1Database, input: RecipeInput): Promise<
 		const results = await db.batch([
 			db
 				.prepare(
-					`INSERT INTO recipe (name, name_key, servings, time_minutes, instructions, source_url)
-					 VALUES (?, ?, ?, ?, ?, ?)`
+					`INSERT INTO recipe (name, name_key, servings, time_minutes, instructions, source_url,
+					 category, base)
+					 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 				)
 				.bind(
 					input.name.trim(),
@@ -215,7 +274,9 @@ export async function createRecipe(db: D1Database, input: RecipeInput): Promise<
 					input.servings,
 					input.timeMinutes,
 					input.instructions,
-					input.sourceUrl
+					input.sourceUrl,
+					input.category ?? null,
+					input.base ?? null
 				),
 			...detailStatements(db, key, input)
 		]);

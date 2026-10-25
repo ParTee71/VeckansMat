@@ -55,3 +55,36 @@ export const formValues = (recipe: {
 	tags: recipe.tags.filter((tag) => tag !== LUNCHBOX_TAG).join(', '),
 	sourceUrl: recipe.sourceUrl ?? ''
 });
+
+/** The sorts of dish, in the order Rätter shows them. A soup is always a soup. */
+export const CATEGORIES = [
+	{ key: 'soppa', label: 'Soppor' },
+	{ key: 'kott', label: 'Kött' },
+	{ key: 'kottfars', label: 'Köttfärs' },
+	{ key: 'kyckling', label: 'Kyckling' },
+	{ key: 'fisk', label: 'Fisk' },
+	{ key: 'korv', label: 'Korv' },
+	{ key: 'vego', label: 'Vegetariskt' },
+	{ key: 'ovrigt', label: 'Övrigt' }
+] as const;
+
+export type Category = (typeof CATEGORIES)[number]['key'];
+
+/** What a dish is served with. */
+export const BASES = [
+	{ key: 'potatis', label: 'Potatis' },
+	{ key: 'pasta', label: 'Pasta' },
+	{ key: 'ris', label: 'Ris' },
+	{ key: 'sallad', label: 'Sallad' },
+	{ key: 'annat', label: 'Annat' }
+] as const;
+
+export type Base = (typeof BASES)[number]['key'];
+
+/** The key when `value` is one of the sorts, else null. */
+export const categoryOf = (value: unknown): Category | null =>
+	CATEGORIES.find((c) => c.key === value)?.key ?? null;
+
+/** The key when `value` is one of the bases, else null. */
+export const baseOf = (value: unknown): Base | null =>
+	BASES.find((b) => b.key === value)?.key ?? null;

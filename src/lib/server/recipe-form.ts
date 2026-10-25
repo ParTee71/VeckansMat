@@ -1,5 +1,5 @@
 import { nameKey } from '../names';
-import { LUNCHBOX_TAG } from '../recipes';
+import { baseOf, categoryOf, LUNCHBOX_TAG } from '../recipes';
 import { recipeUrl } from '../links';
 import type { RecipeInput } from './db/recipes';
 
@@ -10,7 +10,9 @@ const FIELDS = [
 	'ingredients',
 	'instructions',
 	'tags',
-	'sourceUrl'
+	'sourceUrl',
+	'category',
+	'base'
 ];
 
 /** What was written, to show again, and either the recipe or what is wrong with it. */
@@ -64,7 +66,10 @@ export function parseRecipeForm(form: FormData): RecipeForm {
 			ingredients: lines(values.ingredients),
 			instructions: values.instructions.trim() || null,
 			tags: [...tags],
-			sourceUrl
+			sourceUrl,
+			// Left out when nothing is chosen, so the recipe keeps what it has.
+			category: categoryOf(values.category) ?? undefined,
+			base: baseOf(values.base) ?? undefined
 		}
 	};
 }
