@@ -1,5 +1,6 @@
 // Fetches a recipe page and reads its schema.org/Recipe data (JSON-LD), without Claude.
 // See docs/beslut/0013-recept-in.md.
+import { cleanText } from '../names';
 import { recipeUrl } from '../links';
 import { RecipeReadError, type RecipeDraft } from './recipe-draft';
 
@@ -186,10 +187,7 @@ function decodeEntities(text: string): string {
 /** Plain text: entities decoded, tags taken out and white space collapsed. */
 function clean(value: unknown): string {
 	if (typeof value !== 'string' && typeof value !== 'number') return '';
-	return decodeEntities(String(value))
-		.replace(/<[^>]*>/g, ' ')
-		.replace(/\s+/g, ' ')
-		.trim();
+	return cleanText(decodeEntities(String(value)).replace(/<[^>]*>/g, ' '));
 }
 
 const list = (value: unknown): unknown[] =>
