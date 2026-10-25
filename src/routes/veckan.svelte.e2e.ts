@@ -48,21 +48,35 @@ test('a week is written as quickly as on a note', async ({ page }) => {
 });
 
 test('who eats is chosen per week, and shows what they do not eat', async ({ page }) => {
-	await open(page, '/hushallet/ny');
-	await page.getByLabel('Namn').fill('Ätare Test');
-	await page.getByLabel('Krav').fill('Äter inte svamp');
-	await page.getByRole('button', { name: 'Spara' }).click();
-	await expect(page.locator('m3e-list-action', { hasText: 'Ätare Test' })).toBeVisible();
+	const people = ['Ätare Ett', 'Ätare Två'];
+	for (const name of people) {
+		await open(page, '/hushallet/ny');
+		await page.getByLabel('Namn').fill(name);
+		await page.getByLabel('Krav').fill(`${name} äter inte svamp`);
+		await page.getByRole('button', { name: 'Spara' }).click();
+		await expect(page.locator('m3e-list-action', { hasText: name })).toBeVisible();
+	}
 
 	await open(page, '/');
-	const chip = page.locator('m3e-filter-chip', { hasText: 'Ätare Test' });
-	await expect(chip).not.toHaveAttribute('selected');
+	const chips = people.map((name) => page.locator('m3e-filter-chip', { hasText: name }));
+	await expect(chips[0]).not.toHaveAttribute('selected');
+	// Two quick taps both count, even before the first is saved.
 	const saved = page.waitForResponse((r) => r.url().includes('/eaters'));
-	await chip.click();
+	await chips[0].click();
+	await chips[1].click();
 	await saved;
-	await expect(page.getByText('Ätare Test: Äter inte svamp')).toBeVisible();
+	await expect(page.getByText('Ätare Två: Ätare Två äter inte svamp')).toBeVisible();
+	await page.waitForLoadState('networkidle');
 	await page.reload();
-	await expect(chip).toHaveAttribute('selected');
+	for (const chip of chips) await expect(chip).toHaveAttribute('selected');
+
+	// The people are made up for this test, so they are removed again.
+	for (const name of people) {
+		await open(page, '/hushallet');
+		await page.locator('m3e-list-action', { hasText: name }).click();
+		await page.getByRole('button', { name: `Ta bort ${name}` }).click();
+		await expect(page.locator('m3e-list-action', { hasText: name })).toHaveCount(0);
+	}
 });
 
 test('the arrows go between this week and the next', async ({ page }) => {

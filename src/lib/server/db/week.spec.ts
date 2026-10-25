@@ -68,8 +68,11 @@ describe('a week planned in the app', () => {
 			source: 'photo',
 			items: [{ text: 'Linssoppa', recipeName: 'Linssoppa', meal: 'dinner' }]
 		});
-		await setWeekRow(db, WEEK, dinner(5, 'Pizza'), []);
-		expect((await getWeek(db, WEEK)).rows.map((r) => r.text)).toEqual(['Pizza']);
+		await setWeekRow(db, WEEK, dinner(1, 'Pizza'), []);
+		await setWeekRow(db, WEEK, dinner(1, 'Pannkakor'), []);
+		expect((await getWeek(db, WEEK)).rows.map((r) => r.text)).toEqual(['Pannkakor']);
+		const [menu] = await listMenus(db);
+		expect(menu.items.map((i) => i.text)).toEqual(['Linssoppa', 'Pannkakor']);
 	});
 });
 

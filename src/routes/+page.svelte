@@ -22,6 +22,9 @@
 	let editing = $state<string | null>(null);
 	let draft = $state('');
 	let failed = $state(false);
+	// Who eats, as just tapped, before the server has answered.
+	let pendingEaters = $state<Record<string, number[]>>({});
+	let eaterIds = $derived(pendingEaters[week.weekStart] ?? week.eaters);
 
 	const keyOf = (weekday: number, meal: Meal) => `${week.weekStart}-${meal}-${weekday}`;
 	const stored = (weekday: number, meal: Meal) =>
@@ -42,7 +45,7 @@
 	);
 	let freeLunchDays = $derived(DAYS.filter((d) => !lunchDays.includes(d)));
 
-	let eaters = $derived(data.people.filter((p) => week.eaters.includes(p.id)));
+	let eaters = $derived(data.people.filter((p) => eaterIds.includes(p.id)));
 	let extra = $derived(data.settings.lunchboxExtraPortions);
 
 	// Dishes matching what is written, the most eaten first.
@@ -69,7 +72,8 @@
 				headers: { 'x-sveltekit-action': 'true' }
 			});
 			const result = deserialize(await response.text());
-			failed = result.type === 'failure' || result.type === 'error';
+			// A failure stays on screen until the page is loaded again.
+			if (result.type === 'failure' || result.type === 'error') failed = true;
 		} catch {
 			failed = true;
 		}
@@ -92,9 +96,10 @@
 			weekday,
 			meal,
 			text,
-			eaters: week.eaters
+			eaters: eaterIds
 		});
-		delete pending[k];
+		// A newer text for the same day stays until its own answer comes.
+		if (pending[k] === text.trim()) delete pending[k];
 	}
 
 	// Enter writes the day and goes on to the next one, as on the note.
@@ -111,9 +116,15 @@
 	// The text field loses focus when a suggestion is tapped, so suggestions keep it.
 	const keepFocus = (event: Event) => event.preventDefault();
 
-	function toggleEater(id: number, selected: boolean) {
-		const ids = selected ? [...week.eaters, id] : week.eaters.filter((e) => e !== id);
-		post('eaters', { weekStart: week.weekStart, eaters: ids });
+	let eaterRequests = 0;
+
+	async function toggleEater(id: number, selected: boolean) {
+		const weekStart = week.weekStart;
+		const request = ++eaterRequests;
+		const ids = selected ? [...eaterIds, id] : eaterIds.filter((e) => e !== id);
+		pendingEaters[weekStart] = ids;
+		await post('eaters', { weekStart, eaters: ids });
+		if (request === eaterRequests) delete pendingEaters[weekStart];
 	}
 
 	function addLunch(weekday: number) {
@@ -246,7 +257,7 @@
 			<div class="chips">
 				{#each data.people as person (person.id)}
 					<m3e-filter-chip
-						selected={week.eaters.includes(person.id) || undefined}
+						selected={eaterIds.includes(person.id) || undefined}
 						onchange={(e: Event & { currentTarget: HTMLElement & { selected: boolean } }) =>
 							toggleEater(person.id, e.currentTarget.selected)}>{person.name}</m3e-filter-chip
 					>

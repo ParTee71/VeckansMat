@@ -8,6 +8,7 @@ test('a person is added with what they do not eat, changed and removed', async (
 	await open(page, '/');
 	await page.getByRole('link', { name: 'Ändra personer och regler' }).click();
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hushållet');
+	await expect(page.locator('m3e-list-action', { hasText: 'Kim' })).toHaveCount(0);
 
 	await page.locator('m3e-button', { hasText: 'Lägg till person' }).click();
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ny person');

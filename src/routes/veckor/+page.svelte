@@ -48,7 +48,10 @@
 						<span class="sub">{subtitle(menu)}</span>
 					</span>
 					{#each meals as [meal, label] (meal)}
-						{@const items = menu.items.filter((item) => item.meal === meal)}
+						<!-- A week planned in the app keeps its lines in the order they were written. -->
+						{@const items = menu.items
+							.filter((item) => item.meal === meal)
+							.toSorted((a, b) => (a.weekday ?? 0) - (b.weekday ?? 0))}
 						{#if items.length}
 							<h2>{label}</h2>
 							<ul>

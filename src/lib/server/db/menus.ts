@@ -135,9 +135,6 @@ export interface Week {
 	eaters: number[];
 }
 
-// One line per day and meal, dinners first, so the old weeks list them in that order.
-const rowPosition = (weekday: number, meal: Meal) => (meal === 'dinner' ? 0 : 7) + weekday - 1;
-
 /** A week as planned in the app. Lines without a weekday, from old notes, are left out. */
 export async function getWeek(db: D1Database, weekStart: string): Promise<Week> {
 	const [menu, rows, eaters, earlier] = await db.batch([
@@ -148,7 +145,7 @@ export async function getWeek(db: D1Database, weekStart: string): Promise<Week> 
 				 EXISTS (SELECT 1 FROM recipe_tag t WHERE t.recipe_id = i.recipe_id AND t.tag = ?) AS lunchbox
 				 FROM menu_item i JOIN menu m ON m.id = i.menu_id
 				 WHERE m.week_start = ? AND i.weekday IS NOT NULL
-				 ORDER BY i.position`
+				 ORDER BY i.weekday, i.position`
 			)
 			.bind(LUNCHBOX_TAG, weekStart),
 		db
@@ -230,27 +227,30 @@ export async function setWeekRow(
 		return;
 	}
 	const dish = isDish(text);
+	const args = [menuId, row.weekday, row.meal, dish ? nameKey(text) : null, text];
 	await db.batch([
 		...(dish ? [upsertRecipeStatement(db, text)] : []),
+		// The day's line is changed where it is, or added after all others, so lines from an old
+		// note for the same week are never written over.
+		db
+			.prepare(
+				`UPDATE menu_item SET
+				   -- A dish already in the collection is written as it is named there.
+				   text = coalesce((SELECT name FROM recipe WHERE name_key = ?4), ?5),
+				   recipe_id = (SELECT id FROM recipe WHERE name_key = ?4)
+				 WHERE menu_id = ?1 AND weekday = ?2 AND meal = ?3`
+			)
+			.bind(...args),
 		db
 			.prepare(
 				`INSERT INTO menu_item (menu_id, position, weekday, meal, text, recipe_id)
-				 VALUES (?1, ?2, ?3, ?4,
-				   -- A dish already in the collection is written as it is named there.
-				   coalesce((SELECT name FROM recipe WHERE name_key = ?5), ?6),
-				   (SELECT id FROM recipe WHERE name_key = ?5))
-				 ON CONFLICT (menu_id, position) DO UPDATE SET
-				   weekday = excluded.weekday, meal = excluded.meal, text = excluded.text,
-				   recipe_id = excluded.recipe_id`
+				 SELECT ?1, (SELECT coalesce(max(position) + 1, 0) FROM menu_item WHERE menu_id = ?1),
+				   ?2, ?3, coalesce((SELECT name FROM recipe WHERE name_key = ?4), ?5),
+				   (SELECT id FROM recipe WHERE name_key = ?4)
+				 WHERE NOT EXISTS (
+				   SELECT 1 FROM menu_item WHERE menu_id = ?1 AND weekday = ?2 AND meal = ?3)`
 			)
-			.bind(
-				menuId,
-				rowPosition(row.weekday, row.meal),
-				row.weekday,
-				row.meal,
-				dish ? nameKey(text) : null,
-				text
-			)
+			.bind(...args)
 	]);
 }
 
