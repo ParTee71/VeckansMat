@@ -59,6 +59,51 @@ function client(): Anthropic {
 	});
 }
 
+const MODELS = {
+	recipe: 'RECIPE_MODEL',
+	menu: 'MENU_MODEL',
+	shopping: 'SHOPPING_MODEL'
+} as const satisfies Record<Purpose, keyof Env>;
+
+/** Asks with the model chosen for the purpose. */
+export const askFor =
+	(purpose: Purpose): Ask =>
+	(params) =>
+		ask(env.DB, purpose, { ...params, model: env[MODELS[purpose]] });
+
+/**
+ * Asks for an answer in a JSON schema and gives it parsed. A spent cap is thrown as `fail('limit')`,
+ * and any other failure, an answer cut short or refused too, is logged and thrown as
+ * `fail('failed')`. What the answer holds is for the caller to check.
+ */
+export async function askJson(
+	ask: Ask,
+	params: Parameters<Ask>[0],
+	fail: (reason: 'failed' | 'limit') => Error,
+	what: string
+): Promise<{ answer: Record<string, unknown>; message: Anthropic.Message }> {
+	let message: Anthropic.Message;
+	try {
+		message = await ask(params);
+	} catch (e) {
+		if (e instanceof ClaudeLimitError) throw fail('limit');
+		console.error(`Claude could not answer: ${what}`, e);
+		throw fail('failed');
+	}
+	const text = message.content.find((block) => block.type === 'text')?.text;
+	let answer: unknown;
+	try {
+		answer = text === undefined ? null : JSON.parse(text);
+	} catch {
+		// Cut short or refused; the answer is not the schema's.
+	}
+	if (typeof answer !== 'object' || answer === null) {
+		console.error(`Claude gave no answer: ${what}`, message.stop_reason);
+		throw fail('failed');
+	}
+	return { answer: answer as Record<string, unknown>, message };
+}
+
 /**
  * Sends one request and logs what it cost. Two calls at the same moment may both pass the cap
  * check, and a call that times out may still be billed without being logged, so a month can

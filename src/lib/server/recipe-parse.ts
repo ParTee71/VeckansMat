@@ -2,7 +2,7 @@
 // docs/beslut/0013-recept-in.md.
 import type Anthropic from '@anthropic-ai/sdk';
 import { MAX_PHOTOS } from '../photos';
-import { ClaudeLimitError, type Ask } from './claude/claude';
+import { askJson, type Ask } from './claude/claude';
 import { RECIPE_PROMPT, RECIPE_SCHEMA } from './claude/recipe-prompt';
 import { RecipeReadError, type RecipeDraft } from './recipe-draft';
 
@@ -93,32 +93,18 @@ function toDraft(answer: Record<string, unknown>, sourceUrl: string): RecipeDraf
 }
 
 export async function readRecipe(source: RecipeSource, ask: Ask): Promise<RecipeDraft> {
-	let message: Anthropic.Message;
-	try {
-		message = await ask({
+	const { answer } = await askJson(
+		ask,
+		{
 			max_tokens: 8000,
 			system: RECIPE_PROMPT,
 			output_config: { effort: 'low', format: { type: 'json_schema', schema: RECIPE_SCHEMA } },
 			messages: [{ role: 'user', content: content(source) }]
-		});
-	} catch (e) {
-		if (e instanceof ClaudeLimitError) throw new RecipeReadError('limit');
-		console.error('Claude could not read the recipe', e);
-		throw new RecipeReadError('failed');
-	}
-
-	const text = message.content.find((block) => block.type === 'text')?.text;
-	let answer: unknown;
-	try {
-		answer = text === undefined ? null : JSON.parse(text);
-	} catch {
-		// Cut short or refused; the answer is not the schema's.
-	}
-	if (typeof answer !== 'object' || answer === null) {
-		console.error('Claude gave no recipe answer', message.stop_reason);
-		throw new RecipeReadError('failed');
-	}
-	const draft = toDraft(answer as Record<string, unknown>, source.sourceUrl ?? '');
+		},
+		(reason) => new RecipeReadError(reason),
+		'recipe'
+	);
+	const draft = toDraft(answer, source.sourceUrl ?? '');
 	if (!draft) throw new RecipeReadError('none');
 	return draft;
 }

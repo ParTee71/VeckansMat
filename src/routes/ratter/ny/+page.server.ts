@@ -9,7 +9,7 @@ import {
 	type Recipe,
 	type RecipeMatch
 } from '#lib/server/db/recipes.ts';
-import { ask } from '#lib/server/claude/claude.ts';
+import { askFor } from '#lib/server/claude/claude.ts';
 import { recipeUrl, siteName } from '#lib/links.ts';
 import { RecipeReadError, type RecipeDraft } from '#lib/server/recipe-draft.ts';
 import { fetchPage, pageText, recipeFromHtml } from '#lib/server/recipe-link.ts';
@@ -63,8 +63,7 @@ function readError(reason: RecipeReadError['reason'], kind: Kind): string {
 const MAX_TEXT = 20_000;
 
 /** Reads with Claude, using the model the app is set to. */
-const withClaude = (source: RecipeSource) =>
-	readRecipe(source, (params) => ask(env.DB, 'recipe', { ...params, model: env.RECIPE_MODEL }));
+const withClaude = (source: RecipeSource) => readRecipe(source, askFor('recipe'));
 
 /** A page's JSON-LD when it has one, otherwise Claude reads the page's text. */
 async function readLink(link: URL, allowLocal: boolean): Promise<RecipeDraft> {

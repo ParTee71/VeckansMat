@@ -1,9 +1,8 @@
 // Claude makes the week's shopping list, and guesses the ingredients of dishes that have only a
 // name. See docs/beslut/0015-inkopslista.md.
-import type Anthropic from '@anthropic-ai/sdk';
 import { answerText, nameKey } from '../names';
 import { SECTIONS, sectionRank } from '../shopping';
-import { ClaudeLimitError, type Ask } from './claude/claude';
+import { askJson, type Ask } from './claude/claude';
 import {
 	SHOPPING_PROMPT,
 	SHOPPING_SCHEMA,
@@ -67,28 +66,18 @@ export async function askShoppingList(
 	dishes: ShoppingDish[],
 	ask: Ask
 ): Promise<{ items: NewShoppingItem[]; guesses: Map<string, string[]> }> {
-	let message: Anthropic.Message;
-	try {
-		message = await ask({
+	const { answer: parsed, message } = await askJson(
+		ask,
+		{
 			max_tokens: 16000,
 			system: SHOPPING_PROMPT,
 			output_config: { effort: 'low', format: { type: 'json_schema', schema: SHOPPING_SCHEMA } },
 			messages: [{ role: 'user', content: [{ type: 'text', text: shoppingContent(dishes) }] }]
-		});
-	} catch (e) {
-		if (e instanceof ClaudeLimitError) throw new ShoppingListError('limit');
-		console.error('Claude could not make the shopping list', e);
-		throw new ShoppingListError('failed');
-	}
-
-	const answer = message.content.find((block) => block.type === 'text')?.text;
-	let parsed: { items?: unknown; guesses?: unknown } | null = null;
-	try {
-		parsed = answer === undefined ? null : JSON.parse(answer);
-	} catch {
-		// Cut short or refused; the answer is not the schema's.
-	}
-	if (!parsed || !Array.isArray(parsed.items)) {
+		},
+		(reason) => new ShoppingListError(reason),
+		'shopping list'
+	);
+	if (!Array.isArray(parsed.items)) {
 		console.error('Claude gave no shopping list', message.stop_reason);
 		throw new ShoppingListError('failed');
 	}
