@@ -1,0 +1,201 @@
+{
+	"date": "2026-10-25T11:02:43.278Z",
+	"model": "claude-haiku-5-5",
+	"prompt": "4d2ee8b7d360",
+	"score": 0.98989898989899,
+	"costUsd": 0.0024106,
+	"results": [
+		{
+			"id": "text-enkel",
+			"score": 1,
+			"failed": [],
+			"answer": {
+				"name": "Krämig tomatsoppa",
+				"servings": 4,
+				"timeMinutes": 30,
+				"ingredients": [
+					"1 gul lök",
+					"2 vitlöksklyftor",
+					"2 burkar krossade tomater (à 400 g)",
+					"5 dl grönsaksbuljong",
+					"1 dl matlagningsgrädde",
+					"salt och svartpeppar"
+				],
+				"instructions": "1. Hacka lök och vitlök och fräs dem mjuka i en kastrull.\n2. Häll i tomaterna och buljongen och låt koka i 15 minuter.\n3. Mixa soppan slät och rör i grädden. Smaka av med salt och peppar.",
+				"sourceUrl": ""
+			}
+		},
+		{
+			"id": "text-blogg",
+			"score": 0.8888888888888888,
+			"failed": ["tid"],
+			"answer": {
+				"name": "Snabb pasta med kyckling och spenat",
+				"servings": 2,
+				"timeMinutes": 15,
+				"ingredients": [
+					"200 g pasta",
+					"250 g kycklingfilé",
+					"65 g färsk spenat",
+					"2 dl crème fraiche",
+					"1 msk smör"
+				],
+				"instructions": "1. Koka pastan enligt paketet.\n2. Skär kycklingen i bitar och stek den i smöret tills den är genomstekt.\n3. Rör ner crème fraiche och spenat och låt det bli varmt.\n4. Blanda med pastan.",
+				"sourceUrl": ""
+			}
+		},
+		{
+			"id": "text-meddelande",
+			"score": 1,
+			"failed": [],
+			"answer": {
+				"name": "Köttfärssås",
+				"servings": null,
+				"timeMinutes": null,
+				"ingredients": [
+					"500 g nötfärs",
+					"1 gul lök",
+					"1 burk krossade tomater",
+					"2 msk tomatpuré",
+					"1 tsk oregano"
+				],
+				"instructions": "1. Bryn färsen med löken, häll i resten och låt puttra i 20 min.",
+				"sourceUrl": ""
+			}
+		},
+		{
+			"id": "text-engelska",
+			"score": 1,
+			"failed": [],
+			"answer": {
+				"name": "Banana pancakes",
+				"servings": 2,
+				"timeMinutes": null,
+				"ingredients": ["2 ripe bananas", "2 eggs", "1/2 cup oat flour", "1 pinch of salt"],
+				"instructions": "1. Mash the bananas and whisk in the eggs.\n2. Stir in the flour and salt.\n3. Fry small pancakes in a buttered pan.",
+				"sourceUrl": ""
+			}
+		},
+		{
+			"id": "text-intrang",
+			"score": 1,
+			"failed": [],
+			"answer": {
+				"name": "Linsgryta",
+				"servings": null,
+				"timeMinutes": null,
+				"ingredients": ["3 dl röda linser", "1 burk kokosmjölk", "1 msk currypulver"],
+				"instructions": "1. Koka allt i 20 minuter.",
+				"sourceUrl": ""
+			}
+		},
+		{
+			"id": "text-inget",
+			"score": 1,
+			"failed": [],
+			"answer": "none"
+		},
+		{
+			"id": "sida-utan-jsonld",
+			"score": 1,
+			"failed": [],
+			"answer": {
+				"name": "Kycklinggryta med curry",
+				"servings": 4,
+				"timeMinutes": 40,
+				"ingredients": [
+					"600 g kycklinglårfilé",
+					"1 gul lök",
+					"1 msk currypulver",
+					"4 dl kokosmjölk",
+					"1 röd paprika"
+				],
+				"instructions": "1. Skär kycklingen i bitar och hacka löken.\n2. Bryn kycklingen och löken med curryn.\n3. Häll i kokosmjölken och paprikan och låt koka i 20 minuter.",
+				"sourceUrl": "https://recept.exempel.se/sida-utan-jsonld"
+			}
+		},
+		{
+			"id": "sida-delar",
+			"score": 1,
+			"failed": [],
+			"answer": {
+				"name": "Kanelbullar",
+				"servings": 30,
+				"timeMinutes": null,
+				"ingredients": [
+					"50 g jäst",
+					"5 dl mjölk",
+					"150 g smör",
+					"1 dl socker",
+					"13 dl vetemjöl",
+					"100 g smör",
+					"1 dl socker",
+					"1 msk kanel"
+				],
+				"instructions": "1. Smält smöret och värm mjölken. Rör ut jästen och blanda i resten. Låt jäsa 30 minuter.\n2. Kavla ut degen, bred på fyllningen, rulla ihop och skär bullar. Grädda i 225 grader i 8 minuter.",
+				"sourceUrl": "https://recept.exempel.se/sida-delar"
+			}
+		},
+		{
+			"id": "foto-kokbok",
+			"score": 1,
+			"failed": [],
+			"answer": {
+				"name": "Ugnsbakad lax med citron",
+				"servings": 4,
+				"timeMinutes": 30,
+				"ingredients": [
+					"600 g laxfilé",
+					"1 citron",
+					"2 msk olivolja",
+					"1 tsk salt",
+					"1 knippe dill"
+				],
+				"instructions": "1. Sätt ugnen på 200 grader.\n2. Lägg laxen i en form och pressa över citronen.\n3. Ringla över oljan och strö över saltet.\n4. Baka i mitten av ugnen i 20 minuter. Toppa med dill.",
+				"sourceUrl": ""
+			}
+		},
+		{
+			"id": "foto-uppslag",
+			"score": 1,
+			"failed": [],
+			"answer": {
+				"name": "Äppelkaka i långpanna",
+				"servings": 20,
+				"timeMinutes": null,
+				"ingredients": [
+					"200 g smör",
+					"4 dl strösocker",
+					"4 ägg",
+					"5 dl vetemjöl",
+					"2 tsk bakpulver",
+					"1 dl mjölk",
+					"5 äpplen",
+					"2 tsk kanel"
+				],
+				"instructions": "1. Sätt ugnen på 175 grader och klä en långpanna med bakplåtspapper.\n2. Smält smöret och rör ner sockret.\n3. Vispa i äggen ett i taget.\n4. Blanda mjöl och bakpulver och rör ner det med mjölken.\n5. Bred ut smeten i pannan och tryck ner äppelklyftor.\n6. Strö över kanel och grädda i 30 minuter.",
+				"sourceUrl": ""
+			}
+		},
+		{
+			"id": "foto-lapp",
+			"score": 1,
+			"failed": [],
+			"answer": {
+				"name": "Farmors köttbullar",
+				"servings": null,
+				"timeMinutes": null,
+				"ingredients": [
+					"500 g blandfärs",
+					"1 ägg",
+					"1/2 dl ströbröd",
+					"1 dl mjölk",
+					"1 gul lök",
+					"salt, peppar"
+				],
+				"instructions": "1. Blanda allt, rulla bullar, stek i smör.",
+				"sourceUrl": ""
+			}
+		}
+	]
+}

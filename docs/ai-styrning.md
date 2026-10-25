@@ -29,6 +29,13 @@ styrningen är uppbyggd just nu står i
   påhittade rader, stegen. Regler är billiga, ger samma svar varje gång och går att läsa.
   Resultatet sparas så att en promptändring jämförs med förra körningen.
 
+**Första körningen** (Haiku 5.5, två körningar, under en cent var): 98 % och 99 % av 11 fall.
+Nio fall blev fulla båda gångerna. `text-meddelande` fick en gång tiden 20 minuter ur "låt
+puttra i 20 min". `text-blogg` missade tiden båda gångerna: bloggen säger att rätten "går på en
+kvart" och modellen skriver 15 minuter där evalen väntar sig `null`. Det är snarare en tveksam
+förväntan i fallet än ett fel i prompten, så prompten är orörd tills det är bestämt vad som ska
+gälla. Resultatet ligger i `evals/recept/results/latest.json`.
+
 **Lärdom:** Foton kom aldrig fram, fast enhetsproven var gröna. SvelteKits `use:enhance`
 skickar formuläret som vanlig formulärdata om formuläret inte är `multipart/form-data`, och då
 försvinner filer som lagts till med JavaScript utan något fel. Webbläsarprovet fångade det, igen.
