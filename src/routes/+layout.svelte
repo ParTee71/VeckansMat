@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { version } from '$app/env';
-	import { beforeNavigate } from '$app/navigation';
+	import { beforeNavigate, invalidateAll } from '$app/navigation';
 	import { page, updated } from '$app/state';
 	import favicon from '#lib/assets/favicon.svg';
 	import Icon from '#lib/Icon.svelte';
 	import { loadTheme, theme } from '#lib/theme.svelte.ts';
 	import { themeOf } from '#lib/themes.ts';
+	import { swedishToday } from '#lib/weeks.ts';
 	import type { M3eSnackbarElement } from '@m3e/web/snackbar';
 	import type { LayoutProps } from './$types';
 
@@ -39,6 +40,15 @@
 		}
 	});
 
+	// A phone keeps the app open for days. When it comes back on another day, the week to show
+	// may have changed, so the page loads again before anything is written to the old one.
+	let loadedOn = swedishToday();
+	function loadIfNewDay() {
+		if (document.visibilityState !== 'visible' || swedishToday() === loadedOn) return;
+		loadedOn = swedishToday();
+		invalidateAll();
+	}
+
 	// Opening another snackbar, such as an undo, closes this one, so it reloads only when the
 	// action was tapped, and comes back once no other one is showing. An undo can also be taken
 	// out of the page while it shows, without closing, so it is looked for rather than awaited.
@@ -55,6 +65,8 @@
 		}, 500);
 	}
 </script>
+
+<svelte:document onvisibilitychange={loadIfNewDay} />
 
 <svelte:head>
 	<link rel="icon" href={favicon} />

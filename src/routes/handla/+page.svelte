@@ -19,7 +19,9 @@
 	// Items written in but not yet saved, per week.
 	let adding = $state<Record<string, string[]>>({});
 	let draft = $state('');
-	let making = $state(false);
+	// Per week, so that the other week shows its own list meanwhile.
+	let makingWeeks = $state<Record<string, boolean>>({});
+	let making = $derived(!!makingWeeks[data.weekStart]);
 	let failed = $state(false);
 	let showBasket = $state(true);
 	// The latest item put in the basket, which the snackbar can undo.
@@ -66,13 +68,13 @@
 
 	async function make() {
 		const weekStart = data.weekStart;
-		making = true;
+		makingWeeks[weekStart] = true;
 		delete listErrors[weekStart];
 		const result = await post('make', {});
 		if (result?.type === 'failure') {
 			listErrors[weekStart] = result.data?.shoppingError as 'failed' | 'limit';
 		}
-		making = false;
+		delete makingWeeks[weekStart];
 	}
 
 	async function add(event: SubmitEvent) {

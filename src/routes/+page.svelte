@@ -32,8 +32,11 @@
 	// The wish as written, per week, so that the page loading again does not wipe it.
 	let wishes = $state<Record<string, string>>({});
 	let wish = $derived(wishes[week.weekStart] ?? week.wish ?? '');
-	let suggesting = $state<string | null>(null);
+	// Per week, so that one week waiting on Claude leaves the other free.
+	let suggestingWeeks = $state<Record<string, boolean>>({});
+	let suggesting = $derived(!!suggestingWeeks[week.weekStart]);
 	let swapping = $state<string | null>(null);
+	let busy = $derived(suggesting || !!swapping?.startsWith(`${week.weekStart}-`));
 	let suggestError = $state<{ weekStart: string; reason: 'failed' | 'limit' } | null>(null);
 	// The latest swap, which the snackbar can undo.
 	let swapped = $state<{ key: string; weekStart: string; before: RowInput; text: string } | null>(
@@ -95,9 +98,10 @@
 
 	async function suggest() {
 		editing = null;
-		suggesting = week.weekStart;
+		const weekStart = week.weekStart;
+		suggestingWeeks[weekStart] = true;
 		await postSuggest('suggest', { wish, eaters: eaterIds });
-		suggesting = null;
+		delete suggestingWeeks[weekStart];
 	}
 
 	async function swap(weekday: number, meal: Meal) {
@@ -165,15 +169,16 @@
 	// The text field loses focus when a suggestion is tapped, so suggestions keep it.
 	const keepFocus = (event: Event) => event.preventDefault();
 
-	let eaterRequests = 0;
+	// The latest tap per week, whose answer clears what is shown.
+	const eaterRequests: Record<string, number> = {};
 
 	async function toggleEater(id: number, selected: boolean) {
 		const weekStart = week.weekStart;
-		const request = ++eaterRequests;
+		const request = (eaterRequests[weekStart] = (eaterRequests[weekStart] ?? 0) + 1);
 		const ids = selected ? [...eaterIds, id] : eaterIds.filter((e) => e !== id);
 		pendingEaters[weekStart] = ids;
 		await post('eaters', { weekStart, eaters: ids });
-		if (request === eaterRequests) delete pendingEaters[weekStart];
+		if (request === eaterRequests[weekStart]) delete pendingEaters[weekStart];
 	}
 
 	function addLunch(weekday: number) {
@@ -290,7 +295,7 @@
 					<m3e-icon-button
 						class="swap"
 						aria-label="Byt {name}"
-						disabled={!!swapping || !!suggesting || undefined}
+						disabled={busy || undefined}
 						onclick={() => swap(weekday, meal)}
 					>
 						<Icon name="swap" />
@@ -314,7 +319,7 @@
 				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-icon-button is a button with its own keyboard handling) -->
 				<m3e-icon-button
 					aria-label="Nytt förslag på hela veckan"
-					disabled={!!suggesting || !!swapping || undefined}
+					disabled={busy || undefined}
 					onclick={suggest}
 				>
 					<Icon name="suggest" />
@@ -355,7 +360,7 @@
 				/>
 			</m3e-form-field>
 			<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
-			<m3e-button variant="filled" disabled={!!swapping || undefined} onclick={suggest}>
+			<m3e-button variant="filled" disabled={busy || undefined} onclick={suggest}>
 				<span slot="icon" class="slot-icon"><Icon name="suggest" /></span>Föreslå veckan
 			</m3e-button>
 		{/if}
@@ -375,7 +380,7 @@
 		</p>
 	{/if}
 
-	{#if suggesting === week.weekStart}
+	{#if suggesting}
 		<div class="suggesting">
 			<m3e-loading-indicator></m3e-loading-indicator>
 			<p role="status">Claude sätter ihop veckan …</p>
