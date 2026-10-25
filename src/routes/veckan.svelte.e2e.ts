@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { open } from '../../test/e2e';
+import { open, saved } from '../../test/e2e';
 
 // The made-up dishes come from test/e2e-seed.sql. Veckan shows this week or the next, so the
 // tests do not depend on which day they run.
@@ -27,6 +27,7 @@ test('a week is written as quickly as on a note', async ({ page }) => {
 	await page.keyboard.press('Enter');
 	await expect(page.getByRole('button', { name: 'Lunch torsdag: Ostfrallor' })).toBeVisible();
 
+	await saved(page);
 	await page.reload();
 	await expect(page.getByRole('button', { name: 'Middag måndag: Fiskgratäng' })).toBeVisible();
 	await expect(
@@ -61,12 +62,10 @@ test('who eats is chosen per week, and shows what they do not eat', async ({ pag
 	const chips = people.map((name) => page.locator('m3e-filter-chip', { hasText: name }));
 	await expect(chips[0]).not.toHaveAttribute('selected');
 	// Two quick taps both count, even before the first is saved.
-	const saved = page.waitForResponse((r) => r.url().includes('/eaters'));
 	await chips[0].click();
 	await chips[1].click();
-	await saved;
 	await expect(page.getByText('Ätare Två: Ätare Två äter inte svamp')).toBeVisible();
-	await page.waitForLoadState('networkidle');
+	await saved(page);
 	await page.reload();
 	for (const chip of chips) await expect(chip).toHaveAttribute('selected');
 
@@ -136,6 +135,7 @@ test('Claude suggests the week, and a day is swapped with one tap', async ({ pag
 	await page.locator('m3e-icon-button[aria-label="Nytt förslag på hela veckan"]').click();
 	await expect(monday('Blomkålssoppa')).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Middag tisdag: Ärtsoppa' })).toBeVisible();
+	await saved(page);
 	await page.reload();
 	await expect(page.getByRole('button', { name: 'Middag tisdag: Ärtsoppa' })).toBeVisible();
 	await expect(monday('Blomkålssoppa')).toBeVisible();
