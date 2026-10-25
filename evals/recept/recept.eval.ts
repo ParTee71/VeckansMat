@@ -1,14 +1,13 @@
 // Reads every case with the real API and the app's own prompt, grades the answers by rules and
 // compares them with the last saved run. See evals/recept/README.md.
-import Anthropic from '@anthropic-ai/sdk';
 import { readFileSync } from 'node:fs';
-import { afterAll, beforeAll, it } from 'vitest';
+import { afterAll, it } from 'vitest';
 import { nameKey } from '../../src/lib/names';
-import { costUsd, type Ask } from '../../src/lib/server/claude/claude';
 import { RECIPE_PROMPT } from '../../src/lib/server/claude/recipe-prompt';
 import { RecipeReadError, type RecipeDraft } from '../../src/lib/server/recipe-draft';
 import { pageText } from '../../src/lib/server/recipe-link';
 import { readRecipe, type RecipeSource } from '../../src/lib/server/recipe-parse';
+import { liveClaude } from '../live';
 import { report, score, type Scored } from '../report';
 import { CASES, type Case } from './cases';
 
@@ -19,20 +18,8 @@ interface Result extends Scored {
 	answer: RecipeDraft | string;
 }
 
-let claude: Anthropic;
-let cost = 0;
+const claude = liveClaude(MODEL);
 const results: Result[] = [];
-
-beforeAll(() => {
-	if (!process.env.ANTHROPIC_API_KEY) throw new Error('Set ANTHROPIC_API_KEY to run the eval.');
-	claude = new Anthropic();
-});
-
-const ask: Ask = async (params) => {
-	const message = await claude.messages.create({ ...params, model: MODEL });
-	cost += costUsd(MODEL, message.usage);
-	return message;
-};
 
 function source(c: Case): RecipeSource {
 	if (c.html) return { text: pageText(c.html), sourceUrl: `https://recept.exempel.se/${c.id}` };
@@ -72,8 +59,9 @@ function grade(c: Case, draft: RecipeDraft | null): Record<string, boolean> {
 	return checks;
 }
 
-for (const c of CASES) {
-	it(c.id, async () => {
+CASES.forEach((c, i) => {
+	it.concurrent(c.id, async () => {
+		const { ask, spent } = claude();
 		let answer: RecipeDraft | RecipeReadError['reason'];
 		try {
 			answer = await readRecipe(source(c), ask);
@@ -83,8 +71,8 @@ for (const c of CASES) {
 		}
 		const checks = grade(c, typeof answer === 'string' ? null : answer);
 		if (answer === 'failed') checks['svar'] = false;
-		results.push({ id: c.id, ...score(checks), answer });
+		results[i] = { id: c.id, ...score(checks), costUsd: spent.costUsd, answer };
 	});
-}
+});
 
-afterAll(() => report(RESULTS, { model: MODEL, prompt: RECIPE_PROMPT, costUsd: cost, results }));
+afterAll(() => report(RESULTS, { model: MODEL, prompt: RECIPE_PROMPT, results }));

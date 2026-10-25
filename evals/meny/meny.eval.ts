@@ -1,38 +1,31 @@
 // Suggests every case's week with the real API and the app's own prompt, grades the answers by
 // rules and compares them with the last saved run. See evals/meny/README.md.
-import Anthropic from '@anthropic-ai/sdk';
-import { afterAll, beforeAll, it } from 'vitest';
+import { afterAll, it } from 'vitest';
 import { nameKey } from '../../src/lib/names';
 import { isDish } from '../../src/lib/recipes';
-import { costUsd, type Ask } from '../../src/lib/server/claude/claude';
 import { MENU_PROMPT, menuContent, slotName } from '../../src/lib/server/claude/menu-prompt';
 import {
 	MenuSuggestError,
 	suggestMenu,
 	type SuggestedRow
 } from '../../src/lib/server/menu-suggest';
+import { liveClaude, type Effort } from '../live';
 import { report, score, type Scored } from '../report';
 import { CASES, COLLECTION, RECENT, type Case } from './cases';
 
 const MODEL = process.env.MENU_MODEL ?? 'claude-sonnet-5-5';
 // To compare efforts without changing the app.
-const EFFORT = process.env.MENU_EFFORT as 'low' | 'medium' | 'high' | undefined;
+const EFFORT = process.env.MENU_EFFORT as Effort;
 const RESULTS = new URL('results/latest.json', import.meta.url);
 
 interface Result extends Scored {
 	seconds: number;
-	costUsd: number;
 	cacheRead: number;
 	answer: string[] | string;
 }
 
-let claude: Anthropic;
+const claude = liveClaude(MODEL, EFFORT);
 const results: Result[] = [];
-
-beforeAll(() => {
-	if (!process.env.ANTHROPIC_API_KEY) throw new Error('Set ANTHROPIC_API_KEY to run the eval.');
-	claude = new Anthropic();
-});
 
 const byKey = new Map(COLLECTION.map((dish) => [nameKey(dish.name), dish]));
 const tagged = (text: string, tag: string) => byKey.get(nameKey(text))?.tags.includes(tag) ?? false;
@@ -106,20 +99,9 @@ function grade(c: Case, rows: SuggestedRow[]): Record<string, boolean> {
 	return checks;
 }
 
-for (const c of CASES) {
+CASES.forEach((c, i) => {
 	it.concurrent(c.id, async () => {
-		let cost = 0;
-		let cacheRead = 0;
-		const ask: Ask = async (params) => {
-			const message = await claude.messages.create({
-				...params,
-				...(EFFORT && { output_config: { ...params.output_config, effort: EFFORT } }),
-				model: MODEL
-			});
-			cost += costUsd(MODEL, message.usage);
-			cacheRead += message.usage.cache_read_input_tokens ?? 0;
-			return message;
-		};
+		const { ask, spent } = claude();
 		const started = Date.now();
 		let rows: SuggestedRow[] = [];
 		let failure = '';
@@ -130,26 +112,22 @@ for (const c of CASES) {
 			failure = e.reason;
 		}
 		const checks = failure ? { svar: false } : grade(c, rows);
-		results.push({
+		results[i] = {
 			id: c.id,
 			...score(checks),
 			seconds: Math.round((Date.now() - started) / 1000),
-			costUsd: cost,
-			cacheRead,
+			...spent,
 			answer:
 				failure ||
 				rows.map(
 					(r) =>
 						`${slotName(r)}: ${r.text} (${r.reason}) | ${r.alternatives.map((a) => a.text).join(' | ')}`
 				)
-		});
+		};
 	});
-}
+});
 
 afterAll(() => {
-	results.sort(
-		(a, b) => CASES.findIndex((c) => c.id === a.id) - CASES.findIndex((c) => c.id === b.id)
-	);
 	report(
 		RESULTS,
 		{
@@ -157,7 +135,6 @@ afterAll(() => {
 			effort: EFFORT ?? null,
 			// The prompt and how the material is written, so a change to either shows.
 			prompt: MENU_PROMPT + menuContent(CASES[0].request).join('\n'),
-			costUsd: results.reduce((sum, r) => sum + r.costUsd, 0),
 			results
 		},
 		(r) => ({ sekunder: r.seconds })
