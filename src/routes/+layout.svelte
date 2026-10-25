@@ -27,9 +27,10 @@
 	// The m3e web components touch `customElements`, which only exists in the
 	// browser, so they are registered after hydration instead of during SSR.
 	// The phone's theme is read first, so the scheme is built from it straight away.
+	// `data-ready` tells the tests that the components are there.
 	onMount(() => {
 		loadTheme();
-		import('#lib/m3e.ts');
+		import('#lib/m3e.ts').then(() => (document.documentElement.dataset.ready = ''));
 	});
 
 	// After a release, the next navigation loads the new version in full instead

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { open } from '../../test/e2e';
 import pkg from '../../package.json' with { type: 'json' };
 
 test('start page shows the week', async ({ page }) => {
@@ -7,10 +8,8 @@ test('start page shows the week', async ({ page }) => {
 });
 
 test('material components are registered in the browser', async ({ page }) => {
-	await page.goto('/');
-	await expect
-		.poll(() => page.evaluate(() => customElements.get('m3e-card') !== undefined))
-		.toBe(true);
+	await open(page, '/');
+	expect(await page.evaluate(() => customElements.get('m3e-card') !== undefined)).toBe(true);
 });
 
 test('health endpoint answers', async ({ request }) => {
@@ -25,10 +24,7 @@ test('start page shows the version', async ({ page }) => {
 });
 
 test('a new version offers a reload that loads it', async ({ page }) => {
-	await page.goto('/');
-	await expect
-		.poll(() => page.evaluate(() => customElements.get('m3e-snackbar') !== undefined))
-		.toBe(true);
+	await open(page, '/');
 	await page.route('**/_app/version.json', (route) =>
 		route.fulfill({ json: { version: '99.0.0' } })
 	);
@@ -43,10 +39,7 @@ test('a new version offers a reload that loads it', async ({ page }) => {
 });
 
 test('a new version is offered again after another notice has closed', async ({ page }) => {
-	await page.goto('/');
-	await expect
-		.poll(() => page.evaluate(() => customElements.get('m3e-snackbar') !== undefined))
-		.toBe(true);
+	await open(page, '/');
 	await page.route('**/_app/version.json', (route) =>
 		route.fulfill({ json: { version: '99.0.0' } })
 	);
@@ -78,8 +71,7 @@ test('a new version is offered again after another notice has closed', async ({ 
 
 test('the app loads again when it comes back on another day', async ({ page }) => {
 	await page.clock.install({ time: Date.now() - 24 * 60 * 60 * 1000 });
-	await page.goto('/');
-	await expect.poll(() => page.evaluate(() => !!customElements.get('m3e-fab'))).toBe(true);
+	await open(page, '/');
 	let loads = 0;
 	page.on('request', (request) => {
 		if (request.url().includes('__data.json')) loads++;

@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { countLoads, open, saved } from '../../../test/e2e';
 
-// Runs after the tests of Veckan, in its own Playwright project, since both write the weeks Veckan
-// shows. The made-up dishes come from test/e2e-seed.sql.
+// Has a Worker of its own in playwright.config.ts, since it writes the same weeks as the tests of
+// Veckan. The made-up dishes come from test/e2e-seed.sql.
 test.describe.configure({ mode: 'serial' });
 
 test('the week shopping list is made from the dishes and ticked off in the store', async ({
