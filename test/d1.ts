@@ -26,6 +26,8 @@ export async function clearTestDb(db: D1Database) {
 	await db.batch([
 		db.prepare('DELETE FROM menu'),
 		db.prepare('DELETE FROM recipe'),
-		db.prepare('DELETE FROM claude_call')
+		db.prepare('DELETE FROM claude_call'),
+		db.prepare('DELETE FROM person'),
+		db.prepare('DELETE FROM setting')
 	]);
 }
