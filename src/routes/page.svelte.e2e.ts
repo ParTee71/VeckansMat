@@ -75,3 +75,23 @@ test('a new version is offered again after another notice has closed', async ({ 
 	await expect(notice).toBeHidden();
 	await expect(notice).toBeVisible();
 });
+
+test('the app loads again when it comes back on another day', async ({ page }) => {
+	await page.clock.install({ time: Date.now() - 24 * 60 * 60 * 1000 });
+	await page.goto('/');
+	await expect.poll(() => page.evaluate(() => !!customElements.get('m3e-fab'))).toBe(true);
+	let loads = 0;
+	page.on('request', (request) => {
+		if (request.url().includes('__data.json')) loads++;
+	});
+
+	// The same day: nothing to load.
+	await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+	await page.waitForTimeout(300);
+	expect(loads).toBe(0);
+
+	// The next day.
+	await page.clock.setSystemTime(Date.now());
+	await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+	await expect.poll(() => loads).toBe(1);
+});

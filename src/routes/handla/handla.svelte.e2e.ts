@@ -85,3 +85,26 @@ test('a list made before the week changed offers to be updated', async ({ page }
 	await expect(changed).toHaveCount(0);
 	await expect(page.getByRole('checkbox', { name: 'Till linsgryta i handlaprovet' })).toBeVisible();
 });
+
+test('a list being made for one week leaves the other week alone', async ({ page }) => {
+	await open(page, '/handla');
+	let release = () => {};
+	const held = new Promise<void>((resolve) => (release = resolve));
+	await page.route('**/handla?/make', async (route) => {
+		await held;
+		await route.continue();
+	});
+	await page.getByRole('button', { name: 'Gör om listan från veckan' }).click();
+	const status = page.getByRole('status').filter({ hasText: 'Claude gör listan' });
+	await expect(status).toBeVisible();
+
+	// To whichever week is not shown.
+	await page
+		.locator(
+			'm3e-icon-button:is([aria-label="Nästa vecka"], [aria-label="Den här veckan"]):not([disabled])'
+		)
+		.click();
+	await expect(page).toHaveURL(/vecka=/);
+	await expect(status).toBeHidden();
+	release();
+});
