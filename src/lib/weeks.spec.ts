@@ -60,6 +60,7 @@ describe('the week to plan', () => {
 		expect(isWeekStart('2026-10-26')).toBe(true);
 		expect(isWeekStart('2026-10-27')).toBe(false);
 		expect(isWeekStart('2026-02-30')).toBe(false);
+		expect(isWeekStart('2026-13-02')).toBe(false);
 		expect(isWeekStart('vecka 44')).toBe(false);
 	});
 

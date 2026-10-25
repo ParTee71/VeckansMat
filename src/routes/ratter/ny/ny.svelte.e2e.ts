@@ -42,6 +42,16 @@ test('a link in the search field fills in the dish that has only the name', asyn
 	await expect(page).toHaveURL('/ratter/2');
 	await expect(page.getByText('3 dl röda linser')).toBeVisible();
 	await expect(page.getByText('Ätits 2 gånger')).toBeVisible();
+
+	// Going back does not read the link again.
+	let readAgain = false;
+	page.on('request', (request) => {
+		if (request.url().includes('?/read')) readAgain = true;
+	});
+	await page.goBack();
+	await expect(page.getByLabel('Länk eller recepttext')).toBeVisible();
+	await page.waitForLoadState('networkidle');
+	expect(readAgain).toBe(false);
 });
 
 test('a dish with only a name is filled in from its own page and keeps its name', async ({

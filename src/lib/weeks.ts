@@ -87,7 +87,11 @@ export function addWeeks(weekStart: string, weeks: number): string {
 /** Whether the text is a Monday written YYYY-MM-DD. */
 export function isWeekStart(text: string): boolean {
 	return (
-		/^\d{4}-\d{2}-\d{2}$/.test(text) && iso(new Date(text)) === text && mondayOf(text) === text
+		/^\d{4}-\d{2}-\d{2}$/.test(text) &&
+		// A month or day out of range is no date at all, which iso cannot write.
+		!Number.isNaN(Date.parse(text)) &&
+		iso(new Date(text)) === text &&
+		mondayOf(text) === text
 	);
 }
 

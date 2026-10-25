@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
+	import { afterNavigate } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import Icon from '#lib/Icon.svelte';
 	import RecipeFields from '#lib/RecipeFields.svelte';
@@ -75,8 +75,9 @@
 
 	// A link from the search field on Rätter is read straight away.
 	let readForm: HTMLFormElement | undefined = $state();
-	onMount(() => {
-		if (data.link) readForm?.requestSubmit();
+	// Coming back to the page shows the form, without reading the link again.
+	afterNavigate(({ type }) => {
+		if (data.link && type !== 'popstate') readForm?.requestSubmit();
 	});
 
 	function existingText(timesEaten: number) {
