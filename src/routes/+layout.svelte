@@ -170,9 +170,11 @@
 		display: flow-root;
 	}
 
+	/* Above the rows of a list, whose invisible links have z-index 1. */
 	m3e-nav-bar {
 		position: sticky;
 		bottom: 0;
+		z-index: 2;
 	}
 
 	footer {
