@@ -65,11 +65,14 @@ const MODELS = {
 	shopping: 'SHOPPING_MODEL'
 } as const satisfies Record<Purpose, keyof Env>;
 
-/** Asks with the model the app is set to use for the purpose. */
+/**
+ * Asks with the model the app is set to use for the purpose. The app's env is read at each call,
+ * since a route builds its Ask when it loads, before env is there.
+ */
 export const askFor =
-	(purpose: Purpose, db: D1Database = env.DB, claude?: Anthropic): Ask =>
+	(purpose: Purpose, db?: D1Database, claude?: Anthropic): Ask =>
 	(params) =>
-		ask(db, purpose, { ...params, model: env[MODELS[purpose]] }, claude);
+		ask(db ?? env.DB, purpose, { ...params, model: env[MODELS[purpose]] }, claude);
 
 /** Untyped like JSON.parse's, so the caller checks each field it reads; a named list is a list. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
