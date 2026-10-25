@@ -10,6 +10,7 @@ Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ä
 - Appen har bytt färg till terrakotta på vit bakgrund. (#21)
 - Var och en kan byta appens färg på sin egen telefon: terrakotta, skiffer, salvia, eukalyptus, oliv eller en egen färg. (#22)
 - Ett recept kan läggas till från en länk: appen läser in det från receptsidan, och man kollar och sparar. Har rätten bara ett namn fylls den i, och veckorna den ätits ligger kvar. (#25)
+- Ett recept kan också läsas in från foton, till exempel två sidor ur en kokbok, från inklistrad text och från receptsidor som appen inte kunde läsa förut. Claude läser det, och man kollar och sparar. (#26)
 
 ## 0.2.0
 

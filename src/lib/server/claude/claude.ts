@@ -1,0 +1,86 @@
+// The app's calls to Claude: each one is logged with its cost, and none is made once the
+// month's cap is spent. See docs/beslut/0006-claude-i-appen.md.
+import Anthropic from '@anthropic-ai/sdk';
+import { env } from 'cloudflare:workers';
+
+/** What a call is for, kept with its cost. */
+export type Purpose = 'recipe';
+
+/**
+ * Dollars per million tokens. Haiku's price is for prompts up to 100K tokens, which the app's
+ * prompts stay well under.
+ */
+const PRICES: Record<string, { input: number; output: number }> = {
+	'claude-haiku-5-5': { input: 0.1, output: 0.5 },
+	'claude-sonnet-5-5': { input: 2, output: 10 }
+};
+// A model missing above is counted at the highest price, so the cap still holds.
+const UNKNOWN_PRICE = { input: 10, output: 50 };
+
+/** The month's cap is spent, so no call is made until next month. */
+export class ClaudeLimitError extends Error {
+	constructor() {
+		super('The monthly Claude limit is reached');
+	}
+}
+
+export function costUsd(model: string, usage: Anthropic.Usage): number {
+	const price = PRICES[model] ?? UNKNOWN_PRICE;
+	return (usage.input_tokens * price.input + usage.output_tokens * price.output) / 1e6;
+}
+
+/** What calls have cost since the start of the month, in UTC. */
+export async function spentThisMonth(db: D1Database): Promise<number> {
+	const row = await db
+		.prepare(
+			"SELECT coalesce(sum(cost_usd), 0) AS spent FROM claude_call WHERE created_at >= strftime('%Y-%m-01', 'now')"
+		)
+		.first<{ spent: number }>();
+	return row?.spent ?? 0;
+}
+
+function client(): Anthropic {
+	return new Anthropic({
+		apiKey: env.ANTHROPIC_API_KEY,
+		// Only the browser tests set it, to a stand-in for the API.
+		baseURL: env.CLAUDE_BASE_URL || undefined,
+		timeout: 60_000,
+		maxRetries: 1
+	});
+}
+
+/**
+ * Sends one request and logs what it cost. Two calls at the same moment may both pass the cap
+ * check, and a call that times out may still be billed without being logged, so a month can
+ * end a little over the cap.
+ */
+export async function ask(
+	db: D1Database,
+	purpose: Purpose,
+	params: Anthropic.MessageCreateParamsNonStreaming,
+	claude: Anthropic = client()
+): Promise<Anthropic.Message> {
+	// A missing or broken cap stops every call rather than none.
+	const limit = Number(env.CLAUDE_MONTHLY_LIMIT_USD);
+	if (!((await spentThisMonth(db)) < limit)) throw new ClaudeLimitError();
+
+	const message = await claude.messages.create(params);
+	try {
+		await db
+			.prepare(
+				'INSERT INTO claude_call (purpose, model, input_tokens, output_tokens, cost_usd) VALUES (?, ?, ?, ?, ?)'
+			)
+			.bind(
+				purpose,
+				params.model,
+				message.usage.input_tokens,
+				message.usage.output_tokens,
+				costUsd(params.model, message.usage)
+			)
+			.run();
+	} catch (e) {
+		// The answer is paid for, so it is used even when its cost could not be written down.
+		console.error('The cost of a Claude call was not logged', e);
+	}
+	return message;
+}

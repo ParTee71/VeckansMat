@@ -1,52 +1,21 @@
-// Reads a recipe from a web page's schema.org/Recipe data (JSON-LD), without Claude.
+// Fetches a recipe page and reads its schema.org/Recipe data (JSON-LD), without Claude.
 // See docs/beslut/0013-recept-in.md.
-
-/** What a page gave, before anyone has checked it. Only what was found is filled in. */
-export interface RecipeDraft {
-	name: string;
-	servings: number | null;
-	timeMinutes: number | null;
-	ingredients: string[];
-	instructions: string | null;
-	sourceUrl: string;
-}
-
-/** Why a link gave no recipe: a page that could not be fetched, or no recipe in it. */
-export class RecipeLinkError extends Error {
-	constructor(readonly reason: 'fetch' | 'none') {
-		super(`No recipe from the link: ${reason}`);
-	}
-}
+import { recipeUrl } from '../links';
+import { RecipeReadError, type RecipeDraft } from './recipe-draft';
 
 const TIMEOUT_MS = 10_000;
 const MAX_BYTES = 2_000_000;
 const MAX_REDIRECTS = 5;
 
-/** The link as a URL, or null when it is not a web page on a named host. */
-export function recipeUrl(text: string, allowLocal = false): URL | null {
-	const url = URL.parse(text.trim());
-	if (!url || !/^https?:$/.test(url.protocol) || url.username || url.password) return null;
-	if (allowLocal) return url;
-	const host = url.hostname.replace(/\.$/, '');
-	// Only named hosts on the internet: no IP addresses, localhost or single-label names.
-	const local =
-		host === 'localhost' ||
-		host.endsWith('.localhost') ||
-		host.startsWith('[') ||
-		/^[\d.]+$/.test(host) ||
-		!host.includes('.');
-	return local ? null : url;
-}
-
 /**
- * Fetches the page and reads the recipe in it. Redirects are followed by hand, so that each
- * address on the way is checked like the first.
+ * The page's HTML. Redirects are followed by hand, so that each address on the way is checked
+ * like the first.
  */
-export async function fetchRecipe(
+export async function fetchPage(
 	url: URL,
 	fetcher: typeof fetch = fetch,
 	allowLocal = false
-): Promise<RecipeDraft> {
+): Promise<string> {
 	// One deadline for the whole fetch, redirects included.
 	const signal = AbortSignal.timeout(TIMEOUT_MS);
 	let html: string | null = null;
@@ -75,10 +44,8 @@ export async function fetchRecipe(
 	} catch {
 		// Fetching or reading failed; html stays null.
 	}
-	if (html === null) throw new RecipeLinkError('fetch');
-	const draft = recipeFromHtml(html, url.href);
-	if (!draft) throw new RecipeLinkError('none');
-	return draft;
+	if (html === null) throw new RecipeReadError('fetch');
+	return html;
 }
 
 /** The body as text, or null when it is larger than a recipe page has reason to be. */
@@ -139,6 +106,25 @@ export function recipeFromHtml(html: string, sourceUrl: string): RecipeDraft | n
 		if (recipe) return toDraft(recipe, sourceUrl);
 	}
 	return null;
+}
+
+// A recipe page's text is a few thousand characters; the rest of a long page is menus and ads.
+const MAX_PAGE_TEXT = 30_000;
+
+/** The page as plain text, a line per paragraph, for Claude to read when it has no JSON-LD. */
+export function pageText(html: string): string {
+	return decodeEntities(
+		html
+			.replace(/<!--[\s\S]*?-->/g, '')
+			.replace(/<(script|style|noscript|svg|template)\b[\s\S]*?<\/\1\s*>/gi, '')
+			.replace(/<br\s*\/?>|<\/(p|div|li|h[1-6]|tr|section|article|header|title)\s*>/gi, '\n')
+			.replace(/<[^>]*>/g, ' ')
+	)
+		.split('\n')
+		.map((line) => line.replace(/\s+/g, ' ').trim())
+		.filter(Boolean)
+		.join('\n')
+		.slice(0, MAX_PAGE_TEXT);
 }
 
 type Node = Record<string, unknown>;

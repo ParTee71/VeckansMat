@@ -18,10 +18,12 @@
 		"format": "prettier --write .",
 		"test": "vitest --run",
 		"test:e2e": "playwright test",
+		"eval:recept": "vitest run --config evals/recept/vitest.config.ts",
 		"verify": "npm run check && npm run lint && npm run test",
 		"types": "wrangler types"
 	},
 	"dependencies": {
+		"@anthropic-ai/sdk": "^1.3.0",
 		"@m3e/web": "^2.10.2"
 	},
 	"devDependencies": {

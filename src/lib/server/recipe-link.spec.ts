@@ -1,11 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-	durationMinutes,
-	fetchRecipe,
-	recipeFromHtml,
-	RecipeLinkError,
-	recipeUrl
-} from './recipe-link';
+import { recipeUrl } from '../links';
+import { RecipeReadError } from './recipe-draft';
+import { durationMinutes, fetchPage, pageText, recipeFromHtml } from './recipe-link';
 
 // Made-up pages in the shapes recipe sites use.
 const SOURCE = 'https://recept.exempel.se/gryta';
@@ -168,7 +164,8 @@ describe('a link', () => {
 			'http://[::1]/gryta',
 			'http://intranat/gryta',
 			'https://namn:hemligt@recept.exempel.se/gryta',
-			'Kycklinggryta med curry'
+			'Kycklinggryta med curry',
+			'https://recept.exempel.se/gryta\nKycklinggryta med curry'
 		]) {
 			expect(recipeUrl(text), text).toBeNull();
 		}
@@ -179,15 +176,31 @@ describe('a link', () => {
 	});
 });
 
+describe('the text of a page', () => {
+	it('keeps the words a line per paragraph, without scripts, styles or tags', () => {
+		const html = `<html><head><title>Gryta</title><style>p{color:red}</style>
+			<script>track()</script></head><body><!-- reklam --><h1>Gryta &amp; ris</h1>
+			<ul><li>2 dl  ris</li><li>1&nbsp;gul lök</li></ul><p>Koka<br>och servera.</p></body></html>`;
+		expect(pageText(html)).toBe('Gryta\nGryta & ris\n2 dl ris\n1 gul lök\nKoka\noch servera.');
+	});
+
+	it('is cut short for a very long page', () => {
+		expect(pageText(`<p>${'a'.repeat(40_000)}</p>`)).toHaveLength(30_000);
+	});
+});
+
 describe('fetching a recipe', () => {
 	const url = new URL(SOURCE);
+	// What the app does with a page that has JSON-LD.
+	const fetchRecipe = async (at: URL, fetcher: typeof fetch) =>
+		recipeFromHtml(await fetchPage(at, fetcher), at.href)!;
 	const respond = (body: BodyInit | null, init?: ResponseInit) =>
 		vi.fn<typeof fetch>().mockResolvedValue(new Response(body, init));
 
 	const reason = (promise: Promise<unknown>) =>
 		promise.then(
 			() => 'ok',
-			(e: unknown) => (e instanceof RecipeLinkError ? e.reason : String(e))
+			(e: unknown) => (e instanceof RecipeReadError ? e.reason : String(e))
 		);
 
 	it('reads the page', async () => {
@@ -196,12 +209,11 @@ describe('fetching a recipe', () => {
 		expect(fetcher.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
 	});
 
-	it('fails when the site says no, the fetch fails or the page has no recipe', async () => {
-		expect(await reason(fetchRecipe(url, respond('Nekad', { status: 403 })))).toBe('fetch');
+	it('fails when the site says no or the fetch fails', async () => {
+		expect(await reason(fetchPage(url, respond('Nekad', { status: 403 })))).toBe('fetch');
 		expect(
-			await reason(fetchRecipe(url, vi.fn<typeof fetch>().mockRejectedValue(new Error('timeout'))))
+			await reason(fetchPage(url, vi.fn<typeof fetch>().mockRejectedValue(new Error('timeout'))))
 		).toBe('fetch');
-		expect(await reason(fetchRecipe(url, respond('<html></html>')))).toBe('none');
 	});
 
 	it('follows redirects to named hosts only', async () => {
@@ -214,11 +226,11 @@ describe('fetching a recipe', () => {
 		expect(String(fetcher.mock.calls[1][0])).toBe('https://recept.exempel.se/ny-adress');
 
 		const inward = vi.fn<typeof fetch>().mockResolvedValue(moved('http://127.0.0.1/admin'));
-		expect(await reason(fetchRecipe(url, inward))).toBe('fetch');
+		expect(await reason(fetchPage(url, inward))).toBe('fetch');
 		expect(inward).toHaveBeenCalledTimes(1);
 
 		const loop = vi.fn<typeof fetch>().mockImplementation(async () => moved(SOURCE));
-		expect(await reason(fetchRecipe(url, loop))).toBe('fetch');
+		expect(await reason(fetchPage(url, loop))).toBe('fetch');
 		expect(loop).toHaveBeenCalledTimes(6);
 	});
 
@@ -242,7 +254,7 @@ describe('fetching a recipe', () => {
 				? new Response(null, { status: 302, headers: { location: SOURCE } })
 				: new Response(page(curry));
 		});
-		await fetchRecipe(url, fetcher);
+		await fetchPage(url, fetcher);
 		expect(new Set(signals).size).toBe(1);
 	});
 
@@ -255,7 +267,7 @@ describe('fetching a recipe', () => {
 				else controller.close();
 			}
 		});
-		expect(await reason(fetchRecipe(url, respond(body)))).toBe('fetch');
+		expect(await reason(fetchPage(url, respond(body)))).toBe('fetch');
 		expect(sent).toBeLessThan(10);
 	});
 });

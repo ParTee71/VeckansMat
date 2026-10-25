@@ -9,6 +9,10 @@ declare global {
 		interface Env {
 			/** "true" only in the browser tests, so a recipe link may point at the test's own server. */
 			ALLOW_LOCAL_FETCH?: string;
+			/** A secret on each Worker, never in the repo. */
+			ANTHROPIC_API_KEY: string;
+			/** Set only in the browser tests, to a stand-in for Claude's API. */
+			CLAUDE_BASE_URL?: string;
 		}
 	}
 }
