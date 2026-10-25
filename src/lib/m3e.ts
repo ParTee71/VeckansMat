@@ -18,3 +18,4 @@ import '@m3e/web/expansion-panel';
 import '@m3e/web/bottom-sheet';
 import '@m3e/web/chips';
 import '@m3e/web/checkbox';
+import '@m3e/web/dialog';

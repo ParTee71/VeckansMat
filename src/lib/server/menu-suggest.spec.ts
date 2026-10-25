@@ -281,6 +281,39 @@ describe('suggesting a week', () => {
 		]);
 	});
 
+	it('replaces what was written by hand when the whole week is asked for', async () => {
+		await setWeekRow(db, WEEK, { weekday: 2, meal: 'dinner', text: 'Tacos' }, []);
+		await setWeekRow(db, WEEK, { weekday: 3, meal: 'lunch', text: 'Soppa' }, []);
+		const ask = answering(fullWeek('Rätt'));
+		await suggestWeek(db, WEEK, '', [], ask, true);
+		const [, plan] = ask.mock.calls[0][0].messages[0].content as { text: string }[];
+		expect(plan.text).not.toContain('Tacos');
+		expect(plan.text).toContain('Tuesday dinner, Wednesday dinner');
+		const rows = (await getWeek(db, WEEK)).rows;
+		expect(rows.find((r) => r.weekday === 2 && r.meal === 'dinner')).toMatchObject({
+			text: 'Rätt 2',
+			reason: 'Skäl 2'
+		});
+		expect(rows.some((r) => r.text === 'Tacos')).toBe(false);
+		// Claude was asked for the lunch too, but a day it does not answer for stays as written.
+		expect(plan.text).toContain('Wednesday lunch');
+		expect(rows.find((r) => r.weekday === 3 && r.meal === 'lunch')?.text).toBe('Soppa');
+	});
+
+	it('keeps a day changed by hand while Claude was thinking about the whole week', async () => {
+		await setWeekRow(db, WEEK, { weekday: 1, meal: 'dinner', text: 'Tacos' }, []);
+		const ask = vi.fn<Ask>().mockImplementation(async (params) => {
+			await setWeekRow(db, WEEK, { weekday: 1, meal: 'dinner', text: 'Pizza' }, []);
+			return answering(fullWeek('Rätt'))(params);
+		});
+		await suggestWeek(db, WEEK, '', [], ask, true);
+		const rows = (await getWeek(db, WEEK)).rows;
+		expect(rows.find((r) => r.weekday === 1 && r.meal === 'dinner')).toMatchObject({
+			text: 'Pizza',
+			reason: null
+		});
+	});
+
 	it('keeps a day written by hand while Claude was thinking', async () => {
 		const ask = vi.fn<Ask>().mockImplementation(async (params) => {
 			await setWeekRow(db, WEEK, { weekday: 1, meal: 'dinner', text: 'Tacos' }, []);

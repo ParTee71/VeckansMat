@@ -135,6 +135,10 @@ test('Claude suggests the week, and a day is swapped with one tap', async ({ pag
 	await expect(page.getByRole('button', { name: 'Middag tisdag: Ärtsoppa' })).toBeVisible();
 	await expect(page.getByLabel('Något särskilt den här veckan?')).toHaveValue('Något med pumpa');
 	await page.locator('m3e-button', { hasText: 'Föreslå veckan' }).click();
+	const dialog = page.locator('m3e-dialog');
+	await expect(dialog).toContainText('Föreslå veckan?');
+	await expect(dialog).toContainText('Du har skrivit in tisdag själv.');
+	await dialog.locator('m3e-button', { hasText: 'Fyll i resten' }).click();
 	const monday = (dish: string) => page.getByRole('button', { name: `Middag måndag: ${dish}` });
 	await expect(monday('Blomkålssoppa')).toBeVisible();
 	await expect(page.getByRole('alert')).toHaveCount(0);
@@ -156,12 +160,33 @@ test('Claude suggests the week, and a day is swapped with one tap', async ({ pag
 		await expect(monday(dish)).toBeVisible();
 	}
 
-	// A new suggestion for the whole week keeps what was written by hand.
-	await page.locator('m3e-icon-button[aria-label="Nytt förslag på hela veckan"]').click();
+	// A new suggestion for the week asks first, and nothing changes when it is cancelled.
+	const again = page.locator('m3e-icon-button[aria-label="Nytt förslag på hela veckan"]');
+	await again.click();
+	await expect(dialog).toContainText('Föreslå veckan igen?');
+	await expect(dialog).toContainText('Du har skrivit in tisdag själv.');
+	await dialog.locator('m3e-button', { hasText: 'Avbryt' }).click();
+	await expect(dialog).not.toHaveAttribute('open');
+	await expect(monday('Fiskpinnar')).toBeVisible();
+
+	// Only Claude's dishes keeps what was written by hand.
+	const loads = countLoads(page);
+	await again.click();
+	await dialog.locator('m3e-button', { hasText: 'Bara Claudes rätter' }).click();
 	await expect(monday('Blomkålssoppa')).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Middag tisdag: Ärtsoppa' })).toBeVisible();
 	await saved(page);
+	expect(loads()).toBe(0);
 	await page.reload();
 	await expect(page.getByRole('button', { name: 'Middag tisdag: Ärtsoppa' })).toBeVisible();
 	await expect(monday('Blomkålssoppa')).toBeVisible();
+
+	// The whole week replaces it too; with only Claude's dishes left, the question is shorter.
+	await again.click();
+	await dialog.locator('m3e-button', { hasText: 'Hela veckan' }).click();
+	await expect(page.getByRole('button', { name: 'Middag tisdag: Kycklinggryta' })).toBeVisible();
+	await again.click();
+	await expect(dialog).toContainText(/Claudes rätter för vecka \d+ byts mot nya förslag\./);
+	await page.keyboard.press('Escape');
+	await expect(dialog).not.toHaveAttribute('open');
 });

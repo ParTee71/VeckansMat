@@ -3,10 +3,11 @@
 Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ändringen
 (se `.claude/skills/release/SKILL.md`).
 
-## 0.3.1
+## 0.4.0
 
 - Menyknapparna längst ner leder rätt även i Rätter, i stället för att ibland öppna rätten bakom menyn. (#72)
 - Ingredienser som Claude gissat står utan de konstiga numren framför, som "3.1". (#71)
+- Appen frågar innan en vecka som redan har rätter föreslås om, och om dagar man skrivit in själv ska ligga kvar eller bytas. (#77)
 
 ## 0.3.0
 

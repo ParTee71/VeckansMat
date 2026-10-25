@@ -193,6 +193,8 @@ export interface RowInput {
 	reason?: string | null;
 	alternatives?: Choice[];
 	passedOn?: string[];
+	/** The text written by hand that this row replaces, if it is still there. */
+	replaces?: string;
 }
 
 /**
@@ -251,10 +253,11 @@ function rowStatements(db: D1Database, menuId: number, row: RowInput): D1Prepare
 				   recipe_id = (SELECT id FROM recipe WHERE name_key = ?4),
 				   reason = ?6, alternatives = ?7, passed_on = ?8
 				 WHERE menu_id = ?1 AND weekday = ?2 AND meal = ?3
-				   -- Claude's line, which has a reason, never replaces one written by hand meanwhile.
-				   AND (?6 IS NULL OR reason IS NOT NULL)`
+				   -- Claude's line, which has a reason, replaces one written by hand only when asked to
+				   -- and it is unchanged, never one written meanwhile.
+				   AND (?6 IS NULL OR reason IS NOT NULL OR text = ?9)`
 			)
-			.bind(...args),
+			.bind(...args, row.replaces ?? null),
 		db
 			.prepare(
 				`INSERT INTO menu_item (menu_id, position, weekday, meal, text, recipe_id, reason, alternatives, passed_on)

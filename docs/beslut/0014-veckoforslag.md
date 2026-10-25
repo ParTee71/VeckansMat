@@ -24,7 +24,9 @@ in och $10 ut, och månadstaket är $5 (0006).
   (`menu_item.passed_on`).
 - **Det som skrivits för hand ligger kvar.** En rad med skäl (`menu_item.reason`) är Claudes; en
   rad utan är skriven för hand. Nytt förslag på hela veckan ersätter bara Claudes rader, och
-  bara Claudes rader har en knapp för att byta.
+  bara Claudes rader har en knapp för att byta. Innan en vecka med rader föreslås om frågar
+  appen, och finns det dagar skrivna för hand kan man välja att Claude byter också dem
+  ("Hela veckan", #77). En dag som ändras medan Claude arbetar skrivs ändå aldrig över.
 - **Ångra** ett byte: appen skickar tillbaka dagen som den var.
 - **Krav är absoluta när det är något en person inte kan äta**, som allergier och "äter inte
   fisk". Andra krav och önskemål följs när det går. Veckans önskan går före vanorna.

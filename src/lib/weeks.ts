@@ -1,4 +1,6 @@
 // How weeks are written in the app. A week is given by its Monday, YYYY-MM-DD.
+import { MEAL_LABELS } from './recipes';
+import type { Meal } from './server/db/menus';
 
 const MONTHS = [
 	'januari',
@@ -32,6 +34,19 @@ export const WEEKDAY_NAMES = [
 	'lördag',
 	'söndag'
 ];
+
+/** Days named in a sentence, in week order: "tisdag, fredag och lunch lördag". */
+export function dayList(days: { weekday: number; meal: Meal }[]): string {
+	const names = days
+		.toSorted(
+			(a, b) => a.weekday - b.weekday || Number(a.meal === 'lunch') - Number(b.meal === 'lunch')
+		)
+		.map(
+			(d) =>
+				`${d.meal === 'lunch' ? `${MEAL_LABELS.lunch.toLowerCase()} ` : ''}${WEEKDAY_NAMES[d.weekday - 1]}`
+		);
+	return new Intl.ListFormat('sv', { type: 'conjunction' }).format(names);
+}
 
 const DAY = 24 * 60 * 60 * 1000;
 
