@@ -1,7 +1,15 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { clearTestDb, createTestDb } from '../../../../test/d1';
+import { nameKey } from '../../names';
 import { listMenus, saveMenu } from './menus';
-import { nameKey } from './recipes';
+import {
+	addRecipe,
+	getRecipe,
+	listRecipes,
+	NameTakenError,
+	updateRecipe,
+	type RecipeInput
+} from './recipes';
 
 let db: D1Database;
 let dispose: () => Promise<void>;
@@ -149,5 +157,112 @@ describe('menus', () => {
 		const week = { weekStart: '2030-01-07', source: 'app' as const, items: [] };
 		await saveMenu(db, week);
 		await expect(saveMenu(db, week)).rejects.toThrow();
+	});
+});
+
+describe('the recipe list', () => {
+	it('counts how often a dish was eaten and when it was last', async () => {
+		await saveMenu(db, week('2030-01-07', 'Linssoppa', 'Ostfrallor'));
+		await saveMenu(db, week('2030-01-14', 'Linssoppa'));
+		await saveMenu(db, week(null, 'Linssoppa'));
+		await addRecipe(db, 'Kålpudding');
+
+		const list = await listRecipes(db);
+		expect(list.sort((a, b) => a.name.localeCompare(b.name, 'sv'))).toEqual([
+			{ id: expect.any(Number), name: 'Kålpudding', timesEaten: 0, lastWeek: null },
+			{ id: expect.any(Number), name: 'Linssoppa', timesEaten: 3, lastWeek: '2030-01-14' },
+			{ id: expect.any(Number), name: 'Ostfrallor', timesEaten: 1, lastWeek: '2030-01-07' }
+		]);
+	});
+});
+
+describe('adding a recipe', () => {
+	it('saves just the name', async () => {
+		const id = await addRecipe(db, '  Kålpudding ');
+		expect(await getRecipe(db, id)).toEqual({
+			id,
+			name: 'Kålpudding',
+			servings: null,
+			timeMinutes: null,
+			instructions: null,
+			sourceUrl: null,
+			ingredients: [],
+			tags: [],
+			weeks: []
+		});
+	});
+
+	it('finds the recipe that already has the name', async () => {
+		const id = await addRecipe(db, 'Kålpudding');
+		expect(await addRecipe(db, 'KÅLPUDDING')).toBe(id);
+		expect(await recipes()).toHaveLength(1);
+	});
+
+	it('needs a name', async () => {
+		await expect(addRecipe(db, '  ')).rejects.toThrow();
+		expect(await recipes()).toEqual([]);
+	});
+});
+
+describe('a recipe', () => {
+	const full: RecipeInput = {
+		name: 'Fiskgratäng',
+		servings: 4,
+		timeMinutes: 45,
+		instructions: 'Koka potatisen.\nGratinera.',
+		sourceUrl: 'https://recept.exempel.se/fisk',
+		ingredients: ['600 g torskfilé', '2 dl grädde'],
+		tags: ['fisk', 'vardag']
+	};
+
+	it('is unknown when no recipe has the id', async () => {
+		expect(await getRecipe(db, 999)).toBeNull();
+	});
+
+	it('lists the weeks it was eaten, newest first and undated last', async () => {
+		await saveMenu(db, week(null, 'Linssoppa'));
+		await saveMenu(db, week('2030-01-07', 'Linssoppa'));
+		await saveMenu(db, {
+			weekStart: '2030-01-14',
+			source: 'photo',
+			items: [{ text: 'Linssoppa', recipeName: 'Linssoppa', meal: 'lunch' }]
+		});
+		const [{ id }] = await recipes();
+		const recipe = await getRecipe(db, id);
+		expect(recipe?.weeks.map(({ weekStart, meal }) => ({ weekStart, meal }))).toEqual([
+			{ weekStart: '2030-01-14', meal: 'lunch' },
+			{ weekStart: '2030-01-07', meal: 'dinner' },
+			{ weekStart: null, meal: 'dinner' }
+		]);
+	});
+
+	it('can be filled in, and filled in again', async () => {
+		const id = await addRecipe(db, 'fiskgratäng');
+		await updateRecipe(db, id, full);
+		expect(await getRecipe(db, id)).toEqual({ id, ...full, weeks: [] });
+
+		const less = { ...full, ingredients: ['1 kg potatis'], tags: [], servings: null };
+		await updateRecipe(db, id, less);
+		expect(await getRecipe(db, id)).toEqual({ id, ...less, weeks: [] });
+	});
+
+	it('cannot take the name of another recipe, and is then left as it was', async () => {
+		await addRecipe(db, 'Fiskgratäng');
+		const id = await addRecipe(db, 'Linssoppa');
+		await expect(updateRecipe(db, id, { ...full, name: ' FISKGRATÄNG' })).rejects.toThrow(
+			NameTakenError
+		);
+		expect((await getRecipe(db, id))?.name).toBe('Linssoppa');
+	});
+
+	it('is not made up when there is none with the id', async () => {
+		expect(await updateRecipe(db, 99, full)).toBe(false);
+		expect(await getRecipe(db, 99)).toBeNull();
+	});
+
+	it('can change how its own name is written', async () => {
+		const id = await addRecipe(db, 'fiskgratäng');
+		await updateRecipe(db, id, full);
+		expect((await getRecipe(db, id))?.name).toBe('Fiskgratäng');
 	});
 });

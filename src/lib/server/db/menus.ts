@@ -1,4 +1,5 @@
-import { nameKey, upsertRecipeStatement } from './recipes';
+import { nameKey } from '../../names';
+import { upsertRecipeStatement } from './recipes';
 
 export type Meal = 'dinner' | 'lunch';
 

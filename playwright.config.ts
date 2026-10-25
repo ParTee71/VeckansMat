@@ -1,7 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-	webServer: { command: 'npm run build && npm run preview', port: 4173 },
+	// Its own local database with made-up data, so a test run never touches the one `npm run dev` uses.
+	webServer: {
+		command: [
+			'npm run build',
+			'npx wrangler d1 migrations apply DB --local --persist-to .wrangler/e2e',
+			'npx wrangler d1 execute DB --local --persist-to .wrangler/e2e --file test/e2e-seed.sql',
+			'npx wrangler dev .svelte-kit/cloudflare/_worker.js --port 4173 --persist-to .wrangler/e2e'
+		].join(' && '),
+		port: 4173
+	},
 	testMatch: '**/*.e2e.{ts,js}',
 	forbidOnly: !!process.env.CI,
 	reporter: process.env.CI ? 'github' : 'list',

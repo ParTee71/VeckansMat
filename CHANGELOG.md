@@ -3,6 +3,12 @@
 Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ändringen
 (se `.claude/skills/release/SKILL.md`).
 
+## 0.3.0
+
+- Rätterna och de gamla veckorna syns i appen, med en meny längst ner för Veckan, Rätter och Veckor. (#21)
+- En ny rätt läggs till med namnet och ett tryck, och fylls på med ingredienser, steg och taggar när man vill. En rätt kan markeras som att den passar till matlådor. (#21)
+- Appen har bytt färg till terrakotta på vit bakgrund. (#21)
+
 ## 0.2.0
 
 - Appen har fått en databas för recept och veckomenyer. Den syns inte i appen än. (#18)
