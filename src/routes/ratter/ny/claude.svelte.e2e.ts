@@ -34,9 +34,7 @@ test('pasted recipe text is read', async ({ page }) => {
 	await open(page, '/ratter/ny');
 	await read(page, 'Pannkakor\n3 dl vetemjöl\n6 dl mjölk');
 	await expect(page.getByText('Läst ur texten. Kolla att det stämmer och spara.')).toBeVisible();
-	await expect(page.getByLabel('Ingredienser, en per rad')).toHaveValue(
-		'3 dl vetemjöl\n6 dl mjölk'
-	);
+	await expect(page.getByLabel('Ingredienser')).toHaveValue('3 dl vetemjöl\n6 dl mjölk');
 	await expect(page.getByLabel('Gör så här')).toHaveValue('1. Blanda och laga.');
 });
 

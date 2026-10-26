@@ -135,13 +135,21 @@
 		--md-sys-color-on-surface-variant: #4a4946;
 		--md-sys-color-outline: #7a7975;
 		--md-sys-color-outline-variant: #d9d8d4;
+		/* The new look (#73): white cards on a warm background, and fields with a warm fill. Both
+		   take a little of the theme colour, so every theme gets its own warmth. */
+		--app-warm: color-mix(in srgb, var(--md-sys-color-primary) 5%, #f5f4f2);
+		--app-fill: color-mix(in srgb, var(--md-sys-color-primary) 4%, #f9f8f7);
+		--app-card: #ffffff;
+		--app-card-shadow: 0 1px 2px rgb(60 30 15 / 0.06);
+		/* What the view lies on, for what must cover it, such as a header that stays on top. */
+		--app-page: var(--md-sys-color-background);
 
 		min-height: 100dvh;
 		display: flex;
 		flex-direction: column;
 		/* m3e-theme only sets the type when it is the body's child; Roboto is Android's own. */
 		font-family: Roboto, system-ui, sans-serif;
-		background-color: var(--md-sys-color-background);
+		background-color: var(--app-page);
 		color: var(--md-sys-color-on-background);
 	}
 
@@ -162,7 +170,16 @@
 			--md-sys-color-on-surface-variant: #c9c7c3;
 			--md-sys-color-outline: #93918d;
 			--md-sys-color-outline-variant: #484745;
+			--app-warm: var(--md-sys-color-background);
+			--app-fill: var(--md-sys-color-surface-container-highest);
+			--app-card: var(--md-sys-color-surface-container);
+			--app-card-shadow: none;
 		}
+	}
+
+	/* A view in the new look marks itself with .warm-view. */
+	.app:has(:global(.warm-view)) {
+		--app-page: var(--app-warm);
 	}
 
 	.content {

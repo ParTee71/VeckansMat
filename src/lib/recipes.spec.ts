@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { byName, byOften, formValues, LUNCHBOX_TAG, matching } from './recipes';
+import { byName, byOften, formValues, LUNCHBOX_TAG, matching, splitSteps } from './recipes';
 
 const dish = (name: string, timesEaten = 0, lastWeek: string | null = null) => ({
 	id: 0,
@@ -63,5 +63,33 @@ it('writes a dish as its form fields, with the lunch-box tag left to its switch'
 		sourceUrl: '',
 		category: 'vego',
 		base: ''
+	});
+});
+
+describe('the steps of a recipe', () => {
+	it('are split at blank lines, keeping the line breaks within a step', () => {
+		expect(splitSteps('Skala potatisen.\nSkär den i bitar.\n\n  \nKoka den mjuk.\n')).toEqual([
+			'Skala potatisen.\nSkär den i bitar.',
+			'Koka den mjuk.'
+		]);
+	});
+
+	it('are split at line breaks when there are no blank lines', () => {
+		expect(splitSteps('1. Skala pumpan.\n2) Koka allt mjukt.\n')).toEqual([
+			'Skala pumpan.',
+			'Koka allt mjukt.'
+		]);
+	});
+
+	it('are one step when the text is one paragraph', () => {
+		expect(splitSteps('Blanda allt och grädda i 20 minuter.')).toEqual([
+			'Blanda allt och grädda i 20 minuter.'
+		]);
+	});
+
+	it('are none when there is no text', () => {
+		expect(splitSteps('')).toEqual([]);
+		expect(splitSteps('  \n ')).toEqual([]);
+		expect(splitSteps(null)).toEqual([]);
 	});
 });

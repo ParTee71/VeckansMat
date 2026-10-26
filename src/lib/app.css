@@ -143,6 +143,36 @@ m3e-form-field {
 	width: 100%;
 }
 
+/* A white card on the warm background of the new look. */
+.card {
+	margin: 0;
+	padding: 1rem;
+	border-radius: 1.5rem;
+	background: var(--app-card);
+	box-shadow: var(--app-card-shadow);
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+/* A field in a card is filled with a warm tone and rounded all round. */
+.card m3e-form-field {
+	--m3e-form-field-container-color: var(--app-fill);
+	--m3e-form-field-container-shape: 0.875rem;
+	--m3e-form-field-outline-color: transparent;
+}
+
+/* A box that says what just happened, or what to do next. */
+.banner {
+	margin: 0;
+	padding: 0.75rem 1rem;
+	border-radius: 1.125rem;
+	background: var(--md-sys-color-primary-container);
+	color: var(--md-sys-color-on-primary-container);
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+}
+
 m3e-list {
 	--m3e-segmented-list-item-container-color: var(--md-sys-color-surface-container);
 }

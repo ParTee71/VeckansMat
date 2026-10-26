@@ -95,3 +95,13 @@ export const categoryOf = (value: unknown): Category | null =>
 /** The key when `value` is one of the bases, else null. */
 export const baseOf = (value: unknown): Base | null =>
 	BASES.find((b) => b.key === value)?.key ?? null;
+
+/**
+ * The steps of a recipe, to be numbered: split at blank lines, or at line breaks when there are
+ * none. A number already written before a step, as in "1. Skala", is left out.
+ */
+export function splitSteps(text: string | null): string[] {
+	const trimmed = text?.trim() ?? '';
+	const parts = /\n\s*\n/.test(trimmed) ? trimmed.split(/\n\s*\n/) : trimmed.split('\n');
+	return parts.map((part) => part.trim().replace(/^\d+[.)]\s+/, '')).filter(Boolean);
+}
