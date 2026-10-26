@@ -5,7 +5,8 @@
 	import { page, updated } from '$app/state';
 	import '#lib/app.css';
 	import favicon from '#lib/assets/favicon.svg';
-	import Icon from '#lib/Icon.svelte';
+	import { provideFab } from '#lib/fab.svelte.ts';
+	import FloatingNav, { destinations } from '#lib/FloatingNav.svelte';
 	import { loadTheme, theme } from '#lib/theme.svelte.ts';
 	import { themeOf } from '#lib/themes.ts';
 	import { swedishToday } from '#lib/weeks.ts';
@@ -14,14 +15,9 @@
 
 	let { children }: LayoutProps = $props();
 
-	// The main views have the nav bar; a dish and its form have a back button instead.
-	const destinations = [
-		{ href: '/', label: 'Veckan', icon: 'week' },
-		{ href: '/handla', label: 'Handla', icon: 'shop' },
-		{ href: '/ratter', label: 'Rätter', icon: 'dishes' },
-		{ href: '/veckor', label: 'Veckor', icon: 'history' }
-	] as const;
 	let showNav = $derived(destinations.some((d) => d.href === page.url.pathname));
+
+	const fab = provideFab();
 
 	let current = $derived(themeOf(theme.choice));
 
@@ -83,19 +79,16 @@
 	strong-focus
 >
 	<div class="app">
-		<div class="content">
+		<div class="content" class:floating={showNav}>
 			{@render children()}
 			<footer>Version {version}</footer>
 		</div>
 		{#if showNav}
-			<!-- m3e reads any boolean attribute as true, even "false", so false is left out with `|| undefined`. -->
-			<m3e-nav-bar>
-				{#each destinations as d (d.href)}
-					<m3e-nav-item href={d.href} selected={d.href === page.url.pathname || undefined}>
-						<span slot="icon" class="slot-icon"><Icon name={d.icon} /></span>{d.label}
-					</m3e-nav-item>
-				{/each}
-			</m3e-nav-bar>
+			<div class="fade"></div>
+			<FloatingNav />
+			{#if fab.current}
+				<div class="fab">{@render fab.current()}</div>
+			{/if}
 		{/if}
 	</div>
 	{#if updated.current}
@@ -187,11 +180,35 @@
 		display: flow-root;
 	}
 
-	/* Above the rows of a list, whose invisible links have z-index 1. */
-	m3e-nav-bar {
-		position: sticky;
-		bottom: 0;
+	/* Room at the end of a view, so its last row can be scrolled up above the floating menu. */
+	.content.floating {
+		padding-bottom: calc(7.5rem + env(safe-area-inset-bottom));
+	}
+
+	/* A soft fade at the bottom, so the list does not show straight behind the menu. It lies above
+	   the rows' invisible links (z-index 1) but lets taps through. */
+	.fade {
+		position: fixed;
+		inset: auto 0 0;
+		height: calc(7.5rem + env(safe-area-inset-bottom));
 		z-index: 2;
+		pointer-events: none;
+		background: linear-gradient(to bottom, transparent, var(--app-page) 60%);
+	}
+
+	.fab {
+		position: fixed;
+		right: 1rem;
+		bottom: calc(1.25rem + env(safe-area-inset-bottom));
+		z-index: 3;
+	}
+
+	.fab :global(m3e-fab) {
+		--m3e-fab-container-height: 4rem;
+		--m3e-fab-shape: 1.25rem;
+		--m3e-fab-icon-size: 1.625rem;
+		--m3e-fab-leading-space: 1.1875rem;
+		--m3e-fab-trailing-space: 1.1875rem;
 	}
 
 	footer {

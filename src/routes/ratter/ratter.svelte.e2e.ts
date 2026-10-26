@@ -128,16 +128,24 @@ test('the old weeks show dishes and lines without a dish', async ({ page }) => {
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Fiskgratäng');
 });
 
-test('the nav bar leads between the main views', async ({ page }) => {
+test('the menu leads to each main view and marks the one shown', async ({ page }) => {
+	const menu = page.getByRole('navigation', { name: 'Huvudmeny' });
 	await open(page, '/');
-	await page.locator('m3e-nav-item', { hasText: 'Rätter' }).click();
-	await expect(page).toHaveURL('/ratter');
-	await page.locator('m3e-nav-item', { hasText: 'Veckor' }).click();
-	await expect(page).toHaveURL('/veckor');
+	await expect(menu.getByRole('link', { name: 'Veckan' })).toHaveAttribute('aria-current', 'page');
+	for (const [label, path] of [
+		['Handla', '/handla'],
+		['Rätter', '/ratter'],
+		['Veckor', '/veckor'],
+		['Veckan', '/']
+	]) {
+		await menu.getByRole('link', { name: label }).click();
+		await expect(page).toHaveURL(path);
+		await expect(menu.getByRole('link', { name: label })).toHaveAttribute('aria-current', 'page');
+	}
 });
 
-test('the nav bar is tapped, not the dish behind it', async ({ page }) => {
-	// A short screen puts the dishes behind the nav bar, as a long list does on the phone.
+test('the menu is tapped, not the dish behind it', async ({ page }) => {
+	// A short screen puts the dishes behind the menu, as a long list does on the phone.
 	await page.setViewportSize({ width: 412, height: 360 });
 	for (const [label, path] of [
 		['Veckan', '/'],
@@ -145,8 +153,32 @@ test('the nav bar is tapped, not the dish behind it', async ({ page }) => {
 		['Veckor', '/veckor']
 	]) {
 		await open(page, '/ratter');
-		const box = await page.locator('m3e-nav-item', { hasText: label }).boundingBox();
+		const box = await page
+			.getByRole('navigation', { name: 'Huvudmeny' })
+			.getByRole('link', { name: label })
+			.boundingBox();
 		await page.touchscreen.tap(box!.x + box!.width / 2, box!.y + box!.height / 2);
 		await expect(page).toHaveURL(path);
 	}
+});
+
+test('the last dish can be scrolled up above the menu and tapped', async ({ page }) => {
+	await page.setViewportSize({ width: 412, height: 360 });
+	await open(page, '/ratter');
+	await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+	const last = page.locator('m3e-list-action').last();
+	const dish = (await last.boundingBox())!;
+	const menu = (await page.getByRole('navigation', { name: 'Huvudmeny' }).boundingBox())!;
+	expect(dish.y + dish.height).toBeLessThan(menu.y);
+	await page.touchscreen.tap(dish.x + dish.width / 2, dish.y + dish.height / 2);
+	await expect(page).toHaveURL(/\/ratter\/\d+$/);
+});
+
+test('the plus button on Rätter opens Ny rätt', async ({ page }) => {
+	await open(page, '/ratter');
+	await page.getByRole('link', { name: 'Ny rätt' }).click();
+	await expect(page).toHaveURL('/ratter/ny');
+	// The button belongs to Rätter, so the other views have none.
+	await open(page, '/veckor');
+	await expect(page.getByRole('link', { name: 'Ny rätt' })).toHaveCount(0);
 });
