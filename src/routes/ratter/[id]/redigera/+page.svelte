@@ -24,5 +24,5 @@
 		<p class="error" role="alert">{form.error}</p>
 	{/if}
 
-	<RecipeFields {values} {lunchbox} />
+	<RecipeFields {values} {lunchbox} sort={{ guessed: saved.categoryGuessed }} />
 </form>

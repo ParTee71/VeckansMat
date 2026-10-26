@@ -1,0 +1,290 @@
+{
+	"date": "2026-10-25T21:13:30.636Z",
+	"model": "claude-haiku-5-5",
+	"effort": null,
+	"prompt": "42d1a471456c",
+	"results": [
+		{
+			"id": "Köttsoppa",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "soppa annat"
+		},
+		{
+			"id": "Kycklingsoppa med kokos",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "soppa annat"
+		},
+		{
+			"id": "Fisksoppa",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "soppa annat"
+		},
+		{
+			"id": "Gul ärtsoppa",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "soppa annat"
+		},
+		{
+			"id": "Linssoppa",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "soppa annat"
+		},
+		{
+			"id": "Tomatsoppa med ost",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "soppa annat"
+		},
+		{
+			"id": "Potatis- och purjolökssoppa",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "soppa annat"
+		},
+		{
+			"id": "Korvsoppa",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "soppa annat"
+		},
+		{
+			"id": "Köttbullar med potatismos",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "kottfars potatis"
+		},
+		{
+			"id": "Spaghetti och köttfärssås",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "kottfars pasta"
+		},
+		{
+			"id": "Lasagne",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "kottfars pasta"
+		},
+		{
+			"id": "Pannbiff med lök",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "kottfars potatis"
+		},
+		{
+			"id": "Tacos",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "kottfars annat"
+		},
+		{
+			"id": "Chili con carne",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "kottfars ris"
+		},
+		{
+			"id": "Fläskfilé med klyftpotatis",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "kott potatis"
+		},
+		{
+			"id": "Biff med bearnaise och pommes",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "kott potatis"
+		},
+		{
+			"id": "Kalops",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "kott potatis"
+		},
+		{
+			"id": "Pulled pork i bröd",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "kott annat"
+		},
+		{
+			"id": "Lammgryta med ris",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "kott ris"
+		},
+		{
+			"id": "Korv stroganoff",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "korv ris"
+		},
+		{
+			"id": "Stekt falukorv med makaroner",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "korv pasta"
+		},
+		{
+			"id": "Korv med potatismos",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "korv potatis"
+		},
+		{
+			"id": "Kycklinggryta med curry",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "kyckling ris"
+		},
+		{
+			"id": "Kycklinglår med rotfrukter",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "kyckling potatis"
+		},
+		{
+			"id": "Caesarsallad med kyckling",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "kyckling sallad"
+		},
+		{
+			"id": "Kycklingpasta med pesto",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "kyckling pasta"
+		},
+		{
+			"id": "Fiskgratäng med dill",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "fisk potatis"
+		},
+		{
+			"id": "Ugnsbakad lax med kokt potatis",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "fisk potatis"
+		},
+		{
+			"id": "Fiskpinnar med potatismos",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "fisk potatis"
+		},
+		{
+			"id": "Räkpasta",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "fisk pasta"
+		},
+		{
+			"id": "Sushibowl med lax",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "fisk ris"
+		},
+		{
+			"id": "Halloumiburgare",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "vego annat"
+		},
+		{
+			"id": "Vegetarisk lasagne",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "vego pasta"
+		},
+		{
+			"id": "Linsgryta med ris",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "vego ris"
+		},
+		{
+			"id": "Svamprisotto",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "vego ris"
+		},
+		{
+			"id": "Grekisk sallad med fetaost",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "vego sallad"
+		},
+		{
+			"id": "Falafel med bulgur",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "vego annat"
+		},
+		{
+			"id": "Pannkakor",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "ovrigt annat"
+		},
+		{
+			"id": "Risgrynsgröt",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "ovrigt annat"
+		},
+		{
+			"id": "Mormors fredagsspecial",
+			"score": 1,
+			"failed": [],
+			"costUsd": 0.0000158625,
+			"answer": "ovrigt annat"
+		}
+	],
+	"costUsd": 0.0006345000000000004,
+	"score": 1
+}

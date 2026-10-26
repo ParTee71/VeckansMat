@@ -1,12 +1,45 @@
 <script lang="ts">
-	// The fields of a recipe, shared by the form that edits one and the one that adds one.
-	let { values, lunchbox }: { values: Record<string, string>; lunchbox: boolean } = $props();
+	import Icon from './Icon.svelte';
+	import { BASES, CATEGORIES } from './recipes';
+
+	// The fields of a recipe, shared by the form that edits one and the one that adds one. Only the
+	// form that edits one has the sort and base, with a word on whether Claude guessed them.
+	let {
+		values,
+		lunchbox,
+		sort
+	}: { values: Record<string, string>; lunchbox: boolean; sort?: { guessed: boolean } } = $props();
 </script>
 
 <m3e-form-field variant="filled">
 	<label slot="label" for="name">Namn</label>
 	<input id="name" name="name" required value={values.name} />
 </m3e-form-field>
+{#if sort}
+	{#each [{ name: 'category', legend: 'Sort', choices: CATEGORIES }, { name: 'base', legend: 'Bas', choices: BASES }] as group (group.name)}
+		<fieldset aria-describedby="sort-hint">
+			<legend>{group.legend}</legend>
+			<div class="choices">
+				{#each group.choices as choice (choice.key)}
+					<label class="chip">
+						<input
+							type="radio"
+							name={group.name}
+							value={choice.key}
+							checked={values[group.name] === choice.key}
+						/>
+						<span class="check"><Icon name="check" /></span>{choice.label}
+					</label>
+				{/each}
+			</div>
+		</fieldset>
+	{/each}
+	<p class="hint" id="sort-hint">
+		{sort.guessed
+			? 'Claude gissade sort och bas. Välj något annat om det blev fel.'
+			: 'Det du väljer här ändrar Claude aldrig.'}
+	</p>
+{/if}
 <div class="pair">
 	<m3e-form-field variant="filled">
 		<label slot="label" for="servings">Portioner</label>
@@ -41,6 +74,59 @@
 </m3e-form-field>
 
 <style>
+	fieldset {
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+
+	legend {
+		margin-bottom: 0.5rem;
+		padding: 0;
+		font-size: 0.8125rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--md-sys-color-primary);
+	}
+
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+	}
+
+	.chip input {
+		position: absolute;
+		opacity: 0;
+		width: 1px;
+		height: 1px;
+	}
+
+	.chip:has(:checked) {
+		border-color: var(--md-sys-color-primary-container);
+		background: var(--md-sys-color-primary-container);
+		color: var(--md-sys-color-on-primary-container);
+	}
+
+	.chip:has(:focus-visible) {
+		outline: 2px solid var(--md-sys-color-primary);
+		outline-offset: 2px;
+	}
+
+	.check {
+		display: none;
+	}
+
+	.chip:has(:checked) .check {
+		display: inline-flex;
+	}
+
+	.check :global(svg) {
+		width: 1rem;
+		height: 1rem;
+	}
+
 	.pair {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));

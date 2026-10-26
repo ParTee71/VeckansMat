@@ -44,6 +44,16 @@ describe('the recipe form', () => {
 		expect('input' in parsed && parsed.input.tags).toEqual(['soppa']);
 	});
 
+	it('gives the sort and base when chosen, and leaves them out when not', () => {
+		const chosen = parseRecipeForm(formOf({ name: 'Ärtsoppa', category: 'soppa', base: 'annat' }));
+		expect('input' in chosen && chosen.input).toMatchObject({ category: 'soppa', base: 'annat' });
+		const none = parseRecipeForm(formOf({ name: 'Ärtsoppa', category: 'gryta' }));
+		expect('input' in none && [none.input.category, none.input.base]).toEqual([
+			undefined,
+			undefined
+		]);
+	});
+
 	it('says what is wrong, and keeps what was written', () => {
 		expect(error({ name: '  ' })).toBe('Rätten behöver ett namn.');
 		expect(error({ servings: '2,5' })).toBe('Portioner ska vara ett heltal.');

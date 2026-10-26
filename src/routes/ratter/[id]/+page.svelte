@@ -1,12 +1,24 @@
 <script lang="ts">
 	import Icon from '#lib/Icon.svelte';
-	import { hasOnlyName, LUNCHBOX_TAG, MEAL_LABELS, timesText } from '#lib/recipes.ts';
+	import {
+		BASES,
+		CATEGORIES,
+		hasOnlyName,
+		LUNCHBOX_TAG,
+		MEAL_LABELS,
+		timesText
+	} from '#lib/recipes.ts';
 	import { weekName } from '#lib/weeks.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 	let recipe = $derived(data.recipe);
 	let onlyName = $derived(hasOnlyName(recipe));
+	let category = $derived(CATEGORIES.find((c) => c.key === recipe.category));
+	// "Annat" says nothing about the dish, so it is not shown.
+	let base = $derived(
+		recipe.base === 'annat' ? undefined : BASES.find((b) => b.key === recipe.base)
+	);
 	let lastWeek = $derived(recipe.weeks.find((w) => w.weekStart)?.weekStart ?? null);
 	let eaten = $derived(
 		recipe.weeks.length === 0
@@ -33,14 +45,23 @@
 	<section class="hero">
 		<h1>{recipe.name}</h1>
 		<p>{eaten}</p>
-		{#if recipe.servings || recipe.timeMinutes || recipe.tags.length}
+		{#if category || base || recipe.servings || recipe.timeMinutes || recipe.tags.length}
 			<ul class="facts">
+				{#if category}
+					<li class="category" style:background={category.tint} style:color={category.ink}>
+						<Icon name={category.key} />{category.label}
+					</li>
+				{/if}
+				{#if base}<li>Med {base.label.toLocaleLowerCase('sv')}</li>{/if}
 				{#if recipe.servings}<li>{recipe.servings} portioner</li>{/if}
 				{#if recipe.timeMinutes}<li>{recipe.timeMinutes} min</li>{/if}
 				{#each recipe.tags as tag (tag)}
 					<li class="tag">{tag === LUNCHBOX_TAG ? 'Passar till matlådor' : tag}</li>
 				{/each}
 			</ul>
+		{/if}
+		{#if recipe.categoryGuessed}
+			<p class="guessed">Sort och bas gissade av Claude. Ändra under Redigera.</p>
 		{/if}
 	</section>
 
@@ -162,6 +183,23 @@
 		color: var(--md-sys-color-on-surface);
 		font-size: 0.875rem;
 		font-weight: 500;
+	}
+
+	.facts .category {
+		padding-left: 0.625rem;
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+	}
+
+	.category :global(svg) {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.hero .guessed {
+		margin-top: 0.625rem;
+		font-size: 0.8125rem;
 	}
 
 	.facts .tag {
