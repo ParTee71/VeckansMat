@@ -158,12 +158,12 @@
 		<p class="empty">Inga rätter än. Skriv namnet på en rätt ovan och lägg till den.</p>
 	{:else}
 		{#each groups as group (group.key)}
-			<!-- While searching, every sort with a match is open. -->
+			<!-- While searching, every sort with a match is open, and stays so. -->
 			<FoldCard
 				title={group.label}
 				look={categoryLook(group.key)}
 				count={group.recipes.length}
-				bind:open={() => !!key || !folded[group.key], (open) => fold(group.key, open)}
+				bind:open={() => !!key || !folded[group.key], (open) => key || fold(group.key, open)}
 			>
 				<m3e-list>
 					{#each group.recipes as recipe (recipe.id)}

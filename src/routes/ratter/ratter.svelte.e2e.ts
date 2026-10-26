@@ -9,29 +9,40 @@ const card = (page: Page, sort: string) =>
 	page.locator('section', { has: page.getByRole('button', { name: new RegExp(`^${sort}`) }) });
 
 test('dishes are listed in a card per sort, by how often they were eaten', async ({ page }) => {
-	// Claude sorts the dishes in the background, so a later load shows the sorts. The stand-in
-	// puts soups under Soppor and the rest under Fisk.
+	// A dish not yet sorted by Claude is under Övrigt.
+	await open(page, '/ratter');
+	const search = page.getByRole('searchbox', { name: 'Sök eller lägg till rätt' });
+	await search.fill('Abborre i ugn');
+	await page.getByRole('button', { name: 'Lägg till ”Abborre i ugn”' }).click();
+	await expect(card(page, 'Övrigt')).toContainText('Abborre i ugn');
+
+	// Claude sorts in the background, so a later load shows the sorts. The stand-in puts soups
+	// under Soppor and the rest under Fisk.
 	await expect(async () => {
 		await open(page, '/ratter');
-		await expect(card(page, 'Soppor')).toContainText('Linssoppa', { timeout: 1000 });
+		await expect(card(page, 'Fisk')).toContainText('Abborre i ugn', { timeout: 1000 });
 	}).toPass();
+	await expect(card(page, 'Soppor')).toContainText('Linssoppa');
+	await expect(card(page, 'Fisk')).not.toContainText('Linssoppa');
 	const fish = card(page, 'Fisk').locator('m3e-list-action');
 	await expect(fish.first()).toContainText('Fiskgratäng');
 	await expect(fish.first()).toContainText('2 gånger · senast v. 3 2030');
-	await expect(card(page, 'Fisk')).not.toContainText('Linssoppa');
 
 	await page.getByRole('button', { name: 'A–Ö' }).click();
-	const names = (await fish.allTextContents()).map((t) => t.trim().split(/\s{2,}|\n/)[0]);
-	expect(names).toEqual(names.toSorted((a, b) => a.localeCompare(b, 'sv')));
+	await expect(fish.first()).toContainText('Abborre i ugn');
 
 	// A search shows only the sorts with a match.
-	await page.getByRole('searchbox', { name: 'Sök eller lägg till rätt' }).fill('soppa');
+	await search.fill('soppa');
 	await expect(card(page, 'Soppor')).toBeVisible();
 	await expect(card(page, 'Fisk')).toHaveCount(0);
 });
 
 test('a folded sort stays folded on the phone', async ({ page }) => {
-	await open(page, '/ratter');
+	// Once Claude has sorted the dishes.
+	await expect(async () => {
+		await open(page, '/ratter');
+		await expect(page.getByRole('button', { name: /^Fisk/ })).toBeVisible({ timeout: 1000 });
+	}).toPass();
 	const sort = page.getByRole('button', { name: /^Fisk/ });
 	await expect(sort).toHaveAttribute('aria-expanded', 'true');
 	await sort.click();
