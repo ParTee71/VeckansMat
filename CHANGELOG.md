@@ -11,6 +11,7 @@ Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ä
 - Varje rätt får en sort, som Soppor, Kött, Fisk eller Vegetariskt, och vad den äts med, som potatis eller pasta. Claude gissar för rätterna som saknar dem, och man kan ändra på rätten. (#82)
 - Rättens sida, Ny rätt och Redigera rätt har fått ett lugnare utseende: vita kort på varm bakgrund, ingredienser och steg i kort som kan fällas ihop, numrerade steg, och Spara som ligger kvar överst när man scrollar. (#83)
 - Menyn längst ner är en liten ö som svävar över listan, med plats för vyns viktigaste knapp till höger. I Rätter öppnar plusknappen Ny rätt. (#86)
+- Handla har fått små avdelningskort som kan fällas ihop, rätterna bakom en vara under en liten info-ikon och plusknappen för en ny vara. Varje vara kan svepas bort åt vänster, med Ångra. Korgen ligger hopfälld längst ned. (#87)
 
 ## 0.3.0
 

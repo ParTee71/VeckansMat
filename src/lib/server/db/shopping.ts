@@ -209,6 +209,67 @@ export async function setShoppingItemChecked(
 		.run();
 }
 
-export async function deleteShoppingItem(db: D1Database, id: number): Promise<void> {
-	await db.prepare('DELETE FROM shopping_item WHERE id = ?').bind(id).run();
+/** An item as it was when it was removed, with the recipe lines it covered, to put it back. */
+export interface RemovedItem {
+	position: number;
+	text: string;
+	amount: string | null;
+	section: string | null;
+	origin: Origin;
+	checked: boolean;
+	lines: Line[];
+}
+
+/** Removes an item, and answers with what it was, or null when it was already gone. */
+export async function deleteShoppingItem(db: D1Database, id: number): Promise<RemovedItem | null> {
+	// The lines go with the item (ON DELETE CASCADE), so they are read first, in the same batch.
+	const [lines, items] = await db.batch<unknown>([
+		db
+			.prepare('SELECT recipe_id AS recipeId, position FROM shopping_item_source WHERE item_id = ?')
+			.bind(id),
+		db
+			.prepare(
+				`DELETE FROM shopping_item WHERE id = ?
+				 RETURNING position, text, amount, section, origin, checked`
+			)
+			.bind(id)
+	]);
+	const item = (
+		items.results as (Omit<RemovedItem, 'checked' | 'lines'> & { checked: number })[]
+	)[0];
+	if (!item) return null;
+	return { ...item, checked: Boolean(item.checked), lines: lines.results as Line[] };
+}
+
+/** Puts a removed item back where it was on the week's list, with the lines of dishes that still exist. */
+export async function restoreShoppingItem(
+	db: D1Database,
+	weekStart: string,
+	item: RemovedItem
+): Promise<void> {
+	const menuId = await ensureMenu(db, weekStart);
+	await db.batch([
+		db
+			.prepare(
+				`INSERT INTO shopping_item (menu_id, position, text, amount, section, origin, checked)
+				 VALUES (?, ?, ?, ?, ?, ?, ?)`
+			)
+			.bind(
+				menuId,
+				item.position,
+				item.text,
+				item.amount,
+				item.section,
+				item.origin,
+				item.checked ? 1 : 0
+			),
+		// A batch is one transaction, so the newest item is the one just inserted.
+		db
+			.prepare(
+				`INSERT OR IGNORE INTO shopping_item_source (item_id, recipe_id, position)
+				 SELECT (SELECT max(id) FROM shopping_item), value ->> '$.recipeId', value ->> '$.position'
+				 FROM json_each(?) WHERE EXISTS (SELECT 1 FROM recipe WHERE id = value ->> '$.recipeId')`
+			)
+			.bind(JSON.stringify(item.lines))
+	]);
 }
