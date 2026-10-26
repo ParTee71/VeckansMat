@@ -32,6 +32,7 @@
 
 	function down(event: PointerEvent) {
 		if (event.button !== 0) return;
+		swiped = false;
 		start = { x: event.clientX, y: event.clientY };
 	}
 

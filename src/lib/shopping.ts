@@ -57,6 +57,12 @@ export const HAND_LOOK: Look = {
 	ink: 'var(--md-sys-color-on-primary-container)',
 	shape: '0.625rem'
 };
+export const BASKET_LOOK: Look = {
+	icon: 'check',
+	tint: 'var(--app-fill)',
+	ink: 'var(--md-sys-color-on-surface-variant)',
+	shape: '50%'
+};
 export const DISH_LOOK: Look = {
 	icon: 'dishes',
 	tint: '#ece6df',

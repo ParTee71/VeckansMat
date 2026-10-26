@@ -11,7 +11,7 @@
 	import WeekArrows from '#lib/WeekArrows.svelte';
 	import type { RemovedItem, ShoppingItem } from '#lib/server/db/shopping.ts';
 	import { plural } from '#lib/names.ts';
-	import { HAND_LOOK, lookOf, sectionRank, type Look } from '#lib/shopping.ts';
+	import { BASKET_LOOK, HAND_LOOK, lookOf, sectionRank, type Look } from '#lib/shopping.ts';
 	import { isoWeek } from '#lib/weeks.ts';
 	import type { PageProps } from './$types';
 
@@ -141,6 +141,7 @@
 
 	async function check(item: ShoppingItem, checked: boolean) {
 		pendingChecked[item.id] = checked;
+		removed = null;
 		if (checked) basketed = item;
 		else if (basketed?.id === item.id) basketed = null;
 		await post('check', { id: item.id, checked: String(checked) });
@@ -172,6 +173,10 @@
 		if (event.currentTarget.isActionTaken) check(item, false);
 	}
 </script>
+
+<svelte:head>
+	<title>Handla – Veckans mat</title>
+</svelte:head>
 
 {#snippet row(item: ShoppingItem)}
 	<ShoppingRow
@@ -220,7 +225,7 @@
 				{#if wave.d}<path class="wave" d={wave.d} />{/if}
 				<path class="track" d={wave.track} />
 			</svg>
-			<span>{plural(toBuy.length, 'kvar', 'kvar')} · {basket.length} i korgen</span>
+			<span>{toBuy.length} kvar · {basket.length} i korgen</span>
 		</div>
 	{/if}
 
@@ -316,12 +321,7 @@
 		{#if basket.length}
 			<FoldCard
 				title={BASKET}
-				look={{
-					icon: 'check',
-					tint: 'var(--app-fill)',
-					ink: 'var(--md-sys-color-on-surface-variant)',
-					shape: '50%'
-				}}
+				look={BASKET_LOOK}
 				count={basket.length}
 				bind:open={() => !folded[BASKET], (open) => fold(BASKET, open)}
 			>
@@ -486,5 +486,4 @@
 		display: flex;
 		gap: 0.5rem;
 	}
-
 </style>

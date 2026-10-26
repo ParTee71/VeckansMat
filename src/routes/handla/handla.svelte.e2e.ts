@@ -106,6 +106,11 @@ test('any item is swiped away, and undo puts it back with its dishes', async ({ 
 	await swipe(page, 'Till fiskgratäng', 0.25);
 	await expect(item).toBeVisible();
 	await expect(item).not.toBeChecked();
+	// And the next tap still ticks it.
+	await item.click();
+	await expect(item).toBeHidden();
+	await page.locator('m3e-snackbar').getByRole('button', { name: 'Ångra' }).click();
+	await expect(item).toBeVisible();
 
 	await swipe(page, 'Till fiskgratäng', 0.7);
 	await expect(item).toHaveCount(0);
