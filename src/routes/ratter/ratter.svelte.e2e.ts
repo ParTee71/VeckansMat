@@ -1,17 +1,57 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { open } from '../../../test/e2e';
 
 // The made-up data comes from test/e2e-seed.sql. Tests that change it use names of their own,
 // that sort after the seeded dishes.
 
-test('dishes are listed by how often they were eaten', async ({ page }) => {
+/** The card of a sort on Rätter. */
+const card = (page: Page, sort: string) =>
+	page.locator('section', { has: page.getByRole('button', { name: new RegExp(`^${sort}`) }) });
+
+test('dishes are listed in a card per sort, by how often they were eaten', async ({ page }) => {
+	// A dish not yet sorted by Claude is under Övrigt.
 	await open(page, '/ratter');
-	const names = page.locator('m3e-list-action');
-	await expect(names.first()).toContainText('Fiskgratäng');
-	await expect(names.first()).toContainText('2 gånger · senast v. 3 2030');
+	const search = page.getByRole('searchbox', { name: 'Sök eller lägg till rätt' });
+	await search.fill('Abborre i ugn');
+	await page.getByRole('button', { name: 'Lägg till ”Abborre i ugn”' }).click();
+	await expect(card(page, 'Övrigt')).toContainText('Abborre i ugn');
+
+	// Claude sorts in the background, so a later load shows the sorts. The stand-in puts soups
+	// under Soppor and the rest under Fisk.
+	await expect(async () => {
+		await open(page, '/ratter');
+		await expect(card(page, 'Fisk')).toContainText('Abborre i ugn', { timeout: 1000 });
+	}).toPass();
+	await expect(card(page, 'Soppor')).toContainText('Linssoppa');
+	await expect(card(page, 'Fisk')).not.toContainText('Linssoppa');
+	const fish = card(page, 'Fisk').locator('m3e-list-action');
+	await expect(fish.first()).toContainText('Fiskgratäng');
+	await expect(fish.first()).toContainText('2 gånger · senast v. 3 2030');
+
 	await page.getByRole('button', { name: 'A–Ö' }).click();
-	await expect(names.first()).toContainText('Fiskgratäng');
-	await expect(names.nth(1)).toContainText('Linssoppa');
+	await expect(fish.first()).toContainText('Abborre i ugn');
+
+	// A search shows only the sorts with a match.
+	await search.fill('soppa');
+	await expect(card(page, 'Soppor')).toBeVisible();
+	await expect(card(page, 'Fisk')).toHaveCount(0);
+});
+
+test('a folded sort stays folded on the phone', async ({ page }) => {
+	// Once Claude has sorted the dishes.
+	await expect(async () => {
+		await open(page, '/ratter');
+		await expect(page.getByRole('button', { name: /^Fisk/ })).toBeVisible({ timeout: 1000 });
+	}).toPass();
+	const sort = page.getByRole('button', { name: /^Fisk/ });
+	await expect(sort).toHaveAttribute('aria-expanded', 'true');
+	await sort.click();
+	await expect(sort).toHaveAttribute('aria-expanded', 'false');
+	await page.reload();
+	await expect(page.getByRole('button', { name: /^Fisk/ })).toHaveAttribute(
+		'aria-expanded',
+		'false'
+	);
 });
 
 test('a new dish is added with its name and one tap, and can be filled in', async ({ page }) => {

@@ -12,6 +12,7 @@ Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ä
 - Rättens sida, Ny rätt och Redigera rätt har fått ett lugnare utseende: vita kort på varm bakgrund, ingredienser och steg i kort som kan fällas ihop, numrerade steg, och Spara som ligger kvar överst när man scrollar. (#83)
 - Menyn längst ner är en liten ö som svävar över listan, med plats för vyns viktigaste knapp till höger. I Rätter öppnar plusknappen Ny rätt. (#86)
 - Handla har fått små avdelningskort som kan fällas ihop, rätterna bakom en vara under en liten info-ikon och plusknappen för en ny vara. Varje vara kan svepas bort åt vänster, med Ångra. Korgen ligger hopfälld längst ned. (#87)
+- Rätter visas i ett kort per sort, som Soppor, Kött och Fisk, med hur ofta och när de ätits. Korten kan fällas ihop, och en sökning visar bara sorterna med träffar. (#88)
 
 ## 0.3.0
 

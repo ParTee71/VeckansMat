@@ -1,6 +1,7 @@
 import { nameKey, plural } from './names';
 import type { Meal } from './server/db/menus';
 import type { RecipeSummary } from './server/db/recipes';
+import type { Look } from './shopping';
 
 /** The tag on a dish that is good for lunch boxes, so a little extra is cooked. */
 export const LUNCHBOX_TAG = 'matlåda';
@@ -76,6 +77,24 @@ export const CATEGORIES = [
 ] as const;
 
 export type Category = (typeof CATEGORIES)[number]['key'];
+
+// Each sort has a shape of its own, so that the cards differ by more than colour.
+const CATEGORY_SHAPES: Record<Category, string> = {
+	soppa: '50%',
+	kott: '0.5rem 0.5rem 0.25rem 0.25rem',
+	kottfars: '0.625rem',
+	kyckling: '50% 50% 0.375rem 0.375rem',
+	fisk: '0.75rem',
+	korv: '50% 0.375rem 50% 0.375rem',
+	vego: '50% 50% 50% 0.375rem',
+	ovrigt: '0.375rem'
+};
+
+/** How a sort's card heading looks: its icon on its colour and shape. */
+export function categoryLook(key: Category): Look {
+	const { tint, ink } = CATEGORIES.find((c) => c.key === key)!;
+	return { icon: key, tint, ink, shape: CATEGORY_SHAPES[key] };
+}
 
 /** What a dish is served with. */
 export const BASES = [
