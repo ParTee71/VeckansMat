@@ -46,6 +46,8 @@ export const formValues = (recipe: {
 	instructions: string | null;
 	tags: string[];
 	sourceUrl: string | null;
+	category?: string | null;
+	base?: string | null;
 }): Record<string, string> => ({
 	name: recipe.name,
 	servings: recipe.servings?.toString() ?? '',
@@ -53,19 +55,24 @@ export const formValues = (recipe: {
 	ingredients: recipe.ingredients.join('\n'),
 	instructions: recipe.instructions ?? '',
 	tags: recipe.tags.filter((tag) => tag !== LUNCHBOX_TAG).join(', '),
-	sourceUrl: recipe.sourceUrl ?? ''
+	sourceUrl: recipe.sourceUrl ?? '',
+	category: recipe.category ?? '',
+	base: recipe.base ?? ''
 });
 
-/** The sorts of dish, in the order Rätter shows them. A soup is always a soup. */
+/**
+ * The sorts of dish, in the order Rätter shows them, each with its icon and its colours as a
+ * background and the text on it. A soup is always a soup.
+ */
 export const CATEGORIES = [
-	{ key: 'soppa', label: 'Soppor' },
-	{ key: 'kott', label: 'Kött' },
-	{ key: 'kottfars', label: 'Köttfärs' },
-	{ key: 'kyckling', label: 'Kyckling' },
-	{ key: 'fisk', label: 'Fisk' },
-	{ key: 'korv', label: 'Korv' },
-	{ key: 'vego', label: 'Vegetariskt' },
-	{ key: 'ovrigt', label: 'Övrigt' }
+	{ key: 'soppa', label: 'Soppor', tint: '#f7e3b0', ink: '#56400a' },
+	{ key: 'kott', label: 'Kött', tint: '#f1d9cc', ink: '#5a2c18' },
+	{ key: 'kottfars', label: 'Köttfärs', tint: '#f3d6d2', ink: '#5c2420' },
+	{ key: 'kyckling', label: 'Kyckling', tint: '#f6e0c4', ink: '#5a3a12' },
+	{ key: 'fisk', label: 'Fisk', tint: '#d3e4f5', ink: '#1d3a57' },
+	{ key: 'korv', label: 'Korv', tint: '#f0d4dc', ink: '#57202f' },
+	{ key: 'vego', label: 'Vegetariskt', tint: '#d8ecc9', ink: '#2c4a1a' },
+	{ key: 'ovrigt', label: 'Övrigt', tint: '#e6e0f0', ink: '#3b3150' }
 ] as const;
 
 export type Category = (typeof CATEGORIES)[number]['key'];

@@ -38,6 +38,40 @@ test('a new dish is added with its name and one tap, and can be filled in', asyn
 	await expect(page.getByText('1 vitkål')).toBeVisible();
 });
 
+test('Claude sorts the dishes in the background, and a sort chosen by hand stays', async ({
+	page
+}) => {
+	await open(page, '/ratter');
+	// The stand-in for Claude puts soups under Soppor and the rest under Fisk, with potatoes.
+	await expect(async () => {
+		await open(page, '/ratter/2');
+		await expect(page.getByText('Soppor', { exact: true })).toBeVisible({ timeout: 1000 });
+	}).toPass();
+	await expect(page.getByText('Sort och bas gissade av Claude.')).toBeVisible();
+
+	const search = page.getByRole('searchbox', { name: 'Sök eller lägg till rätt' });
+	await open(page, '/ratter');
+	await search.fill('Viltgryta');
+	await page.getByRole('button', { name: 'Lägg till ”Viltgryta”' }).click();
+	await expect(page.getByText('Viltgryta är tillagd')).toBeVisible();
+	await expect(async () => {
+		await open(page, '/ratter');
+		await page.locator('m3e-list-action', { hasText: 'Viltgryta' }).click();
+		await expect(page.getByText('Med potatis')).toBeVisible({ timeout: 1000 });
+	}).toPass();
+
+	await page.locator('m3e-button', { hasText: 'Redigera' }).click();
+	await expect(page.getByText('Claude gissade sort och bas.')).toBeVisible();
+	await page.getByText('Kött', { exact: true }).click();
+	await page.getByText('Ris', { exact: true }).click();
+	await page.getByRole('button', { name: 'Spara' }).click();
+
+	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Viltgryta');
+	await expect(page.getByText('Kött', { exact: true })).toBeVisible();
+	await expect(page.getByText('Med ris')).toBeVisible();
+	await expect(page.getByText('Sort och bas gissade av Claude.')).toHaveCount(0);
+});
+
 test('a dish cannot take the name of another', async ({ page }) => {
 	await open(page, '/ratter/2/redigera');
 	await page.getByLabel('Namn').fill('fiskgratäng');

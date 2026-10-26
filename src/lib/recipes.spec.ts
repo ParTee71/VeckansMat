@@ -49,7 +49,9 @@ it('writes a dish as its form fields, with the lunch-box tag left to its switch'
 			ingredients: ['3 dl linser', '1 lök'],
 			instructions: null,
 			tags: ['vego', LUNCHBOX_TAG, 'snabb'],
-			sourceUrl: null
+			sourceUrl: null,
+			category: 'vego',
+			base: null
 		})
 	).toEqual({
 		name: 'Linsgryta',
@@ -58,6 +60,8 @@ it('writes a dish as its form fields, with the lunch-box tag left to its switch'
 		ingredients: '3 dl linser\n1 lök',
 		instructions: '',
 		tags: 'vego, snabb',
-		sourceUrl: ''
+		sourceUrl: '',
+		category: 'vego',
+		base: ''
 	});
 });

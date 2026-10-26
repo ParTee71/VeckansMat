@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { answering, failing, reason } from '../../../test/claude';
 import { useTestDb } from '../../../test/d1';
 import { giveIngredients } from '../../../test/fixtures';
@@ -9,6 +9,12 @@ import { askCategories, sortRecipes } from './recipe-category';
 
 let db: D1Database;
 useTestDb((test) => (db = test));
+// Each test an hour after the last, so a wait after a failed call never carries over.
+let now = Date.now();
+beforeEach(() => {
+	vi.useFakeTimers({ toFake: ['Date'] });
+	vi.setSystemTime((now += 60 * 60_000));
+});
 afterEach(() => vi.useRealTimers());
 
 const sorts = async () =>
@@ -112,7 +118,6 @@ describe('sorting the dishes', () => {
 	});
 
 	it('leaves the dishes unsorted when the cap is spent, and waits before it asks again', async () => {
-		vi.useFakeTimers({ toFake: ['Date'] });
 		await addRecipe(db, 'Linssoppa');
 		const spent = failing(new ClaudeLimitError());
 		await sortRecipes(db, spent);
