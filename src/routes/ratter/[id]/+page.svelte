@@ -67,7 +67,7 @@
 		<p class="eaten">{eaten}</p>
 		{#if facts.length}
 			<ul class="facts">
-				{#each facts as fact (fact)}<li>{fact}</li>{/each}
+				{#each facts as fact, i (i)}<li>{fact}</li>{/each}
 			</ul>
 		{/if}
 		{#if recipe.categoryGuessed}
@@ -111,7 +111,11 @@
 			{#if steps.length}
 				<ol class="steps">
 					{#each steps as step, i (i)}
-						<li><span class="number" aria-hidden="true">{i + 1}</span><span>{step}</span></li>
+						{#if step.number}
+							<li><span class="number" aria-hidden="true">{step.number}</span>{step.text}</li>
+						{:else}
+							<li class="part">{step.text}</li>
+						{/if}
 					{/each}
 				</ol>
 			{/if}
@@ -294,6 +298,12 @@
 		gap: 0.75rem;
 		line-height: 1.4375rem;
 		white-space: pre-line;
+	}
+
+	.part {
+		margin-top: 0.25rem;
+		font-size: 0.875rem;
+		font-weight: 700;
 	}
 
 	.number {

@@ -69,7 +69,9 @@
 <section class="card">
 	<h2 id="instructions-heading">Gör så här</h2>
 	<m3e-form-field variant="filled" hide-subscript="always">
-		<label slot="label" id="instructions-label" for="instructions">Ett steg per stycke</label>
+		<label slot="label" id="instructions-label" for="instructions"
+			>Ett steg per rad eller stycke</label
+		>
 		<textarea
 			id="instructions"
 			name="instructions"

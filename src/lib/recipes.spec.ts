@@ -69,21 +69,38 @@ it('writes a dish as its form fields, with the lunch-box tag left to its switch'
 describe('the steps of a recipe', () => {
 	it('are split at blank lines, keeping the line breaks within a step', () => {
 		expect(splitSteps('Skala potatisen.\nSkär den i bitar.\n\n  \nKoka den mjuk.\n')).toEqual([
-			'Skala potatisen.\nSkär den i bitar.',
-			'Koka den mjuk.'
+			{ text: 'Skala potatisen.\nSkär den i bitar.', number: 1 },
+			{ text: 'Koka den mjuk.', number: 2 }
 		]);
 	});
 
 	it('are split at line breaks when there are no blank lines', () => {
-		expect(splitSteps('1. Skala pumpan.\n2) Koka allt mjukt.\n')).toEqual([
-			'Skala pumpan.',
-			'Koka allt mjukt.'
+		expect(splitSteps('Skala pumpan.\nKoka allt mjukt.\n')).toEqual([
+			{ text: 'Skala pumpan.', number: 1 },
+			{ text: 'Koka allt mjukt.', number: 2 }
+		]);
+	});
+
+	it('are the numbered lines, without their numbers, also across blank lines', () => {
+		expect(splitSteps('1. Skala\n2.Skär\n\n3) Koka')).toEqual([
+			{ text: 'Skala', number: 1 },
+			{ text: 'Skär', number: 2 },
+			{ text: 'Koka', number: 3 }
+		]);
+	});
+
+	it('have the parts of a recipe as headings without a number', () => {
+		expect(splitSteps('Ris\n1. Koka riset.\nGryta\n2. Bryn kycklingen.')).toEqual([
+			{ text: 'Ris' },
+			{ text: 'Koka riset.', number: 1 },
+			{ text: 'Gryta' },
+			{ text: 'Bryn kycklingen.', number: 2 }
 		]);
 	});
 
 	it('are one step when the text is one paragraph', () => {
 		expect(splitSteps('Blanda allt och grädda i 20 minuter.')).toEqual([
-			'Blanda allt och grädda i 20 minuter.'
+			{ text: 'Blanda allt och grädda i 20 minuter.', number: 1 }
 		]);
 	});
 

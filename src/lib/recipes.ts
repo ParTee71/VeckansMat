@@ -96,12 +96,31 @@ export const categoryOf = (value: unknown): Category | null =>
 export const baseOf = (value: unknown): Base | null =>
 	BASES.find((b) => b.key === value)?.key ?? null;
 
+/** A numbered step of a recipe, or the heading of a part of it, which has no number. */
+export interface Step {
+	text: string;
+	number?: number;
+}
+
+const NUMBERED = /^\d+[.)]\s*/;
+
 /**
- * The steps of a recipe, to be numbered: split at blank lines, or at line breaks when there are
- * none. A number already written before a step, as in "1. Skala", is left out.
+ * The steps of a recipe, numbered. When some lines are numbered already, as a recipe from a link
+ * is, each such line is a step and a line between them is the heading of a part, such as
+ * "Sås". Otherwise the steps are split at blank lines, or at line breaks when there are none.
  */
-export function splitSteps(text: string | null): string[] {
+export function splitSteps(text: string | null): Step[] {
 	const trimmed = text?.trim() ?? '';
-	const parts = /\n\s*\n/.test(trimmed) ? trimmed.split(/\n\s*\n/) : trimmed.split('\n');
-	return parts.map((part) => part.trim().replace(/^\d+[.)]\s+/, '')).filter(Boolean);
+	const lines = trimmed
+		.split('\n')
+		.map((line) => line.trim())
+		.filter(Boolean);
+	let number = 0;
+	if (lines.some((line) => NUMBERED.test(line))) {
+		return lines.map((line) =>
+			NUMBERED.test(line) ? { text: line.replace(NUMBERED, ''), number: ++number } : { text: line }
+		);
+	}
+	const parts = /\n\s*\n/.test(trimmed) ? trimmed.split(/\n\s*\n/) : lines;
+	return parts.map((part) => ({ text: part.trim(), number: ++number }));
 }
