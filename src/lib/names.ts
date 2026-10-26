@@ -24,3 +24,8 @@ export function nameKey(name: string): string {
 
 /** "1 vara", "3 varor". */
 export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+const list = new Intl.ListFormat('sv', { type: 'conjunction' });
+
+/** "Kim, Sam och Noa". */
+export const listText = (items: string[]) => list.format(items);

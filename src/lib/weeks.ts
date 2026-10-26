@@ -1,5 +1,6 @@
 // How weeks are written in the app. A week is given by its Monday, YYYY-MM-DD.
 import { MEAL_LABELS } from './recipes';
+import { listText } from './names';
 import type { Meal } from './server/db/menus';
 
 const MONTHS = [
@@ -45,7 +46,7 @@ export function dayList(days: { weekday: number; meal: Meal }[]): string {
 			(d) =>
 				`${d.meal === 'lunch' ? `${MEAL_LABELS.lunch.toLowerCase()} ` : ''}${WEEKDAY_NAMES[d.weekday - 1]}`
 		);
-	return new Intl.ListFormat('sv', { type: 'conjunction' }).format(names);
+	return listText(names);
 }
 
 const DAY = 24 * 60 * 60 * 1000;

@@ -1,38 +1,42 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
-	import { isDish } from './recipes.ts';
+	import { isDish, MEAL_LABELS } from './recipes.ts';
 
 	// A dinner or a lunch on the menu, which opens for writing when tapped. Claude's dishes have a
 	// button that swaps them.
 	let {
 		name,
-		label = '',
+		lunch = false,
 		text,
 		meta = '',
 		swapped = false,
-		swap,
+		swappable = false,
+		swapping = false,
+		busy = false,
 		onedit,
 		onswap
 	}: {
 		/** The meal and the day, as "Middag måndag". */
 		name: string;
-		/** What stands before the dish, as "Lunch". */
-		label?: string;
+		lunch?: boolean;
 		text: string;
 		/** A line under the dish, such as why Claude chose it. */
 		meta?: string;
 		/** Just swapped, which the line shows until the snackbar is gone. */
 		swapped?: boolean;
-		/** Whether the dish can be swapped, and whether that is going on or must wait. */
-		swap?: 'ready' | 'busy' | 'swapping';
+		/** Claude's dish, which can be swapped. */
+		swappable?: boolean;
+		swapping?: boolean;
+		/** Claude is busy with the week, so a swap must wait. */
+		busy?: boolean;
 		onedit: () => void;
 		onswap: () => void;
 	} = $props();
 </script>
 
-<div class={['menu-line', label && 'lunch', swapped && 'swapped']}>
+<div class={['menu-line', lunch && 'lunch', swapped && 'swapped']}>
 	<button type="button" class="show" aria-label="{name}: {text || 'tom'}" onclick={onedit}>
-		{#if label}<span class="label">{label}</span>{/if}
+		{#if lunch}<span class="label">{MEAL_LABELS.lunch}</span>{/if}
 		<span class="text">
 			<span class={['dish ink', !text && 'empty', text && !isDish(text) && 'other']}
 				>{text || 'Skriv en rätt'}</span
@@ -40,14 +44,14 @@
 			{#if meta}<span class="reason ink">{meta}</span>{/if}
 		</span>
 	</button>
-	{#if swap === 'swapping'}
+	{#if swapping}
 		<m3e-loading-indicator class="swap" aria-label="Byter {name}"></m3e-loading-indicator>
-	{:else if swap}
+	{:else if swappable}
 		<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-icon-button is a button with its own keyboard handling) -->
 		<m3e-icon-button
 			class="swap"
 			aria-label="Byt {name}"
-			disabled={swap === 'busy' || undefined}
+			disabled={busy || undefined}
 			onclick={onswap}
 		>
 			<Icon name="swap" />
@@ -61,6 +65,10 @@
 		display: flex;
 		align-items: flex-start;
 		transition: background-color 0.3s;
+	}
+
+	.lunch {
+		--menu-dish-size: 1rem;
 	}
 
 	.swapped {

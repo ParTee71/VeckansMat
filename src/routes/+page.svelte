@@ -226,10 +226,9 @@
 
 {#snippet line(weekday: number, meal: Meal)}
 	{@const name = `${MEAL_LABELS[meal]} ${WEEKDAY_NAMES[weekday - 1]}`}
-	{@const label = meal === 'lunch' ? MEAL_LABELS.lunch : ''}
 	{#if editing === keyOf(weekday, meal)}
 		<DayEditor
-			{label}
+			lunch={meal === 'lunch'}
 			{name}
 			bind:draft
 			{recipes}
@@ -243,17 +242,13 @@
 		{@const saved = current && text === current.text ? current : null}
 		<MenuLine
 			{name}
-			{label}
+			lunch={meal === 'lunch'}
 			{text}
 			meta={saved ? metaText(saved) : ''}
 			swapped={swapped?.key === keyOf(weekday, meal)}
-			swap={!saved?.reason
-				? undefined
-				: swapping === keyOf(weekday, meal)
-					? 'swapping'
-					: busy
-						? 'busy'
-						: 'ready'}
+			swappable={!!saved?.reason}
+			swapping={swapping === keyOf(weekday, meal)}
+			{busy}
 			onedit={() => edit(weekday, meal)}
 			onswap={() => swap(weekday, meal)}
 		/>

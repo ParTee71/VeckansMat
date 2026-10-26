@@ -75,8 +75,7 @@
 		margin: 0 0.125rem;
 		padding: 1.625rem 1.375rem 1.5rem;
 		border-radius: 0.375rem;
-		background: var(--menu-paper) url('./assets/papper.webp') 0 0 / 16rem 16rem;
-		background-blend-mode: multiply;
+		background: var(--menu-paper);
 		box-shadow:
 			0 2px 4px rgb(60 30 15 / 0.1),
 			0 14px 28px -6px rgb(60 30 15 / 0.22),
@@ -86,11 +85,13 @@
 		gap: 0.875rem;
 	}
 
-	.menu :global(.lunch) {
-		--menu-dish-size: 1rem;
-	}
-
+	/* Only in light mode, so the dark card never fetches the texture. */
 	@media (prefers-color-scheme: light) {
+		.menu {
+			background: var(--menu-paper) url('./assets/papper.webp') 0 0 / 16rem 16rem;
+			background-blend-mode: multiply;
+		}
+
 		.menu :global(.ink) {
 			filter: url(#ink);
 		}
@@ -102,7 +103,6 @@
 			--menu-rule: color-mix(in srgb, var(--md-sys-color-primary) 8%, #463f3b);
 			border: 1px solid #3a3330;
 			border-radius: 1.25rem;
-			background: var(--menu-paper);
 			box-shadow: none;
 		}
 	}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import Icon from './Icon.svelte';
+	import { listText } from './names.ts';
 
 	// Who eats the week, as a line on the menu that opens a sheet: a chip for each person, what
 	// they do not eat and the household's rules for every week.
@@ -17,10 +18,9 @@
 	} = $props();
 
 	let eaters = $derived(people.filter((p) => eaterIds.includes(p.id)));
-	const names = new Intl.ListFormat('sv', { type: 'conjunction' });
 	let line = $derived(
 		eaters.length
-			? `${names.format(eaters.map((p) => p.name))} äter`
+			? `${listText(eaters.map((p) => p.name))} äter`
 			: people.length
 				? 'Välj vilka som äter'
 				: 'Lägg till vilka som äter'

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
-	import { byOften, isDish, matching, NOT_DISHES, timesText } from './recipes.ts';
+	import { byOften, isDish, matching, MEAL_LABELS, NOT_DISHES, timesText } from './recipes.ts';
 	import { nameKey } from './names.ts';
 	import type { RecipeSummary } from './server/db/recipes.ts';
 
@@ -8,7 +8,7 @@
 	// written, a new dish, and the quick choices that are not dishes. The text stands where the
 	// shown dish stood, in the same hand, so the line does not jump.
 	let {
-		label = '',
+		lunch = false,
 		name,
 		draft = $bindable(),
 		recipes,
@@ -16,8 +16,7 @@
 		onleave,
 		onkeydown
 	}: {
-		/** What stands before the dish, as "Lunch". */
-		label?: string;
+		lunch?: boolean;
 		/** The day and the meal, for the field. */
 		name: string;
 		draft: string;
@@ -44,11 +43,11 @@
 
 <!-- Leaving the day writes it; moving within it, as to a suggestion with Tab, does not. -->
 <div
-	class={['editing', label && 'lunch']}
+	class={['editing', lunch && 'lunch']}
 	onfocusout={(e) => !e.currentTarget.contains(e.relatedTarget as Node | null) && onleave()}
 >
 	<div class="line">
-		{#if label}<span class="label">{label}</span>{/if}
+		{#if lunch}<span class="label">{MEAL_LABELS.lunch}</span>{/if}
 		<input
 			aria-label={name}
 			autocomplete="off"
@@ -106,6 +105,10 @@
 		gap: 0.5rem;
 	}
 
+	.lunch {
+		--menu-dish-size: 1rem;
+	}
+
 	.line {
 		display: flex;
 		align-items: flex-start;
@@ -141,10 +144,9 @@
 	}
 
 	.suggestions {
-		margin: 0;
+		margin: 0 0.5rem;
 		padding: 0;
 		list-style: none;
-		margin: 0 0.5rem;
 		border-radius: 0.75rem;
 		overflow: hidden;
 		background: var(--md-sys-color-surface);
