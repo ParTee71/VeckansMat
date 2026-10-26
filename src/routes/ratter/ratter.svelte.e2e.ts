@@ -1,17 +1,46 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { open } from '../../../test/e2e';
 
 // The made-up data comes from test/e2e-seed.sql. Tests that change it use names of their own,
 // that sort after the seeded dishes.
 
-test('dishes are listed by how often they were eaten', async ({ page }) => {
-	await open(page, '/ratter');
-	const names = page.locator('m3e-list-action');
-	await expect(names.first()).toContainText('Fiskgratäng');
-	await expect(names.first()).toContainText('2 gånger · senast v. 3 2030');
+/** The card of a sort on Rätter. */
+const card = (page: Page, sort: string) =>
+	page.locator('section', { has: page.getByRole('button', { name: new RegExp(`^${sort}`) }) });
+
+test('dishes are listed in a card per sort, by how often they were eaten', async ({ page }) => {
+	// Claude sorts the dishes in the background, so a later load shows the sorts. The stand-in
+	// puts soups under Soppor and the rest under Fisk.
+	await expect(async () => {
+		await open(page, '/ratter');
+		await expect(card(page, 'Soppor')).toContainText('Linssoppa', { timeout: 1000 });
+	}).toPass();
+	const fish = card(page, 'Fisk').locator('m3e-list-action');
+	await expect(fish.first()).toContainText('Fiskgratäng');
+	await expect(fish.first()).toContainText('2 gånger · senast v. 3 2030');
+	await expect(card(page, 'Fisk')).not.toContainText('Linssoppa');
+
 	await page.getByRole('button', { name: 'A–Ö' }).click();
-	await expect(names.first()).toContainText('Fiskgratäng');
-	await expect(names.nth(1)).toContainText('Linssoppa');
+	const names = (await fish.allTextContents()).map((t) => t.trim().split(/\s{2,}|\n/)[0]);
+	expect(names).toEqual(names.toSorted((a, b) => a.localeCompare(b, 'sv')));
+
+	// A search shows only the sorts with a match.
+	await page.getByRole('searchbox', { name: 'Sök eller lägg till rätt' }).fill('soppa');
+	await expect(card(page, 'Soppor')).toBeVisible();
+	await expect(card(page, 'Fisk')).toHaveCount(0);
+});
+
+test('a folded sort stays folded on the phone', async ({ page }) => {
+	await open(page, '/ratter');
+	const sort = page.getByRole('button', { name: /^Fisk/ });
+	await expect(sort).toHaveAttribute('aria-expanded', 'true');
+	await sort.click();
+	await expect(sort).toHaveAttribute('aria-expanded', 'false');
+	await page.reload();
+	await expect(page.getByRole('button', { name: /^Fisk/ })).toHaveAttribute(
+		'aria-expanded',
+		'false'
+	);
 });
 
 test('a new dish is added with its name and one tap, and can be filled in', async ({ page }) => {

@@ -2,14 +2,14 @@
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import FoldCard from '#lib/FoldCard.svelte';
 	import Icon from '#lib/Icon.svelte';
-	import Initial from '#lib/Initial.svelte';
 	import SubmitButton from '#lib/SubmitButton.svelte';
 	import { useFab } from '#lib/fab.svelte.ts';
 	import ThemeSheet from '#lib/ThemeSheet.svelte';
 	import { recipeUrl } from '#lib/links.ts';
 	import { nameKey } from '#lib/names.ts';
-	import { byName, byOften, matching, timesText } from '#lib/recipes.ts';
+	import { byName, byOften, CATEGORIES, categoryLook, matching, timesText } from '#lib/recipes.ts';
 	import { shortWeekName } from '#lib/weeks.ts';
 	import type { M3eSnackbarElement } from '@m3e/web/snackbar';
 	import type { RecipeSummary } from '#lib/server/db/recipes.ts';
@@ -36,6 +36,34 @@
 
 	let key = $derived(nameKey(query));
 	let shown = $derived(matching(recipes, query).toSorted(order === 'name' ? byName : byOften));
+	// The dishes per sort, in the sorts' order. A dish Claude has not sorted yet is Övrigt.
+	let groups = $derived(
+		CATEGORIES.map((c) => ({
+			...c,
+			recipes: shown.filter((r) => (r.category ?? 'ovrigt') === c.key)
+		})).filter((g) => g.recipes.length)
+	);
+
+	// The sorts folded away, which each phone remembers. All start open, since a dish just added
+	// is Övrigt until Claude has sorted it.
+	const FOLDED_KEY = 'ratter-stangda';
+	let folded = $state<Record<string, boolean>>({});
+	$effect(() => {
+		try {
+			const stored = JSON.parse(localStorage.getItem(FOLDED_KEY) ?? 'null');
+			if (stored && typeof stored === 'object') folded = stored;
+		} catch {
+			// Nothing remembered, or no storage.
+		}
+	});
+	function fold(key: string, open: boolean) {
+		folded[key] = !open;
+		try {
+			localStorage.setItem(FOLDED_KEY, JSON.stringify(folded));
+		} catch {
+			// Remembered for this visit only.
+		}
+	}
 	let exact = $derived(key ? recipes.find((r) => nameKey(r.name) === key) : undefined);
 	// A link is not a dish's name but a recipe to read.
 	let link = $derived(!!recipeUrl(query, true));
@@ -75,7 +103,8 @@
 	<title>Rätter – Veckans mat</title>
 </svelte:head>
 
-<main>
+<main class="warm-view">
+	<p class="label">{recipes.length} rätter</p>
 	<div class="title">
 		<h1 class="view-title">Rätter</h1>
 		<m3e-icon-button aria-label="Byt färg">
@@ -120,7 +149,6 @@
 					>
 				{/each}
 			</m3e-button-group>
-			<span>{recipes.length} rätter</span>
 		</div>
 	{:else if shown.length > 0 && !exact && !link}
 		<h2>Liknande rätter</h2>
@@ -128,17 +156,25 @@
 
 	{#if recipes.length === 0}
 		<p class="empty">Inga rätter än. Skriv namnet på en rätt ovan och lägg till den.</p>
-	{:else if shown.length > 0}
-		<m3e-list variant="segmented">
-			{#each shown as recipe, i (recipe.id)}
-				<m3e-list-action href="/ratter/{recipe.id}">
-					<Initial name={recipe.name} index={i} />
-					{recipe.name}
-					<span slot="supporting-text">{meta(recipe.timesEaten, recipe.lastWeek)}</span>
-					<span slot="trailing" class="slot-icon"><Icon name="next" /></span>
-				</m3e-list-action>
-			{/each}
-		</m3e-list>
+	{:else}
+		{#each groups as group (group.key)}
+			<!-- While searching, every sort with a match is open. -->
+			<FoldCard
+				title={group.label}
+				look={categoryLook(group.key)}
+				count={group.recipes.length}
+				bind:open={() => !!key || !folded[group.key], (open) => fold(group.key, open)}
+			>
+				<m3e-list>
+					{#each group.recipes as recipe (recipe.id)}
+						<m3e-list-action href="/ratter/{recipe.id}">
+							{recipe.name}
+							<span slot="trailing" class="meta">{meta(recipe.timesEaten, recipe.lastWeek)}</span>
+						</m3e-list-action>
+					{/each}
+				</m3e-list>
+			</FoldCard>
+		{/each}
 	{/if}
 </main>
 
@@ -166,8 +202,17 @@
 		gap: 0.875rem;
 	}
 
+	.label {
+		margin: 0.75rem 0 -0.75rem 0.25rem;
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--md-sys-color-primary);
+	}
+
 	.title {
-		margin: 0.75rem 0 0 0.25rem;
+		margin: 0 0 0 0.25rem;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -197,5 +242,21 @@
 
 	.empty {
 		color: var(--md-sys-color-on-surface-variant);
+	}
+
+	/* Compact rows, as in Handla. */
+	m3e-list {
+		--m3e-list-item-container-color: transparent;
+		--m3e-list-item-one-line-height: 2.875rem;
+		--m3e-list-item-one-line-top-space: 0.25rem;
+		--m3e-list-item-one-line-bottom-space: 0.25rem;
+		padding-bottom: 0.25rem;
+	}
+
+	.meta {
+		font-size: 0.75rem;
+		color: var(--md-sys-color-on-surface-variant);
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
 	}
 </style>
