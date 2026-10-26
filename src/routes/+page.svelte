@@ -5,6 +5,8 @@
 	import { postAction, type Fields } from '#lib/actions.ts';
 	import DayEditor from '#lib/DayEditor.svelte';
 	import Icon from '#lib/Icon.svelte';
+	import MenuCard from '#lib/MenuCard.svelte';
+	import MenuLine from '#lib/MenuLine.svelte';
 	import WeekHeader from '#lib/WeekHeader.svelte';
 	import WhoEats from '#lib/WhoEats.svelte';
 	import { plural } from '#lib/names.ts';
@@ -222,10 +224,9 @@
 	<title>Veckan – Veckans mat</title>
 </svelte:head>
 
-{#snippet row(weekday: number, meal: Meal)}
-	{@const text = textOf(weekday, meal)}
-	{@const label = WEEKDAYS[weekday - 1]}
+{#snippet line(weekday: number, meal: Meal)}
 	{@const name = `${MEAL_LABELS[meal]} ${WEEKDAY_NAMES[weekday - 1]}`}
+	{@const label = meal === 'lunch' ? MEAL_LABELS.lunch : ''}
 	{#if editing === keyOf(weekday, meal)}
 		<DayEditor
 			{label}
@@ -237,51 +238,30 @@
 			onkeydown={(e) => keydown(e, weekday, meal)}
 		/>
 	{:else}
+		{@const text = textOf(weekday, meal)}
 		{@const current = stored(weekday, meal)}
 		{@const saved = current && text === current.text ? current : null}
-		{@const meta = saved ? metaText(saved) : ''}
-		<li class={['segment', swapped?.key === keyOf(weekday, meal) && 'swapped']}>
-			<button
-				type="button"
-				class="show"
-				aria-label="{name}: {text || 'tom'}"
-				onclick={() => edit(weekday, meal)}
-			>
-				<span class="weekday">{label}</span>
-				<span class="text">
-					<span class={text ? '' : 'empty'}>{text || 'Skriv en rätt'}</span>
-					{#if meta}
-						<span class="meta">{meta}</span>
-					{/if}
-				</span>
-			</button>
-			{#if saved?.reason}
-				{#if swapping === keyOf(weekday, meal)}
-					<m3e-loading-indicator class="swap" aria-label="Byter {name}"></m3e-loading-indicator>
-				{:else}
-					<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-icon-button is a button with its own keyboard handling) -->
-					<m3e-icon-button
-						class="swap"
-						aria-label="Byt {name}"
-						disabled={busy || undefined}
-						onclick={() => swap(weekday, meal)}
-					>
-						<Icon name="swap" />
-					</m3e-icon-button>
-				{/if}
-			{/if}
-		</li>
+		<MenuLine
+			{name}
+			{label}
+			{text}
+			meta={saved ? metaText(saved) : ''}
+			swapped={swapped?.key === keyOf(weekday, meal)}
+			swap={!saved?.reason
+				? undefined
+				: swapping === keyOf(weekday, meal)
+					? 'swapping'
+					: busy
+						? 'busy'
+						: 'ready'}
+			onedit={() => edit(weekday, meal)}
+			onswap={() => swap(weekday, meal)}
+		/>
 	{/if}
 {/snippet}
 
-<main class="page">
-	<WeekHeader
-		title="Vecka {isoWeek(week.weekStart).week}"
-		before={weekDates(week.weekStart)}
-		weekStart={week.weekStart}
-		thisWeek={data.thisWeek}
-		nextWeek={data.nextWeek}
-	>
+<main class="page warm-view">
+	<WeekHeader weekStart={week.weekStart} thisWeek={data.thisWeek} nextWeek={data.nextWeek}>
 		{#snippet actions()}
 			{#if hasSuggestion}
 				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-icon-button is a button with its own keyboard handling) -->
@@ -296,8 +276,8 @@
 		{/snippet}
 	</WeekHeader>
 
-	<WhoEats people={data.people} {eaterIds} rules={data.settings.menuRules} ontoggle={toggleEater}>
-		{#if !hasSuggestion && !suggesting}
+	{#if !hasSuggestion && !suggesting}
+		<section class="card">
 			<m3e-form-field variant="filled">
 				<label slot="label" for="wish">Något särskilt den här veckan? (frivilligt)</label>
 				<input
@@ -315,8 +295,8 @@
 			>
 				<span slot="icon" class="slot-icon"><Icon name="suggest" /></span>Föreslå veckan
 			</m3e-button>
-		{/if}
-	</WhoEats>
+		</section>
+	{/if}
 
 	{#if failed}
 		<p class="error" role="alert">Det gick inte att spara. Kontrollera nätet och försök igen.</p>
@@ -332,44 +312,54 @@
 		</p>
 	{/if}
 
-	{#if suggesting}
-		<div class="suggesting">
-			<m3e-loading-indicator></m3e-loading-indicator>
-			<p role="status">Claude sätter ihop veckan …</p>
-			<p class="hint">Utgår från era gamla veckor och rätter. Brukar ta 10–20 sekunder.</p>
-		</div>
-	{:else}
-		<div class="list-heading"><h2>Middag</h2></div>
-		<ul class="segmented">
-			{#each WEEK_DAYS as weekday (weekday)}
-				{@render row(weekday, 'dinner')}
-			{/each}
-		</ul>
-
-		<div class="list-heading">
-			<h2>Lunch</h2>
-			{#if freeLunchDays.length}
-				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
-				<m3e-button variant="text" onclick={() => (choosingLunch = !choosingLunch)}>
-					<span slot="icon" class="slot-icon"><Icon name="add" /></span>Lunch en vardag
-				</m3e-button>
-			{/if}
-		</div>
-		{#if choosingLunch}
-			<div class="choices" role="group" aria-label="Välj dag för lunch">
-				{#each freeLunchDays as weekday (weekday)}
-					<button type="button" class="chip" onclick={() => addLunch(weekday)}
-						>{WEEKDAYS[weekday - 1]}</button
-					>
-				{/each}
+	<MenuCard dates={weekDates(week.weekStart)}>
+		{#snippet eaters()}
+			<WhoEats
+				people={data.people}
+				{eaterIds}
+				rules={data.settings.menuRules}
+				ontoggle={toggleEater}
+			/>
+		{/snippet}
+		{#if suggesting}
+			<div class="suggesting">
+				<m3e-loading-indicator></m3e-loading-indicator>
+				<p role="status">Claude sätter ihop veckan …</p>
+				<p class="hint">Utgår från era gamla veckor och rätter. Brukar ta 10–20 sekunder.</p>
 			</div>
+		{:else}
+			<ol class="days">
+				{#each WEEK_DAYS as weekday (weekday)}
+					<li>
+						<span class="day ink" aria-hidden="true">{WEEKDAYS[weekday - 1]}</span>
+						<div class="meals">
+							{@render line(weekday, 'dinner')}
+							{#if lunchDays.includes(weekday)}
+								{@render line(weekday, 'lunch')}
+							{/if}
+						</div>
+					</li>
+				{/each}
+			</ol>
+			{#if freeLunchDays.length}
+				<div class="add-lunch">
+					<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
+					<m3e-button variant="text" onclick={() => (choosingLunch = !choosingLunch)}>
+						<span slot="icon" class="slot-icon"><Icon name="add" /></span>Lunch en vardag
+					</m3e-button>
+					{#if choosingLunch}
+						<div class="choices" role="group" aria-label="Välj dag för lunch">
+							{#each freeLunchDays as weekday (weekday)}
+								<button type="button" class="chip" onclick={() => addLunch(weekday)}
+									>{WEEKDAYS[weekday - 1]}</button
+								>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/if}
 		{/if}
-		<ul class="segmented">
-			{#each lunchDays as weekday (weekday)}
-				{@render row(weekday, 'lunch')}
-			{/each}
-		</ul>
-	{/if}
+	</MenuCard>
 </main>
 
 <m3e-dialog open={asking || undefined} onclosed={onAnswer}>
@@ -428,26 +418,12 @@
 		align-items: flex-end;
 	}
 
-	.list-heading h2 {
-		font-size: inherit;
-	}
-
-	.swapped {
-		background: var(--md-sys-color-primary-container);
-	}
-
-	.swap {
-		flex-shrink: 0;
-		margin-right: 0.25rem;
-	}
-
-	m3e-loading-indicator.swap {
-		width: 3rem;
-		height: 3rem;
+	.suggest {
+		align-self: flex-start;
 	}
 
 	.suggesting {
-		padding: 2rem 1rem;
+		padding: 2rem 0;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -459,34 +435,42 @@
 		margin: 0;
 	}
 
-	.suggest {
-		align-self: flex-start;
+	.days {
+		margin: 0;
+		padding: 0;
+		list-style: none;
 	}
 
-	.show {
+	.days li {
+		padding: 0.25rem 0;
+		border-bottom: 1px dotted var(--menu-rule);
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5rem;
+	}
+
+	.day {
+		width: 2.5rem;
+		flex-shrink: 0;
+		padding-top: 0.75rem;
+		font-family: var(--menu-hand);
+		font-size: 1.375rem;
+		font-weight: 700;
+		line-height: 1;
+		color: var(--md-sys-color-primary);
+	}
+
+	.meals {
 		flex-grow: 1;
 		min-width: 0;
-		min-height: 3.5rem;
-		padding: 0.375rem 1rem 0.375rem 0.75rem;
-		border: 0;
-		border-radius: inherit;
-		background: transparent;
-		color: inherit;
-		font: inherit;
-		text-align: left;
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		cursor: pointer;
-	}
-
-	.text {
 		display: flex;
 		flex-direction: column;
-		font-size: 1rem;
 	}
 
-	.empty {
-		color: var(--md-sys-color-on-surface-variant);
+	.add-lunch {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.5rem;
 	}
 </style>

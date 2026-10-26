@@ -1,54 +1,49 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import WeekArrows from './WeekArrows.svelte';
+	import { isoWeek } from './weeks.ts';
 
-	// The heading of a view about this week or the next, with arrows between the two. Under the
-	// title it says which of the two it is, between `before` and `after`.
+	// The small line at the top of a view about this week or the next: which week it is, and the
+	// arrows between the two.
 	let {
-		title,
-		before,
-		after = '',
 		weekStart,
 		thisWeek,
 		nextWeek,
 		actions
 	}: {
-		title: string;
-		before: string;
-		after?: string;
 		weekStart: string;
 		thisWeek: string;
 		nextWeek: string;
 		/** Buttons before the arrows. */
 		actions?: Snippet;
 	} = $props();
-
-	let isNext = $derived(weekStart === nextWeek);
 </script>
 
-<div class="title">
-	<div>
-		<h1 class="view-title">{title}</h1>
-		<p class="subtitle">{before} · {isNext ? 'nästa vecka' : 'den här veckan'}{after}</p>
-	</div>
+<header>
+	<p class="week-label">
+		Vecka {isoWeek(weekStart).week} · {weekStart === nextWeek ? 'nästa vecka' : 'den här veckan'}
+	</p>
 	<div class="nav">
 		{@render actions?.()}
 		<WeekArrows {weekStart} {thisWeek} {nextWeek} />
 	</div>
-</div>
+</header>
 
 <style>
-	.title {
-		margin: 0.25rem 0 0 0.25rem;
+	header {
+		margin: 0 -0.5rem -0.75rem 0.25rem;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 	}
 
-	.subtitle {
+	.week-label {
 		margin: 0;
-		font-size: 0.875rem;
-		color: var(--md-sys-color-on-surface-variant);
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--md-sys-color-primary);
 	}
 
 	.nav {

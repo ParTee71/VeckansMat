@@ -23,4 +23,5 @@ med `/adr` i Claude Code.
 | [0016](0016-spara-i-bakgrunden.md)       | Spara i bakgrunden, ladda inte om sidan         | Beslutat                                  |
 | [0017](0017-varans-identitet.md)         | En vara är de receptrader den täcker            | Beslutat                                  |
 | [0018](0018-plan-fore-kod.md)            | Plan före kod, med spärr                        | Beslutat                                  |
+| [0019](0019-typsnitt-i-appen.md)         | Typsnitt som följer med appen                   | Beslutat                                  |
 | [0020](0020-sorter-pa-ratter.md)         | Fasta sorter och baser på rätterna              | Beslutat                                  |

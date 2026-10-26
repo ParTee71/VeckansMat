@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import { countLoads, open, saved } from '../../test/e2e';
 
 // The made-up dishes come from test/e2e-seed.sql. Veckan shows this week or the next, so the
@@ -29,6 +29,13 @@ test('a week is written as quickly as on a note', async ({ page }) => {
 	await page.getByRole('textbox', { name: 'Lunch torsdag' }).fill('Ostfrallor');
 	await page.keyboard.press('Enter');
 	await expect(page.getByRole('button', { name: 'Lunch torsdag: Ostfrallor' })).toBeVisible();
+	// The lunch stands under its day's dinner on the menu.
+	await expect(
+		page
+			.getByRole('listitem')
+			.filter({ has: page.getByRole('button', { name: /^Middag torsdag/ }) })
+			.getByRole('button', { name: 'Lunch torsdag: Ostfrallor' })
+	).toBeVisible();
 
 	await saved(page);
 	expect(loads()).toBe(0);
@@ -84,14 +91,20 @@ test('who eats is chosen per week, and shows what they do not eat', async ({ pag
 	}
 
 	await open(page, '/');
+	// Who eats is a line on the menu, which opens a sheet with a chip for each person.
+	const line = page.getByRole('button', { name: /äter$/ });
+	await line.click();
 	const chips = people.map((name) => page.locator('m3e-filter-chip', { hasText: name }));
 	await expect(chips[0]).not.toHaveAttribute('selected');
 	// Two quick taps both count, even before the first is saved.
 	await chips[0].click();
 	await chips[1].click();
 	await expect(page.getByText('Ätare Två: Ätare Två äter inte svamp')).toBeVisible();
+	await expect(line).toContainText('Ätare Ett och Ätare Två äter');
 	await saved(page);
 	await page.reload();
+	await expect(line).toContainText('Ätare Ett och Ätare Två äter');
+	await line.click();
 	for (const chip of chips) await expect(chip).toHaveAttribute('selected');
 
 	// The people are made up for this test, so they are removed again.
@@ -105,13 +118,45 @@ test('who eats is chosen per week, and shows what they do not eat', async ({ pag
 
 test('the arrows go between this week and the next', async ({ page }) => {
 	await open(page, '/');
-	const dates = page.locator('.subtitle');
+	const dates = page.locator('.dates');
 	const first = await dates.textContent();
 	// Only the arrow to the other week is a link.
 	const arrow = page.locator('m3e-icon-button[href]');
 	await expect(arrow).toHaveCount(1);
 	await arrow.click();
 	await expect(dates).not.toHaveText(first!);
+});
+
+test('a day opens for writing where it stands, without jumping', async ({ page }) => {
+	await open(page, '/');
+	const shown = page.getByRole('button', { name: /^Middag lördag/ });
+	const before = await textTop(shown.locator('.dish'));
+	await shown.click();
+	const after = await textTop(page.getByRole('textbox', { name: 'Middag lördag' }));
+	expect(Math.abs(after.x - before.x)).toBeLessThanOrEqual(1);
+	expect(Math.abs(after.y - before.y)).toBeLessThanOrEqual(1);
+	await page.keyboard.press('Escape');
+});
+
+test('the handwriting comes with the app, and nothing is fetched from elsewhere', async ({
+	page,
+	baseURL
+}) => {
+	const elsewhere: string[] = [];
+	const fonts: string[] = [];
+	page.on('request', (request) => {
+		const url = new URL(request.url());
+		if (url.origin !== new URL(baseURL!).origin) elsewhere.push(url.href);
+		if (request.resourceType() === 'font') fonts.push(url.pathname);
+	});
+	await open(page, '/');
+	const loaded = await page.evaluate(async () => {
+		await document.fonts.ready;
+		return [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family);
+	});
+	expect(loaded).toEqual(expect.arrayContaining(['Caveat', 'Kalam']));
+	expect(fonts.filter((f) => f.endsWith('.woff2'))).toHaveLength(2);
+	expect(elsewhere).toEqual([]);
 });
 
 test('Claude suggests the week, and a day is swapped with one tap', async ({ page }) => {
@@ -190,3 +235,15 @@ test('Claude suggests the week, and a day is swapped with one tap', async ({ pag
 	await page.keyboard.press('Escape');
 	await expect(dialog).not.toHaveAttribute('open');
 });
+
+/** Where the text of an element starts, inside its padding. */
+async function textTop(locator: Locator) {
+	return locator.evaluate((el) => {
+		const box = el.getBoundingClientRect();
+		const style = getComputedStyle(el);
+		return {
+			x: box.left + parseFloat(style.paddingLeft),
+			y: box.top + parseFloat(style.paddingTop)
+		};
+	});
+}
