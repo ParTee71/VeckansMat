@@ -1,6 +1,6 @@
 # 0005. Åtkomst via Cloudflare Access
 
-- **Status:** Beslutat
+- **Status:** Beslutat, inloggningssättet ersatt av 0021
 - **Datum:** 2026-10-23
 
 ## Sammanhang

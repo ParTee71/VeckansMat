@@ -42,12 +42,14 @@ Agenten `granskare` kontrollerar höjningen.
 
 Varje grön push till `main` driftsätts till en egen Worker, `veckansmat-preview`, med egen
 databas `veckansmat-preview` (jobbet "Förhandsadress" i `ci.yml`, beslut 0012). Skarp drift och
-hushållets data påverkas inte. Den Workern behöver Cloudflare Access precis som drift.
+hushållets data påverkas inte. Den Workern behöver Cloudflare Access precis som drift, med samma inloggning (Google, beslut
+0021).
 
 ## Stegen
 
 0. **Före första releasen:** kontot har en workers.dev-underdomän, och Cloudflare Access står
-   framför appen och förhandsadresserna innan appen har data eller anropar Claude (beslut 0005).
+   framför appen och förhandsadresserna innan appen har data eller anropar Claude (beslut 0005), med Google som enda inloggningssätt
+   (beslut 0021).
 1. Läs `CHANGELOG.md` under versionen i `package.json` på `main`. Raderna är releasens text.
 2. Ge ägaren länken [Actions → Release](https://github.com/ParTee71/VeckansMat/actions/workflows/release.yml)
    → **Run workflow**, först med "Provkör" ikryssad (standard), sedan utan.
