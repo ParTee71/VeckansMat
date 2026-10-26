@@ -10,6 +10,7 @@ import {
 	deleteShoppingItem,
 	getShoppingBasis,
 	getShoppingList,
+	restoreShoppingItem,
 	saveShoppingList,
 	setShoppingItemChecked,
 	weekDishes
@@ -218,6 +219,26 @@ describe('the week shopping list', () => {
 
 		await deleteShoppingItem(db, coffee.id);
 		expect(await getShoppingList(db, WEEK)).toEqual([]);
+	});
+
+	it('removes any item, and puts it back as it was with its dishes', async () => {
+		await planWeek();
+		await makeFromRecipes();
+		const before = await getShoppingList(db, WEEK);
+		const onion = before.find((i) => i.text === '1 gul lök')!;
+		await setShoppingItemChecked(db, onion.id, true);
+
+		const removed = await deleteShoppingItem(db, onion.id);
+		expect(removed).toMatchObject({ text: '1 gul lök', origin: 'recipe', checked: true });
+		expect((await getShoppingList(db, WEEK)).map((i) => i.text)).not.toContain('1 gul lök');
+		expect(await deleteShoppingItem(db, onion.id)).toBeNull();
+
+		await restoreShoppingItem(db, WEEK, removed!);
+		const after = await getShoppingList(db, WEEK);
+		const shownItems = (list: typeof after) => list.map((i) => ({ ...i, id: 0 }));
+		expect(shownItems(after)).toEqual(
+			shownItems(before.map((i) => (i.id === onion.id ? { ...i, checked: true } : i)))
+		);
 	});
 
 	it('keeps who eats when the list starts the week', async () => {

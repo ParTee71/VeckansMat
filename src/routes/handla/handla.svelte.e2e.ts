@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { countLoads, open, saved, writeDay } from '../../../test/e2e';
 
 // Has a Worker of its own in playwright.config.ts, since it writes the same weeks as the tests of
@@ -25,20 +25,27 @@ test('the week shopping list is made from the dishes and ticked off in the store
 
 	// Claude's list, under the store's sections in their order, with what is likely at home last.
 	await expect(page.getByRole('heading', { level: 2 })).toHaveText([
-		'Frukt och grönt',
-		'Skafferi',
-		'Finns kanske hemma'
+		/Frukt och grönt/,
+		/Skafferi/,
+		/Finns kanske hemma/
 	]);
 	const onion = page.getByRole('checkbox', { name: 'Gul lök' });
 	await expect(onion).toBeVisible();
+	// The dishes an item is for are behind its info button.
+	await page
+		.getByRole('button', { name: 'Till vilka rätter: Till pyttipanna i handlaprovet' })
+		.click();
 	await expect(page.getByText('Pyttipanna i handlaprovet · gissat')).toBeVisible();
+	await page.keyboard.press('Escape');
 
-	// Ticked off, it moves to the basket, and stays there after a reload.
+	// Ticked off, it moves to the basket, which is folded, and stays there after a reload.
 	await onion.click();
-	await expect(page.getByRole('heading', { name: /^I korgen/ })).toBeVisible();
-	await expect(onion).toBeChecked();
+	const basket = page.getByRole('button', { name: /I korgen/ });
+	await expect(basket).toBeVisible();
+	await expect(onion).toBeHidden();
 	await saved(page);
 	await page.reload();
+	await page.getByRole('button', { name: /I korgen/ }).click();
 	await expect(page.getByRole('checkbox', { name: 'Gul lök' })).toBeChecked();
 
 	// Nothing in the store loads the page again, so nothing on it jumps.
@@ -49,17 +56,86 @@ test('the week shopping list is made from the dishes and ticked off in the store
 	await page.locator('m3e-snackbar').getByRole('button', { name: 'Ångra' }).click();
 	await expect(page.getByRole('checkbox', { name: 'Salt' })).not.toBeChecked();
 
-	// An item written by hand stays when the list is made again, and can be removed.
-	await page.getByRole('textbox', { name: 'Lägg till en vara' }).fill('Kaffe');
+	// Items written by hand, two in a row from the add button, stay when the list is made again.
+	await page.locator('m3e-fab[aria-label="Lägg till en vara"]').click();
+	const field = page.getByRole('textbox', { name: 'Lägg till en vara' });
+	await field.fill('Kaffe');
+	await page.keyboard.press('Enter');
+	await field.fill('Te');
 	await page.keyboard.press('Enter');
 	await expect(page.getByRole('checkbox', { name: 'Kaffe' })).toBeVisible();
+	await expect(page.getByRole('checkbox', { name: 'Te' })).toBeVisible();
+	await page.getByRole('button', { name: 'Stäng' }).click();
+	await expect(field).toHaveCount(0);
 	await saved(page);
 	expect(loads()).toBe(0);
 	await page.locator('m3e-icon-button[aria-label="Gör om listan från veckan"]').click();
 	await expect(page.getByRole('checkbox', { name: 'Kaffe' })).toBeVisible();
 	await expect(page.getByRole('checkbox', { name: 'Gul lök' })).toBeChecked();
-	await page.locator('m3e-icon-button[aria-label="Ta bort Kaffe"]').click();
-	await expect(page.getByRole('checkbox', { name: 'Kaffe' })).toHaveCount(0);
+	// Without swiping, as from the keyboard, an item without dishes is removed with its button.
+	await page.getByRole('button', { name: 'Ta bort Te' }).focus();
+	await page.keyboard.press('Enter');
+	await expect(page.getByRole('checkbox', { name: 'Te' })).toHaveCount(0);
+});
+
+/** Swipes the row of an item to the left with a finger, over `share` of its width. */
+async function swipe(page: Page, text: string, share: number) {
+	const row = page.locator('li', { has: page.getByRole('checkbox', { name: text }) });
+	const box = (await row.boundingBox())!;
+	const y = box.y + box.height / 2;
+	const x = box.x + box.width - 90;
+	const touch = await page.context().newCDPSession(page);
+	const at = (dx: number) => [{ x: x - dx, y, id: 1 }];
+	await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: at(0) });
+	for (let step = 1; step <= 10; step++) {
+		await touch.send('Input.dispatchTouchEvent', {
+			type: 'touchMove',
+			touchPoints: at((box.width * share * step) / 10)
+		});
+	}
+	await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+	await touch.detach();
+}
+
+test('any item is swiped away, and undo puts it back with its dishes', async ({ page }) => {
+	await open(page, '/handla');
+	const item = page.getByRole('checkbox', { name: 'Till fiskgratäng' });
+	await expect(item).toBeVisible();
+
+	// A short swipe leaves it, and does not tick it either.
+	await swipe(page, 'Till fiskgratäng', 0.25);
+	await expect(item).toBeVisible();
+	await expect(item).not.toBeChecked();
+
+	await swipe(page, 'Till fiskgratäng', 0.7);
+	await expect(item).toHaveCount(0);
+	await page.locator('m3e-snackbar').getByRole('button', { name: 'Ångra' }).click();
+	await expect(item).toBeVisible();
+	await saved(page);
+	await page.reload();
+	await page.getByRole('button', { name: 'Till vilka rätter: Till fiskgratäng' }).click();
+	await expect(page.getByText('Fiskgratäng', { exact: true })).toBeVisible();
+
+	// From the popup too.
+	await page.getByRole('button', { name: 'Ta bort Till fiskgratäng' }).click();
+	await expect(item).toHaveCount(0);
+	await saved(page);
+	await page.reload();
+	await expect(page.getByRole('checkbox', { name: 'Till fiskgratäng' })).toHaveCount(0);
+});
+
+test('a folded section stays folded on the phone', async ({ page }) => {
+	await open(page, '/handla');
+	const section = page.getByRole('button', { name: /Skafferi/ });
+	await expect(section).toHaveAttribute('aria-expanded', 'true');
+	await section.click();
+	await expect(section).toHaveAttribute('aria-expanded', 'false');
+	await page.reload();
+	await expect(page.getByRole('button', { name: /Skafferi/ })).toHaveAttribute(
+		'aria-expanded',
+		'false'
+	);
+	await page.getByRole('button', { name: /Skafferi/ }).click();
 });
 
 test('the guessed ingredients are written into the dish', async ({ page }) => {

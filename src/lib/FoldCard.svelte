@@ -1,16 +1,20 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Icon from './Icon.svelte';
+	import type { Look } from './shopping';
 
-	// A white card whose content folds away under its heading, with a count and a short note.
+	// A white card whose content folds away under its heading, with a count and a short note, and
+	// an icon on a coloured shape before the title.
 	let {
 		title,
+		look,
 		count,
 		note,
 		open = $bindable(true),
 		children
 	}: {
 		title: string;
+		look?: Look;
 		count?: number;
 		note?: string;
 		open?: boolean;
@@ -23,6 +27,16 @@
 <section class="card">
 	<h2>
 		<button type="button" aria-expanded={open} aria-controls={id} onclick={() => (open = !open)}>
+			{#if look}
+				<span
+					class="look"
+					style:background={look.tint}
+					style:color={look.ink}
+					style:border-radius={look.shape}
+				>
+					<Icon name={look.icon} />
+				</span>
+			{/if}
 			<span class="title">{title}</span>
 			{#if note}<span class="note">{note}</span>{/if}
 			{#if count !== undefined}<span class="count">{count}</span>{/if}
@@ -69,6 +83,19 @@
 
 	.title {
 		flex: 1;
+	}
+
+	.look {
+		width: 2rem;
+		height: 2rem;
+		flex-shrink: 0;
+		display: grid;
+		place-items: center;
+	}
+
+	.look :global(svg) {
+		width: 1.125rem;
+		height: 1.125rem;
 	}
 
 	.note {

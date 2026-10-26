@@ -6,7 +6,10 @@ import {
 	deleteShoppingItem,
 	getShoppingBasis,
 	getShoppingList,
-	setShoppingItemChecked
+	restoreShoppingItem,
+	setShoppingItemChecked,
+	type Line,
+	type RemovedItem
 } from '#lib/server/db/shopping.ts';
 import {
 	listChanged,
@@ -49,6 +52,38 @@ function idOf(form: FormData): number {
 	return id;
 }
 
+/** The item to put back, as `remove` answered with it. */
+function removedOf(form: FormData): RemovedItem {
+	try {
+		const item = JSON.parse(String(form.get('item')));
+		const text = typeof item.text === 'string' ? item.text.trim().slice(0, 200) : '';
+		const textOrNull = (v: unknown) => (typeof v === 'string' ? v.slice(0, 200) : null);
+		if (
+			text &&
+			Number.isInteger(item.position) &&
+			['recipe', 'claude', 'hand'].includes(item.origin) &&
+			Array.isArray(item.lines)
+		) {
+			return {
+				text,
+				position: item.position,
+				amount: textOrNull(item.amount),
+				section: textOrNull(item.section),
+				origin: item.origin,
+				checked: item.checked === true,
+				lines: item.lines
+					.filter(
+						(l: Partial<Line>) => Number.isInteger(l?.recipeId) && Number.isInteger(l?.position)
+					)
+					.map(({ recipeId, position }: Line) => ({ recipeId, position }))
+			};
+		}
+	} catch {
+		// Not JSON.
+	}
+	error(400, 'Okänd vara');
+}
+
 export const actions: Actions = {
 	make: async ({ request }) => {
 		try {
@@ -71,9 +106,15 @@ export const actions: Actions = {
 		await setShoppingItemChecked(env.DB, idOf(form), form.get('checked') === 'true');
 		return { items: await getShoppingList(env.DB, weekOf(form)) };
 	},
+	// Answers with what was removed too, which the page sends back to undo it.
 	remove: async ({ request }) => {
 		const form = await request.formData();
-		await deleteShoppingItem(env.DB, idOf(form));
+		const removed = await deleteShoppingItem(env.DB, idOf(form));
+		return { items: await getShoppingList(env.DB, weekOf(form)), removed };
+	},
+	restore: async ({ request }) => {
+		const form = await request.formData();
+		await restoreShoppingItem(env.DB, weekOf(form), removedOf(form));
 		return { items: await getShoppingList(env.DB, weekOf(form)) };
 	}
 };

@@ -57,6 +57,18 @@
 		korv: ['M5 17c-2-2-2-5 0-7l5-5c2-2 5-2 7 0s2 5 0 7l-5 5c-2 2-5 2-7 0z'],
 		vego: ['M5 19c0-8 6-14 14-14 0 8-6 14-14 14z', 'M5 19l8-8'],
 		ovrigt: ['M6 12h.01M12 12h.01M18 12h.01'],
+		// The store's sections on the shopping list, named by their keys in shopping.ts.
+		produce: [
+			'M12 21c-5 0-8-4-8-9 0-4 3-6 6-5 1 .4 1.6.4 2 0 3-1 6 1 6 5 0 5-3 9-6 9z',
+			'M12 7c0-2 1-4 3-4'
+		],
+		dairy: ['M8 3h8v3l2 3v12H6V9l2-3z', 'M6 13h12'],
+		bread: ['M5 11a4 4 0 0 1 2-7h10a4 4 0 0 1 2 7v9H5z'],
+		pantry: ['M7 3h10v3H7z', 'M6 6h12v15H6z', 'M6 11h12'],
+		frozen: ['M12 2v20M3.3 7l17.4 10M20.7 7 3.3 17', 'm9 4 3 2 3-2M9 20l3-2 3 2'],
+		home: ['M3 11l9-7 9 7', 'M5 10v10h14V10'],
+		info: ['M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z', 'M12 11v6M12 7.5v.5'],
+		delete: ['M4 7h16M10 11v6M14 11v6', 'M6 7l1 13h10l1-13M9 7V4h6v3'],
 		image: [
 			'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z',
 			'M11 9a2 2 0 1 1-4 0 2 2 0 0 1 4 0z',

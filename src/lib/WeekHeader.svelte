@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import Icon from './Icon.svelte';
+	import WeekArrows from './WeekArrows.svelte';
 
 	// The heading of a view about this week or the next, with arrows between the two. Under the
 	// title it says which of the two it is, between `before` and `after`.
@@ -33,20 +33,7 @@
 	</div>
 	<div class="nav">
 		{@render actions?.()}
-		<m3e-icon-button
-			href={isNext ? `?vecka=${thisWeek}` : undefined}
-			disabled={!isNext || undefined}
-			aria-label="Den här veckan"
-		>
-			<Icon name="previous" />
-		</m3e-icon-button>
-		<m3e-icon-button
-			href={isNext ? undefined : `?vecka=${nextWeek}`}
-			disabled={isNext || undefined}
-			aria-label="Nästa vecka"
-		>
-			<Icon name="next" />
-		</m3e-icon-button>
+		<WeekArrows {weekStart} {thisWeek} {nextWeek} />
 	</div>
 </div>
 
