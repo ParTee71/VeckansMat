@@ -17,7 +17,7 @@
 	<title>Redigera {saved.name} – Veckans mat</title>
 </svelte:head>
 
-<form method="POST" class="form-page" use:enhance>
+<form method="POST" class="form-page warm-view" use:enhance>
 	<FormHeader title="Redigera rätt" back="/ratter/{saved.id}" />
 
 	{#if form?.error}

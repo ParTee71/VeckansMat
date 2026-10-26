@@ -16,7 +16,7 @@ test('a recipe is read from a link, checked and saved', async ({ page }) => {
 	await expect(page.getByLabel('Namn')).toHaveValue('Pumpasoppa med ingefära');
 	await expect(page.getByLabel('Portioner')).toHaveValue('4');
 	await expect(page.getByLabel('Tid i minuter')).toHaveValue('35');
-	await expect(page.getByLabel('Ingredienser, en per rad')).toHaveValue(
+	await expect(page.getByLabel('Ingredienser')).toHaveValue(
 		'1 kg pumpa\n1 msk riven ingefära\n8 dl grönsaksbuljong'
 	);
 	await expect(page.getByLabel('Gör så här')).toHaveValue(
@@ -64,7 +64,7 @@ test('a dish with only a name is filled in from its own page and keeps its name'
 	await page.getByRole('button', { name: 'Spara' }).click();
 	await expect(page).toHaveURL('/ratter/3');
 
-	await page.locator('m3e-button', { hasText: 'Hämta från länk, foto eller text' }).click();
+	await page.locator('m3e-button', { hasText: 'Hämta receptet' }).click();
 	await read(page, `${SITE}/nekad`);
 	await expect(page.getByRole('alert')).toBeVisible();
 	await expect(

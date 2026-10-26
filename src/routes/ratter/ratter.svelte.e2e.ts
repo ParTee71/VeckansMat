@@ -28,7 +28,7 @@ test('a new dish is added with its name and one tap, and can be filled in', asyn
 
 	await page.locator('m3e-button', { hasText: 'Skriv in själv' }).click();
 	await page.getByLabel('Portioner').fill('4');
-	await page.getByLabel('Ingredienser, en per rad').fill('500 g köttfärs\n1 vitkål');
+	await page.getByLabel('Ingredienser').fill('500 g köttfärs\n1 vitkål');
 	await page.locator('m3e-switch#lunchbox').click();
 	await page.getByRole('button', { name: 'Spara' }).click();
 
@@ -57,10 +57,10 @@ test('Claude sorts the dishes in the background, and a sort chosen by hand stays
 	await expect(async () => {
 		await open(page, '/ratter');
 		await page.locator('m3e-list-action', { hasText: 'Viltgryta' }).click();
-		await expect(page.getByText('Med potatis')).toBeVisible({ timeout: 1000 });
+		await expect(page.getByText('Potatis', { exact: true })).toBeVisible({ timeout: 1000 });
 	}).toPass();
 
-	await page.locator('m3e-button', { hasText: 'Redigera' }).click();
+	await page.locator('m3e-icon-button[aria-label="Redigera"]').click();
 	await expect(page.getByText('Claude gissade sort och bas.')).toBeVisible();
 	await page.getByText('Kött', { exact: true }).click();
 	await page.getByText('Ris', { exact: true }).click();
@@ -68,8 +68,45 @@ test('Claude sorts the dishes in the background, and a sort chosen by hand stays
 
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Viltgryta');
 	await expect(page.getByText('Kött', { exact: true })).toBeVisible();
-	await expect(page.getByText('Med ris')).toBeVisible();
+	await expect(page.getByText('Ris', { exact: true })).toBeVisible();
 	await expect(page.getByText('Sort och bas gissade av Claude.')).toHaveCount(0);
+});
+
+test('the steps are numbered, the cards fold away, and Spara stays on top', async ({ page }) => {
+	await open(page, '/ratter');
+	const search = page.getByRole('searchbox', { name: 'Sök eller lägg till rätt' });
+	await search.fill('Ugnspannkaka');
+	await page.getByRole('button', { name: 'Lägg till ”Ugnspannkaka”' }).click();
+	await expect(page.getByText('Ugnspannkaka är tillagd')).toBeVisible();
+	await page.locator('m3e-list-action', { hasText: 'Ugnspannkaka' }).click();
+	await page.locator('m3e-button', { hasText: 'Skriv in själv' }).click();
+
+	await page.getByLabel('Ingredienser').fill('3 ägg\n6 dl mjölk');
+	await page.getByLabel('Gör så här').fill('Vispa ihop allt.\n\nGrädda i 225 grader.');
+	await page.getByLabel('Länk till receptet').scrollIntoViewIfNeeded();
+	expect(await page.evaluate(() => scrollY)).toBeGreaterThan(0);
+	const save = page.getByRole('button', { name: 'Spara' });
+	await expect(save).toBeInViewport();
+	await save.click();
+
+	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ugnspannkaka');
+	await expect(page.locator('ol li')).toHaveText([/^1\s*Vispa ihop allt\.$/, /^2\s*Grädda/]);
+	const ingredients = page.getByRole('button', { name: /Ingredienser/ });
+	await expect(ingredients).toHaveAttribute('aria-expanded', 'true');
+	await ingredients.click();
+	await expect(ingredients).toHaveAttribute('aria-expanded', 'false');
+	await expect(page.getByText('6 dl mjölk')).toBeHidden();
+	await ingredients.click();
+	await expect(page.getByText('6 dl mjölk')).toBeVisible();
+});
+
+test('the weeks with a dish are folded away at first', async ({ page }) => {
+	await open(page, '/ratter/1');
+	const weeks = page.getByRole('button', { name: /Veckor med rätten/ });
+	await expect(weeks).toHaveAttribute('aria-expanded', 'false');
+	await expect(page.locator('m3e-list-action', { hasText: 'Vecka 3 2030' })).toBeHidden();
+	await weeks.click();
+	await expect(page.locator('m3e-list-action', { hasText: 'Vecka 3 2030' })).toBeVisible();
 });
 
 test('a dish cannot take the name of another', async ({ page }) => {
