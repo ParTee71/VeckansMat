@@ -6,7 +6,7 @@ import { open, read, SITE } from '../../../../test/e2e';
 
 test('a recipe is read from a link, checked and saved', async ({ page }) => {
 	await open(page, '/ratter');
-	await page.locator('m3e-fab', { hasText: 'Nytt recept' }).click();
+	await page.getByRole('link', { name: 'Ny rätt' }).click();
 	await expect(page).toHaveURL('/ratter/ny');
 	await read(page, `${SITE}/pumpasoppa`);
 

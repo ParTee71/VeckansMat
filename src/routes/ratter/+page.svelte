@@ -5,6 +5,7 @@
 	import Icon from '#lib/Icon.svelte';
 	import Initial from '#lib/Initial.svelte';
 	import SubmitButton from '#lib/SubmitButton.svelte';
+	import { useFab } from '#lib/fab.svelte.ts';
 	import ThemeSheet from '#lib/ThemeSheet.svelte';
 	import { recipeUrl } from '#lib/links.ts';
 	import { nameKey } from '#lib/names.ts';
@@ -15,6 +16,8 @@
 	import type { PageProps, SubmitFunction } from './$types';
 
 	let { data, form }: PageProps = $props();
+
+	useFab(newDish);
 
 	let query = $state('');
 	const orders = [
@@ -139,10 +142,9 @@
 	{/if}
 </main>
 
-<m3e-fab extended variant="primary-container" href="/ratter/ny">
-	<Icon name="add" />
-	<span slot="label">Nytt recept</span>
-</m3e-fab>
+{#snippet newDish()}
+	<m3e-fab variant="primary" href="/ratter/ny" aria-label="Ny rätt"><Icon name="add" /></m3e-fab>
+{/snippet}
 
 <ThemeSheet id="theme" />
 
@@ -158,8 +160,7 @@
 	main {
 		max-width: 40rem;
 		margin: 0 auto;
-		/* Room below the list for the floating button. */
-		padding: 1rem 1rem 5.5rem;
+		padding: 1rem;
 		display: flex;
 		flex-direction: column;
 		gap: 0.875rem;
@@ -192,14 +193,6 @@
 		gap: 0.5rem;
 		font-size: 0.875rem;
 		color: var(--md-sys-color-on-surface-variant);
-	}
-
-	m3e-fab {
-		position: fixed;
-		right: 1rem;
-		/* Above the nav bar, which is 5rem high. */
-		bottom: calc(5rem + 1rem + env(safe-area-inset-bottom));
-		z-index: 1;
 	}
 
 	.empty {

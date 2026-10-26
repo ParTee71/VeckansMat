@@ -3,7 +3,6 @@
 import '@m3e/web/theme';
 import '@m3e/web/card';
 import '@m3e/web/snackbar';
-import '@m3e/web/nav-bar';
 import '@m3e/web/list';
 import '@m3e/web/search';
 import '@m3e/web/button';
