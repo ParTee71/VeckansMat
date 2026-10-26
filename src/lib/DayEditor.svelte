@@ -1,13 +1,14 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
-	import { byOften, isDish, matching, NOT_DISHES, timesText } from './recipes.ts';
+	import { byOften, isDish, matching, MEAL_LABELS, NOT_DISHES, timesText } from './recipes.ts';
 	import { nameKey } from './names.ts';
 	import type { RecipeSummary } from './server/db/recipes.ts';
 
-	// A day on Veckan being written, as on the note: the dishes that match what is written, a new
-	// dish, and the quick choices that are not dishes.
+	// A dinner or a lunch on the menu being written, as on the note: the dishes that match what is
+	// written, a new dish, and the quick choices that are not dishes. The text stands where the
+	// shown dish stood, in the same hand, so the line does not jump.
 	let {
-		label,
+		lunch = false,
 		name,
 		draft = $bindable(),
 		recipes,
@@ -15,8 +16,7 @@
 		onleave,
 		onkeydown
 	}: {
-		/** The day, as at the start of the row. */
-		label: string;
+		lunch?: boolean;
 		/** The day and the meal, for the field. */
 		name: string;
 		draft: string;
@@ -42,12 +42,12 @@
 </script>
 
 <!-- Leaving the day writes it; moving within it, as to a suggestion with Tab, does not. -->
-<li
-	class="segment editing"
+<div
+	class={['editing', lunch && 'lunch']}
 	onfocusout={(e) => !e.currentTarget.contains(e.relatedTarget as Node | null) && onleave()}
 >
 	<div class="line">
-		<span class="weekday">{label}</span>
+		{#if lunch}<span class="label">{MEAL_LABELS.lunch}</span>{/if}
 		<input
 			aria-label={name}
 			autocomplete="off"
@@ -92,39 +92,60 @@
 			>
 		{/each}
 	</div>
-</li>
+</div>
 
 <style>
 	.editing {
-		padding: 0.5rem 0.5rem 0.75rem 0.75rem;
-		background: var(--md-sys-color-surface-container-high);
+		padding-bottom: 0.5rem;
+		border-radius: 0.5rem;
+		background: var(--menu-chip);
 		outline: 2px solid var(--md-sys-color-primary);
 		outline-offset: -2px;
+		display: flex;
 		flex-direction: column;
-		align-items: stretch;
 		gap: 0.5rem;
+	}
+
+	.lunch {
+		--menu-dish-size: 1rem;
 	}
 
 	.line {
 		display: flex;
-		align-items: center;
-		gap: 0.75rem;
+		align-items: flex-start;
+	}
+
+	.label {
+		padding: var(--menu-line-padding);
+		padding-right: 0.125rem;
+		font-size: 0.75rem;
+		line-height: calc(var(--menu-dish-size) * 1.3);
+		color: var(--md-sys-color-on-surface-variant);
 	}
 
 	.line input {
 		flex-grow: 1;
 		min-width: 0;
-		padding: 0.625rem 0;
+		padding: var(--menu-line-padding);
 		border: 0;
 		background: transparent;
 		color: inherit;
-		font: inherit;
-		font-size: 1rem;
+		font-family: var(--menu-script);
+		font-size: var(--menu-dish-size);
+		line-height: 1.3;
 		outline: none;
 	}
 
+	.line m3e-icon-button {
+		margin-top: 0.125rem;
+	}
+
+	.choices {
+		padding: 0 0.5rem;
+	}
+
 	.suggestions {
-		margin: 0;
+		margin: 0 0.5rem;
 		padding: 0;
 		list-style: none;
 		border-radius: 0.75rem;

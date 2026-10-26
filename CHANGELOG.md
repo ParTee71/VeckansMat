@@ -13,6 +13,7 @@ Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ä
 - Menyn längst ner är en liten ö som svävar över listan, med plats för vyns viktigaste knapp till höger. I Rätter öppnar plusknappen Ny rätt. (#86)
 - Handla har fått små avdelningskort som kan fällas ihop, rätterna bakom en vara under en liten info-ikon och plusknappen för en ny vara. Varje vara kan svepas bort åt vänster, med Ångra. Korgen ligger hopfälld längst ned. (#87)
 - Rätter visas i ett kort per sort, som Soppor, Kött och Fisk, med hur ofta och när de ätits. Korten kan fällas ihop, och en sökning visar bara sorterna med träffar. (#88)
+- Veckan ser ut som en handskriven meny på papper, med lunchen under sin dag och vilka som äter som en rad på menyn. I mörkt läge är menyn ett enkelt kort. (#89)
 
 ## 0.3.0
 

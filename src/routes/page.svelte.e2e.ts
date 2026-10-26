@@ -4,7 +4,10 @@ import pkg from '../../package.json' with { type: 'json' };
 
 test('start page shows the week', async ({ page }) => {
 	await page.goto('/');
-	await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Vecka \d+$/);
+	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Veckans meny');
+	await expect(page.locator('.week-label')).toHaveText(
+		/^Vecka \d+ · (den här veckan|nästa vecka)$/
+	);
 });
 
 test('material components are registered in the browser', async ({ page }) => {

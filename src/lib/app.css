@@ -61,44 +61,6 @@ h2 {
 	color: var(--md-sys-color-error);
 }
 
-/* A list of rows that sit close together, rounded at its ends. */
-.segmented {
-	margin: 0;
-	padding: 0;
-	list-style: none;
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-}
-
-.segment {
-	border-radius: 0.25rem;
-	background: var(--md-sys-color-surface-container);
-	display: flex;
-	align-items: center;
-}
-
-.segment:first-child {
-	border-top-left-radius: 1.25rem;
-	border-top-right-radius: 1.25rem;
-}
-
-.segment:last-child {
-	border-bottom-left-radius: 1.25rem;
-	border-bottom-right-radius: 1.25rem;
-}
-
-/* The day at the start of a row on Veckan. */
-.weekday {
-	width: 2.25rem;
-	flex-shrink: 0;
-	font-size: 0.8125rem;
-	font-weight: 700;
-	letter-spacing: 0.04em;
-	text-transform: uppercase;
-	color: var(--md-sys-color-primary);
-}
-
 .choices {
 	display: flex;
 	flex-wrap: wrap;
@@ -126,17 +88,6 @@ h2 {
 	line-height: 2.75rem;
 	font-weight: 800;
 	letter-spacing: -0.03em;
-}
-
-/* The heading above a list, with room for a button at its end. */
-.list-heading {
-	margin: 0.5rem 0 0 0.25rem;
-	min-height: 2.5rem;
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	font-size: 0.875rem;
-	color: var(--md-sys-color-on-surface-variant);
 }
 
 m3e-form-field {

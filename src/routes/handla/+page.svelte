@@ -8,11 +8,10 @@
 	import FoldCard from '#lib/FoldCard.svelte';
 	import Icon from '#lib/Icon.svelte';
 	import ShoppingRow from '#lib/ShoppingRow.svelte';
-	import WeekArrows from '#lib/WeekArrows.svelte';
+	import WeekHeader from '#lib/WeekHeader.svelte';
 	import type { RemovedItem, ShoppingItem } from '#lib/server/db/shopping.ts';
 	import { plural } from '#lib/names.ts';
 	import { BASKET_LOOK, HAND_LOOK, lookOf, sectionRank, type Look } from '#lib/shopping.ts';
-	import { isoWeek } from '#lib/weeks.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -190,16 +189,7 @@
 {/snippet}
 
 <main class="page warm-view">
-	<header>
-		<p class="label">
-			Vecka {isoWeek(data.weekStart).week} · {data.weekStart === data.nextWeek
-				? 'nästa vecka'
-				: 'den här veckan'}
-		</p>
-		<div class="arrows">
-			<WeekArrows weekStart={data.weekStart} thisWeek={data.thisWeek} nextWeek={data.nextWeek} />
-		</div>
-	</header>
+	<WeekHeader weekStart={data.weekStart} thisWeek={data.thisWeek} nextWeek={data.nextWeek} />
 	<div class="title">
 		<h1 class="view-title">Handla</h1>
 		{#if !isEmpty}
@@ -370,26 +360,6 @@
 {/key}
 
 <style>
-	header {
-		margin: 0 -0.5rem -0.75rem 0.25rem;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-
-	.label {
-		margin: 0;
-		font-size: 0.75rem;
-		font-weight: 700;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: var(--md-sys-color-primary);
-	}
-
-	.arrows {
-		display: flex;
-	}
-
 	.title {
 		margin: 0 -0.5rem 0 0.25rem;
 		display: flex;
