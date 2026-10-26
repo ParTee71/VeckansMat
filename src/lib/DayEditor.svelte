@@ -100,6 +100,7 @@
 		border-radius: 0.5rem;
 		background: var(--menu-chip);
 		outline: 2px solid var(--md-sys-color-primary);
+		outline-offset: -2px;
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;

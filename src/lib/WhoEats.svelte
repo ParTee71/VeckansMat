@@ -61,6 +61,7 @@
 
 <style>
 	.line {
+		position: relative;
 		align-self: center;
 		min-height: 2.25rem;
 		padding: 0 0.75rem;
@@ -71,6 +72,13 @@
 		font: inherit;
 		font-size: 0.8125rem;
 		cursor: pointer;
+	}
+
+	/* A taller place to tap than the line looks. */
+	.line::after {
+		content: '';
+		position: absolute;
+		inset: -0.375rem 0;
 	}
 
 	m3e-bottom-sheet-trigger {
@@ -84,7 +92,9 @@
 		height: 1rem;
 	}
 
+	/* The sheet sits in the menu's centred heading, but reads from the left. */
 	m3e-bottom-sheet {
+		text-align: start;
 		--m3e-bottom-sheet-container-color: var(--md-sys-color-surface-container-low);
 		--m3e-bottom-sheet-header-font-weight: 700;
 	}

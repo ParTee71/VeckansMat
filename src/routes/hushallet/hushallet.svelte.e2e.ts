@@ -6,6 +6,7 @@ test.describe.configure({ mode: 'serial' });
 
 test('a person is added with what they do not eat, changed and removed', async ({ page }) => {
 	await open(page, '/');
+	await page.getByRole('button', { name: /äter$/ }).click();
 	await page.getByRole('link', { name: 'Ändra personer och regler' }).click();
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hushållet');
 	await expect(page.locator('m3e-list-action', { hasText: 'Kim' })).toHaveCount(0);

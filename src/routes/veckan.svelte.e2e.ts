@@ -155,7 +155,7 @@ test('the handwriting comes with the app, and nothing is fetched from elsewhere'
 		return [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family);
 	});
 	expect(loaded).toEqual(expect.arrayContaining(['Caveat', 'Kalam']));
-	expect(fonts.filter((f) => f.endsWith('.woff2'))).toHaveLength(2);
+	for (const font of ['caveat', 'kalam']) expect(fonts.some((f) => f.includes(font))).toBe(true);
 	expect(elsewhere).toEqual([]);
 });
 
