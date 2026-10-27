@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { version } from '$app/env';
-	import { beforeNavigate, invalidateAll } from '$app/navigation';
+	import { beforeNavigate, goto, invalidateAll, preloadData } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { page, updated } from '$app/state';
 	import '#lib/app.css';
 	import favicon from '#lib/assets/favicon.svg';
 	import { provideFab } from '#lib/fab.svelte.ts';
 	import FloatingNav, { destinations } from '#lib/FloatingNav.svelte';
+	import { neighbour, swipeNav, type Direction } from '#lib/swipe.ts';
 	import { loadTheme, theme } from '#lib/theme.svelte.ts';
 	import { themeOf } from '#lib/themes.ts';
 	import { swedishToday } from '#lib/weeks.ts';
@@ -18,6 +20,15 @@
 	let showNav = $derived(destinations.some((d) => d.href === page.url.pathname));
 
 	const fab = provideFab();
+
+	// A swipe sideways goes to the view next to this one in the menu.
+	const paths = destinations.map((d) => d.href);
+	const swipe = swipeNav(
+		(direction: Direction) => neighbour(paths, page.url.pathname, direction),
+		(path) => goto(resolve(path)),
+		// Only ahead of time; the view loads again when it is gone to.
+		(path) => void preloadData(resolve(path)).catch(() => {})
+	);
 
 	let current = $derived(themeOf(theme.choice));
 
@@ -79,7 +90,7 @@
 	strong-focus
 >
 	<div class="app">
-		<div class="content" class:floating={showNav}>
+		<div class="content" class:floating={showNav} {@attach showNav && swipe}>
 			{@render children()}
 			<footer>Version {version}</footer>
 		</div>
@@ -138,6 +149,8 @@
 		--app-page: var(--md-sys-color-background);
 
 		min-height: 100dvh;
+		/* A view swiped out to the side does not make the page scroll sideways. */
+		overflow-x: clip;
 		display: flex;
 		flex-direction: column;
 		/* m3e-theme only sets the type when it is the body's child; Roboto is Android's own. */

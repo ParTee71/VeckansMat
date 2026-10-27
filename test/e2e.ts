@@ -43,3 +43,16 @@ export async function writeDay(page: Page, day: string, text: string) {
 	await page.keyboard.press('Enter');
 	await expect(page.getByRole('button', { name: `Middag ${day}: ${text}` })).toBeVisible();
 }
+
+/** Moves a finger from x, y by dx, dy in ten steps, as a swipe on a phone, `pause` ms apart. */
+export async function swipeAt(page: Page, x: number, y: number, dx: number, dy = 0, pause = 0) {
+	const touch = await page.context().newCDPSession(page);
+	const at = (step: number) => [{ x: x + (dx * step) / 10, y: y + (dy * step) / 10, id: 1 }];
+	await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: at(0) });
+	for (let step = 1; step <= 10; step++) {
+		if (pause) await page.waitForTimeout(pause);
+		await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: at(step) });
+	}
+	await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+	await touch.detach();
+}

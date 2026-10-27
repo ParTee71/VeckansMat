@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
+	import { heading } from './swipe.ts';
 
 	// An item on the shopping list: tick it off, see which dishes it is for, or swipe it away to
 	// the left.
@@ -41,11 +42,12 @@
 		const dx = event.clientX - start.x;
 		const dy = event.clientY - start.y;
 		if (!swiping) {
-			// Sideways to the left, rather than a scroll or a tap.
-			if (dx < -10 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+			// Sideways to the left, rather than a scroll, a tap or a swipe of the page to the right.
+			const way = heading(dx, dy);
+			if (way === 'sideways' && dx < 0) {
 				swiping = true;
 				row.setPointerCapture(event.pointerId);
-			} else if (Math.abs(dy) > 10) start = null;
+			} else if (way) start = null;
 			return;
 		}
 		shift = Math.min(0, dx);
@@ -92,7 +94,8 @@
 	}
 </script>
 
-<li class="row" class:checked>
+<!-- The row's swipe to the left is its own; to the right it swipes the page (#105). -->
+<li class="row" class:checked data-own-swipe="left">
 	{#if shift < 0}
 		<div class="behind" aria-hidden="true"><Icon name="delete" />Ta bort</div>
 	{/if}
