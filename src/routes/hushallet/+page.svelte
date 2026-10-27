@@ -65,22 +65,35 @@
 		chains = chains.map((c) => (c.chain === chain ? { ...c, ...change } : c));
 	}
 
-	async function send(chain: Chain, action: 'chain' | 'store', fields: Record<string, string>) {
+	// Each chain's latest change, so an answer to an earlier one never overwrites it.
+	const sent: Partial<Record<Chain, number>> = {};
+
+	/** Saves a change to the chain, or puts back how it was when the save fails. */
+	async function send(
+		before: ChainState,
+		action: 'chain' | 'store',
+		fields: Record<string, string>
+	) {
+		const { chain } = before;
+		const id = (sent[chain] = (sent[chain] ?? 0) + 1);
 		fetching = [...fetching, chain];
 		const result = await postAction(action, { chain, ...fields });
+		if (sent[chain] !== id) return;
 		fetching = fetching.filter((c) => c !== chain);
 		if (result?.type === 'success' && result.data?.chain) {
 			update(chain, result.data.chain as ChainState);
 			chainError = null;
 		} else {
+			update(chain, before);
 			chainError = 'Det gick inte att spara. Försök igen.';
 		}
 	}
 
 	function toggle(chain: ChainState, enabled: boolean) {
 		update(chain.chain, { enabled });
-		send(chain.chain, 'chain', { enabled: String(enabled) });
+		// A chain without a store is saved when the store is chosen.
 		if (enabled && hasStores(chain.chain) && !chain.storeId) choose(chain.chain);
+		else send(chain, 'chain', { enabled: String(enabled) });
 	}
 
 	function choose(chain: Chain) {
@@ -89,16 +102,28 @@
 	}
 
 	function pick(store: StoreChoice) {
-		const chain = picking!;
+		const before = chains.find((c) => c.chain === picking)!;
 		pickerOpen = false;
-		update(chain, { enabled: true, storeId: store.id, storeName: store.name, error: null });
-		send(chain, 'store', { id: store.id, name: store.name });
+		update(before.chain, { enabled: true, storeId: store.id, storeName: store.name, error: null });
+		send(before, 'store', { id: store.id, name: store.name });
+	}
+
+	/** Closed without a store, a chain that had none is off again, as it is saved. */
+	function closePicker() {
+		const chain = chains.find((c) => c.chain === picking);
+		if (chain && !chain.storeId) update(chain.chain, { enabled: false });
+		pickerOpen = false;
+		picking = null;
 	}
 
 	async function toggleMemberPrices(on: boolean) {
 		memberPrices = on;
 		const result = await postAction('settings', { memberPrices: String(on) });
-		chainError = result?.type === 'success' ? null : 'Det gick inte att spara. Försök igen.';
+		if (result?.type === 'success') chainError = null;
+		else {
+			memberPrices = !on;
+			chainError = 'Det gick inte att spara. Försök igen.';
+		}
 	}
 </script>
 
@@ -335,10 +360,7 @@
 	open={pickerOpen}
 	chosen={chains.find((c) => c.chain === picking)?.storeId ?? null}
 	onpick={pick}
-	onclose={() => {
-		pickerOpen = false;
-		picking = null;
-	}}
+	onclose={closePicker}
 />
 
 <style>

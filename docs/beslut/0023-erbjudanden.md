@@ -33,7 +33,9 @@ Reglerna:
   varje körning håller sig kort.
 - Hämtning direkt när hushållet väljer butik eller slår på en kedja, och butikssök när någon
   söker. Det är samma frågor som en person gör på kedjans sida, en åt gången.
-- Willys ber om 10 s mellan anrop; appen väntar tills det gått 10 s sedan förra frågan.
+- Willys ber om 10 s mellan anrop. Innan erbjudandena hämtas väntar appen tills det gått 10 s
+  sedan förra frågan, butikssök inräknat. Själva butikssöket väntar inte, eftersom det är en
+  person som söker; det frågar först när personen slutat skriva eller tryckt på sök.
 - Appen säger vem den är i `User-Agent` och följer `robots.txt`. Inget publiceras eller delas,
   och allt ligger bakom inloggningen.
 - En hämtning som lyckas ersätter kedjans erbjudanden. En som misslyckas lämnar de förra kvar
@@ -53,6 +55,10 @@ säger var den ska skriva sin Worker, eftersom `main` i `wrangler.jsonc` nu är 
 - Workers gratisnivå ger 10 ms processortid per anrop. Att läsa en kedja tar några få ms här,
   men Lidls sju sidor ligger nära gränsen. Därför en kedja per körning. Räcker det inte får
   Lidls sidor delas på flera körningar.
-- ICA:s butiksnamn tas ur sidans adress tills första hämtningen ger det riktiga namnet.
+- ICA:s butiksnamn tas ur sidans adress, utan å, ä och ö, tills första hämtningen ger det
+  riktiga namnet.
+- En kedjas erbjudanden sparas med en enda fråga (JSON in i `json_each`), eftersom D1 bara
+  tillåter 50 frågor per anrop på gratisnivån och en butik kan ha flera hundra erbjudanden.
+- Välja en Willys-butik tar upp till tio sekunder, eftersom appen väntar efter butikssöket.
 - Preview-Workern har samma cron men egen databas, så den hämtar bara om någon valt butik där.
 - Lokalt och i Playwright pekar `OFFER_SITE_URL` om alla kedjor till en påhittad sajt.

@@ -69,7 +69,10 @@ export async function markRequested(db: D1Database, chain: Chain, now: Date) {
 		.run();
 }
 
-/** Replaces the chain's offers with those just fetched. */
+/**
+ * Replaces the chain's offers with those just fetched. They go in as one JSON text, so a store's
+ * hundreds of offers are one query, within what D1 allows a Worker per request.
+ */
 export async function saveOffers(
 	db: D1Database,
 	chain: Chain,
@@ -77,26 +80,17 @@ export async function saveOffers(
 	now: Date,
 	storeName: string | null = null
 ) {
-	const insert = db.prepare(
-		`INSERT INTO offer (chain, name, brand, size, price, compare_price, category, member, valid_from, valid_to)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	);
 	await db.batch([
 		db.prepare('DELETE FROM offer WHERE chain = ?').bind(chain),
-		...offers.map((o) =>
-			insert.bind(
-				chain,
-				o.name,
-				o.brand,
-				o.size,
-				o.price,
-				o.comparePrice,
-				o.category,
-				o.member ? 1 : 0,
-				o.validFrom,
-				o.validTo
+		db
+			.prepare(
+				`INSERT INTO offer (chain, name, brand, size, price, compare_price, category, member, valid_from, valid_to)
+				 SELECT ?1, o.value ->> 'name', o.value ->> 'brand', o.value ->> 'size', o.value ->> 'price',
+				   o.value ->> 'comparePrice', o.value ->> 'category', o.value ->> 'member',
+				   o.value ->> 'validFrom', o.value ->> 'validTo'
+				 FROM json_each(?2) o`
 			)
-		),
+			.bind(chain, JSON.stringify(offers.map((o) => ({ ...o, member: o.member ? 1 : 0 })))),
 		db
 			.prepare(
 				`UPDATE offer_chain SET fetched_at = ?, error = NULL, store_name = coalesce(?, store_name)

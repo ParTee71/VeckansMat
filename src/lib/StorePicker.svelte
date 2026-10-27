@@ -23,17 +23,21 @@
 	let stores = $state<StoreChoice[] | null>(null);
 	let searching = $state(false);
 	let failed = $state<string | null>(null);
-	// Each opening starts with an empty search.
+	// Asks once the typing stops, so the chain is asked once per search and not per letter.
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	// Only the latest search's answer is shown.
+	let latest = 0;
+
+	// Each opening starts with an empty search, and a search from before is let go.
 	$effect.pre(() => {
 		if (!open) return;
+		clearTimeout(timer);
+		latest++;
 		query = '';
 		stores = null;
 		failed = null;
+		searching = false;
 	});
-
-	// Asks once the typing stops, so the chain is asked once per search and not per letter.
-	let timer: ReturnType<typeof setTimeout> | undefined;
-	let latest = 0;
 	function oninput() {
 		clearTimeout(timer);
 		timer = setTimeout(search, 700);
@@ -50,10 +54,12 @@
 			const response = await fetch(
 				`/hushallet/butiker?kedja=${chain}&q=${encodeURIComponent(text)}`
 			);
-			const answer: StoreChoice[] | { error?: string } = await response.json();
+			// An error page that is not JSON reads as no answer.
+			const answer = (await response.json().catch(() => null)) as
+				StoreChoice[] | { error?: string } | null;
 			if (asked !== latest) return;
 			if (Array.isArray(answer)) stores = answer;
-			else failed = answer.error ?? `Kunde inte söka hos ${chainLabel(chain)}.`;
+			else failed = answer?.error ?? `Kunde inte söka hos ${chainLabel(chain)}. Försök igen.`;
 		} catch {
 			if (asked === latest) failed = 'Kunde inte söka. Är telefonen uppkopplad?';
 		}

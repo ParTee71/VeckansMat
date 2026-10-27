@@ -6,6 +6,7 @@ import {
 	listChains,
 	listOffers,
 	markRequested,
+	saveOffers,
 	setChainEnabled,
 	setChainStore
 } from '../db/offers';
@@ -33,6 +34,25 @@ describe('fetching a chain', () => {
 
 		await fetchChain(db, 'ica', siteFetch());
 		expect((await listOffers(db, 'ica')).map((o) => o.name)).toEqual(['Fläskfilé', 'Gul lök']);
+	});
+
+	it("saves a large store's offers in one go", async () => {
+		const offer = (i: number) => ({
+			name: `Vara ${i} med "citat" och å`,
+			brand: 'Exempel',
+			size: '1 kg',
+			price: `${i} kr`,
+			comparePrice: '',
+			category: '',
+			member: i % 2 === 0,
+			validFrom: null,
+			validTo: '2026-11-01'
+		});
+		const offers = Array.from({ length: 600 }, (_, i) => offer(i));
+		await saveOffers(db, 'willys', offers, MONDAY_MORNING);
+		const saved = await listOffers(db, 'willys');
+		expect(saved).toHaveLength(600);
+		expect(saved).toContainEqual(offer(42));
 	});
 
 	it('keeps the last offers and notes why when a fetch fails', async () => {

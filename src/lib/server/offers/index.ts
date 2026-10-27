@@ -47,7 +47,10 @@ export const isAvailable = (chain: Chain) => chain in SOURCES;
 const ready = (chain: ChainRecord) =>
 	chain.enabled && isAvailable(chain.chain) && (!hasStores(chain.chain) || !!chain.storeId);
 
-/** Whether the chain's offers are from before this week, Monday to Sunday in Sweden. */
+/**
+ * Whether the chain's offers are from before this week: the Monday is Sweden's, counted from
+ * midnight UTC. A fetch in the first hour or two of Monday in Sweden is thus fetched again.
+ */
 export const isStale = (chain: ChainRecord, now: Date) =>
 	!chain.fetchedAt || chain.fetchedAt < `${mondayOf(swedishToday(now))}T00:00:00Z`;
 
@@ -62,7 +65,9 @@ export async function searchStores(
 	const search = SOURCES[chain]?.searchStores;
 	if (!search) return [];
 	await markRequested(db, chain, now);
-	return search(query, fetcher);
+	// A store listed twice is shown once.
+	const stores = await search(query, fetcher);
+	return stores.filter((store, i) => stores.findIndex((s) => s.id === store.id) === i);
 }
 
 /**

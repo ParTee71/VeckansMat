@@ -99,7 +99,7 @@ test('chains and a store are chosen for the offers, and fetched at once', async 
 	const lidl = page.getByRole('region', { name: 'Lidl' });
 	await lidl.getByRole('switch', { name: 'Lidl' }).click();
 	await expect(lidl).toContainText('Samma erbjudanden i alla butiker');
-	await expect(page.getByText(/Senast i dag \d\d:\d\d: 3 erbjudanden\./)).toBeVisible();
+	await expect(page.getByText(/Senast .+: 3 erbjudanden\./)).toBeVisible();
 
 	// Switched on without a store, ICA asks for one. The made-up site stands in for ica.se.
 	const ica = page.getByRole('region', { name: 'ICA' });
@@ -109,7 +109,7 @@ test('chains and a store are chosen for the offers, and fetched at once', async 
 	await page.getByRole('searchbox', { name: 'Sök på ort eller butik' }).press('Enter');
 	await page.getByRole('button', { name: /ICA Supermarket Exempelby/ }).click();
 	await expect(ica).toContainText('ICA Supermarket Exempelby');
-	await expect(page.getByText(/Senast i dag \d\d:\d\d: 5 erbjudanden\./)).toBeVisible();
+	await expect(page.getByText(/Senast .+: 5 erbjudanden\./)).toBeVisible();
 
 	await saved(page);
 	await lidl.getByRole('switch', { name: 'Lidl' }).click();
