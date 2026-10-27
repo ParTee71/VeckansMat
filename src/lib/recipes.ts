@@ -38,6 +38,33 @@ export function matching<R extends { name: string }>(recipes: R[], text: string)
 	return key ? recipes.filter((r) => nameKey(r.name).includes(key)) : recipes;
 }
 
+/**
+ * The dishes offered for a day before anything is written: those free to come again before those
+ * resting, and among them the household's favourites first, then the most eaten. Not a dish voted
+ * never again, and not one already on the week.
+ */
+export function usualDishes(
+	recipes: RecipeSummary[],
+	onWeek: string[],
+	resting: (recipe: RecipeSummary) => boolean = () => false,
+	count = 5
+) {
+	const taken = new Set(onWeek.map(nameKey));
+	const favouriteFirst = (a: RecipeSummary, b: RecipeSummary) =>
+		Number(resting(a)) - Number(resting(b)) ||
+		Number(b.vote === 'favorit') - Number(a.vote === 'favorit') ||
+		byOften(a, b);
+	return recipes
+		.filter(
+			(r) =>
+				(r.timesEaten > 0 || r.vote === 'favorit') &&
+				r.vote !== 'aldrig' &&
+				!taken.has(nameKey(r.name))
+		)
+		.toSorted(favouriteFirst)
+		.slice(0, count);
+}
+
 /** A dish as the fields of its form. */
 export const formValues = (recipe: {
 	name: string;

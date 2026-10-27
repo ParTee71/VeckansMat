@@ -6,7 +6,9 @@ import {
 	LUNCHBOX_TAG,
 	matching,
 	nextVote,
-	splitSteps
+	splitSteps,
+	usualDishes,
+	type Vote
 } from './recipes';
 
 const dish = (name: string, timesEaten = 0, lastWeek: string | null = null) => ({
@@ -73,6 +75,53 @@ it('writes a dish as its form fields, with the lunch-box tag left to its switch'
 		sourceUrl: '',
 		category: 'vego',
 		base: ''
+	});
+});
+
+describe('the dishes offered before anything is written', () => {
+	const voted = (name: string, timesEaten: number, vote: Vote) => ({
+		...dish(name, timesEaten),
+		vote
+	});
+
+	it('offers favourites first, then the most eaten', () => {
+		const dishes = [
+			dish('Pannkakor', 9),
+			voted('Tacos', 2, 'favorit'),
+			dish('Fiskgratäng', 4),
+			voted('Ärtsoppa', 0, 'favorit')
+		];
+		expect(usualDishes(dishes, []).map((d) => d.name)).toEqual([
+			'Tacos',
+			'Ärtsoppa',
+			'Pannkakor',
+			'Fiskgratäng'
+		]);
+	});
+
+	it('leaves out dishes never eaten, never wanted again or already on the week', () => {
+		const dishes = [
+			dish('Pannkakor', 9),
+			dish('Linsgryta'),
+			voted('Fisksoppa', 7, 'aldrig'),
+			dish('Fiskgratäng', 4)
+		];
+		expect(usualDishes(dishes, ['fiskgratäng ']).map((d) => d.name)).toEqual(['Pannkakor']);
+	});
+
+	it('offers the dishes resting after those free to come again', () => {
+		const dishes = [voted('Tacos', 2, 'favorit'), dish('Pannkakor', 9), dish('Fiskgratäng', 4)];
+		const resting = (d: { name: string }) => d.name !== 'Fiskgratäng';
+		expect(usualDishes(dishes, [], resting).map((d) => d.name)).toEqual([
+			'Fiskgratäng',
+			'Tacos',
+			'Pannkakor'
+		]);
+	});
+
+	it('offers five at most', () => {
+		const dishes = Array.from({ length: 8 }, (_, i) => dish(`Rätt ${i}`, i + 1));
+		expect(usualDishes(dishes, [])).toHaveLength(5);
 	});
 });
 

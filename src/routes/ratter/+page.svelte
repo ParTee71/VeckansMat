@@ -9,8 +9,8 @@
 	import ThemeSheet from '#lib/ThemeSheet.svelte';
 	import { recipeUrl } from '#lib/links.ts';
 	import { nameKey } from '#lib/names.ts';
-	import { byName, byOften, CATEGORIES, categoryLook, matching, timesText } from '#lib/recipes.ts';
-	import { shortWeekName } from '#lib/weeks.ts';
+	import { byName, byOften, CATEGORIES, categoryLook, matching } from '#lib/recipes.ts';
+	import { eatenText } from '#lib/weeks.ts';
 	import type { M3eSnackbarElement } from '@m3e/web/snackbar';
 	import type { RecipeSummary } from '#lib/server/db/recipes.ts';
 	import type { PageProps, SubmitFunction } from './$types';
@@ -67,12 +67,6 @@
 	let exact = $derived(key ? recipes.find((r) => nameKey(r.name) === key) : undefined);
 	// A link is not a dish's name but a recipe to read.
 	let link = $derived(!!recipeUrl(query, true));
-
-	function meta(timesEaten: number, lastWeek: string | null) {
-		if (timesEaten === 0) return 'Inte ätit än';
-		const times = timesText(timesEaten);
-		return lastWeek ? `${times} · senast ${shortWeekName(lastWeek)}` : times;
-	}
 
 	// A dish that already exists is opened instead of added again. A link is sent on, and the
 	// server sends it to Nytt recept.
@@ -187,7 +181,7 @@
 										aria-label="Aldrig mer"><Icon name="thumbUp" /></span
 									>{/if}</span
 							>
-							<span slot="trailing" class="meta">{meta(recipe.timesEaten, recipe.lastWeek)}</span>
+							<span slot="trailing" class="meta">{eatenText(recipe)}</span>
 						</m3e-list-action>
 					{/each}
 				</m3e-list>

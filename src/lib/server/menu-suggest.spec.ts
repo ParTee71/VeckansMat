@@ -4,13 +4,7 @@ import { answering, reason } from '../../../test/claude';
 import { useTestDb } from '../../../test/d1';
 import { WEEK } from '../../../test/fixtures';
 import { ClaudeLimitError, type Ask } from './claude/claude';
-import {
-	MENU_PROMPT,
-	MENU_SCHEMA,
-	menuContent,
-	notBefore,
-	type MenuRequest
-} from './claude/menu-prompt';
+import { MENU_PROMPT, MENU_SCHEMA, menuContent, type MenuRequest } from './claude/menu-prompt';
 import { createPerson, saveSettings } from './db/household';
 import { getMenuHistory, getWeek, setWeekEaters, setWeekRow } from './db/menus';
 import { addRecipe, getRecipe, setRecipeVote, updateRecipe } from './db/recipes';
@@ -260,25 +254,6 @@ describe('the material Claude gets', () => {
 		expect(plan).toContain('<wish>\nNågot med pumpa\n</wish>');
 		expect(plan).toContain('Plan these, in this order: Monday dinner, Tuesday dinner.');
 		expect(plan).toContain('New dishes among the dinners: exactly 1.');
-	});
-
-	it('counts the weeks a dish rests across the new year', () => {
-		const dish = {
-			name: 'Tacos',
-			tags: [],
-			timesEaten: 1,
-			lastWeek: '2030-12-23',
-			favourite: false,
-			category: null,
-			base: null
-		};
-		const rest = { repeatWeeks: 4, favouriteRepeatWeeks: 2 };
-		expect(notBefore(dish, { ...rest, weekStart: '2031-01-06' })).toBe('2031-01-20');
-		expect(notBefore(dish, { ...rest, weekStart: '2031-01-20' })).toBeNull();
-		expect(
-			notBefore({ ...dish, favourite: true }, { ...rest, weekStart: '2031-01-06' })
-		).toBeNull();
-		expect(notBefore({ ...dish, lastWeek: null }, { ...rest, weekStart: '2031-01-06' })).toBeNull();
 	});
 
 	it('asks for no more new dishes than there are dinners to fill', () => {

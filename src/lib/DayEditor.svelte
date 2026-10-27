@@ -1,44 +1,61 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
+	import { untrack } from 'svelte';
 	import { byOften, isDish, matching, MEAL_LABELS, NOT_DISHES, timesText } from './recipes.ts';
 	import { nameKey } from './names.ts';
 	import type { RecipeSummary } from './server/db/recipes.ts';
+	import { usualText, type Rest } from './weeks.ts';
 
-	// A dinner or a lunch on the menu being written, as on the note: the dishes that match what is
-	// written, a new dish, and the quick choices that are not dishes. The text stands where the
-	// shown dish stood, in the same hand, so the line does not jump.
+	// A dinner or a lunch on the menu being written, as on the note: the dishes the household
+	// usually eats until something is written, then the dishes that match it and a new dish, and
+	// the quick choices that are not dishes. The text stands where the shown dish stood, in the
+	// same hand, so the line does not jump.
 	let {
 		lunch = false,
 		name,
 		draft = $bindable(),
 		recipes,
+		usual,
+		rest,
 		onwrite,
 		onleave,
-		onkeydown
+		onkeydown,
+		onbrowse
 	}: {
 		lunch?: boolean;
 		/** The day and the meal, for the field. */
 		name: string;
 		draft: string;
 		recipes: RecipeSummary[];
+		/** The dishes offered before anything is written. */
+		usual: RecipeSummary[];
+		/** How long a dish rests, to show which were eaten just now. */
+		rest: Rest;
 		/** Writes the day with the text. */
 		onwrite: (text: string) => void;
 		/** Focus left the day. */
 		onleave: () => void;
 		onkeydown: (event: KeyboardEvent) => void;
+		/** Opens all the dishes to choose from. */
+		onbrowse: () => void;
 	} = $props();
 
+	// What the day had when it opened, which is replaced as soon as something is written.
+	const opened = untrack(() => draft);
+	let written = $derived(!!nameKey(draft) && draft !== opened);
 	// The most eaten first.
-	let matches = $derived(
-		nameKey(draft) ? matching(recipes, draft).toSorted(byOften).slice(0, 5) : []
-	);
+	let matches = $derived(written ? matching(recipes, draft).toSorted(byOften).slice(0, 5) : []);
 	let isNew = $derived(
-		nameKey(draft) && isDish(draft) && !recipes.some((r) => nameKey(r.name) === nameKey(draft))
+		written && isDish(draft) && !recipes.some((r) => nameKey(r.name) === nameKey(draft))
 	);
 
 	// The text field loses focus when a suggestion is tapped, so suggestions keep it.
 	const keepFocus = (event: Event) => event.preventDefault();
-	const focus = (input: HTMLInputElement) => input.focus();
+	// What the day had is selected, so that writing replaces it.
+	const focus = (input: HTMLInputElement) => {
+		input.focus();
+		input.select();
+	};
 </script>
 
 <!-- Leaving the day writes it; moving within it, as to a suggestion with Tab, does not. -->
@@ -61,7 +78,32 @@
 			<Icon name="close" />
 		</m3e-icon-button>
 	</div>
-	{#if matches.length || isNew}
+	{#if !written}
+		{#if usual.length}<p class="heading">Brukar ni äta</p>{/if}
+		<ul class="suggestions">
+			{#each usual as recipe (recipe.id)}
+				<li>
+					<button type="button" onpointerdown={keepFocus} onclick={() => onwrite(recipe.name)}>
+						<span class="name"
+							>{recipe.name}{#if recipe.vote === 'favorit'}<span
+									class="favourite"
+									role="img"
+									aria-label="Favorit"><Icon name="thumbUp" /></span
+								>{/if}</span
+						>
+						<span class="meta"
+							>{usualText({ ...recipe, favourite: recipe.vote === 'favorit' }, rest)}</span
+						>
+					</button>
+				</li>
+			{/each}
+			<li>
+				<button type="button" class="new" onpointerdown={keepFocus} onclick={onbrowse}>
+					<Icon name="search" />Alla rätter
+				</button>
+			</li>
+		</ul>
+	{:else if matches.length || isNew}
 		<ul class="suggestions">
 			{#each matches as recipe (recipe.id)}
 				<li>
@@ -142,6 +184,30 @@
 
 	.choices {
 		padding: 0 0.5rem;
+	}
+
+	.line input::selection {
+		background: var(--md-sys-color-primary-container);
+		color: var(--md-sys-color-on-primary-container);
+	}
+
+	.meta {
+		flex-shrink: 0;
+		white-space: nowrap;
+	}
+
+	.heading {
+		margin: 0 0.75rem -0.25rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		letter-spacing: 0.03em;
+		color: var(--md-sys-color-on-surface-variant);
+	}
+
+	.favourite {
+		margin-left: 0.25rem;
+		vertical-align: -0.125rem;
+		color: var(--md-sys-color-primary);
 	}
 
 	.suggestions {
