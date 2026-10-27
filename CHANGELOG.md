@@ -3,6 +3,10 @@
 Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ändringen
 (se `.claude/skills/release/SKILL.md`).
 
+## 0.6.0
+
+- När man öppnar en dag i Veckan visas de rätter hushållet brukar äta direkt, favoriterna först, utan att man behöver skriva något. Under Alla rätter kan man söka och välja bland alla rätter efter sort, och ett nytt namn blir en ny rätt. En dag som redan har en rätt öppnas med texten markerad, så att det man skriver ersätter den. (#103)
+
 ## 0.5.0
 
 - En ny rätt får en knapp i Veckan dagen efter: Hur var den? Ett tryck ger tumme upp (Ny favorit), nästa tummen åt sidan (Ok) och nästa tumme ner (Aldrig mer). Samma knapp finns på rättens sida. En rätt med tumme ner föreslår Claude aldrig igen, men den står kvar i Rätter med en liten märkning. (#99)

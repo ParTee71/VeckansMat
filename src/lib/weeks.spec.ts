@@ -3,11 +3,14 @@ import {
 	addWeeks,
 	canVote,
 	dayList,
+	eatenText,
 	isWeekStart,
 	isoWeek,
 	mondayOf,
+	notBefore,
 	shortWeekName,
 	shownWeek,
+	usualText,
 	swedishToday,
 	weekDates,
 	weekName,
@@ -103,5 +106,32 @@ describe('voting on a line', () => {
 	it('is not for a dish eaten a week before, nor a line that is no dish', () => {
 		expect(canVote(row(1, false), '2030-03-04', '2030-03-06')).toBe(false);
 		expect(canVote(row(1, false, null), '2030-03-04', '2030-03-06')).toBe(false);
+	});
+});
+
+describe('a dish eaten before', () => {
+	it('counts the weeks a dish rests across the new year', () => {
+		const dish = { lastWeek: '2030-12-23', favourite: false };
+		const rest = { repeatWeeks: 4, favouriteRepeatWeeks: 2 };
+		expect(notBefore(dish, { ...rest, weekStart: '2031-01-06' })).toBe('2031-01-20');
+		expect(notBefore(dish, { ...rest, weekStart: '2031-01-20' })).toBeNull();
+		expect(
+			notBefore({ ...dish, favourite: true }, { ...rest, weekStart: '2031-01-06' })
+		).toBeNull();
+		expect(notBefore({ ...dish, lastWeek: null }, { ...rest, weekStart: '2031-01-06' })).toBeNull();
+	});
+
+	it('says when a dish resting was eaten, and how often one free to come was', () => {
+		const rest = { weekStart: '2031-01-06', repeatWeeks: 4, favouriteRepeatWeeks: 2 };
+		const dish = { timesEaten: 3, lastWeek: '2030-12-23', favourite: false };
+		expect(usualText(dish, rest)).toBe('Senast v. 52');
+		expect(usualText({ ...dish, favourite: true }, rest)).toBe('3 gånger');
+		expect(usualText({ ...dish, lastWeek: null }, rest)).toBe('3 gånger');
+	});
+
+	it('says how often and when it was eaten', () => {
+		expect(eatenText({ timesEaten: 0, lastWeek: null })).toBe('Inte ätit än');
+		expect(eatenText({ timesEaten: 3, lastWeek: null })).toBe('3 gånger');
+		expect(eatenText({ timesEaten: 1, lastWeek: '2026-04-27' })).toBe('1 gång · senast v. 18 2026');
 	});
 });

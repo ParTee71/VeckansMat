@@ -6,7 +6,6 @@ import {
 	MENU_PROMPT,
 	MENU_SCHEMA,
 	menuContent,
-	notBefore,
 	type MenuRequest,
 	type Slot
 } from './claude/menu-prompt';
@@ -22,7 +21,7 @@ import {
 	type RowInput,
 	type Week
 } from './db/menus';
-import { hasLunch, WEEK_DAYS } from '../weeks';
+import { hasLunch, notBefore, WEEK_DAYS } from '../weeks';
 
 /** Why there is no suggestion: Claude failed, or the month's cap for Claude is spent. */
 export class MenuSuggestError extends Error {

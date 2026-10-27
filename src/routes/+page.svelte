@@ -1,16 +1,18 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import type { ActionResult } from '$app/forms';
 	import type { M3eDialogElement } from '@m3e/web/dialog';
 	import type { M3eSnackbarElement } from '@m3e/web/snackbar';
 	import { postAction, type Fields } from '#lib/actions.ts';
 	import DayEditor from '#lib/DayEditor.svelte';
+	import DishPicker from '#lib/DishPicker.svelte';
 	import Icon from '#lib/Icon.svelte';
 	import MenuCard from '#lib/MenuCard.svelte';
 	import MenuLine from '#lib/MenuLine.svelte';
 	import WeekHeader from '#lib/WeekHeader.svelte';
 	import WhoEats from '#lib/WhoEats.svelte';
 	import { plural } from '#lib/names.ts';
-	import { MEAL_LABELS, type Vote } from '#lib/recipes.ts';
+	import { MEAL_LABELS, usualDishes, type Vote } from '#lib/recipes.ts';
 	import type { Meal, RowInput, Week } from '#lib/server/db/menus.ts';
 	import type { RecipeSummary } from '#lib/server/db/recipes.ts';
 	import {
@@ -22,6 +24,7 @@
 		hasLunch,
 		isoWeek,
 		swedishToday,
+		notBefore,
 		weekDates
 	} from '#lib/weeks.ts';
 	import type { PageProps } from './$types';
@@ -48,6 +51,22 @@
 	let choosingLunch = $state(false);
 	let editing = $state<string | null>(null);
 	let draft = $state('');
+	// The day all the dishes are open for.
+	let browsing = $state<{ weekday: number; meal: Meal } | null>(null);
+	let picking = $state(false);
+	let rest = $derived({
+		weekStart: week.weekStart,
+		repeatWeeks: data.settings.repeatWeeks,
+		favouriteRepeatWeeks: data.settings.favouriteRepeatWeeks
+	});
+	// What is on the week, as shown, is not offered again; a dish resting comes after the free ones.
+	let usual = $derived(
+		usualDishes(
+			recipes,
+			WEEK_DAYS.flatMap((d) => [textOf(d, 'dinner'), textOf(d, 'lunch')]),
+			(r) => !!notBefore({ ...r, favourite: r.vote === 'favorit' }, rest)
+		)
+	);
 	let failed = $state(false);
 	// Who eats, as just tapped, before the server has answered.
 	let pendingEaters = $state<Record<string, number[]>>({});
@@ -174,6 +193,19 @@
 		});
 	}
 
+	// The sheet gives focus back to what had it, so the day's line takes it before the sheet opens.
+	async function browse(weekday: number, meal: Meal) {
+		editing = null;
+		browsing = { weekday, meal };
+		await tick();
+		document
+			.querySelector<HTMLElement>(
+				`.menu-line button[aria-label^="${MEAL_LABELS[meal]} ${WEEKDAY_NAMES[weekday - 1]}:"]`
+			)
+			?.focus();
+		picking = true;
+	}
+
 	function edit(weekday: number, meal: Meal) {
 		editing = keyOf(weekday, meal);
 		draft = textOf(weekday, meal);
@@ -256,9 +288,12 @@
 			{name}
 			bind:draft
 			{recipes}
+			{usual}
+			{rest}
 			onwrite={(text) => write(weekday, meal, text)}
 			onleave={() => editing === keyOf(weekday, meal) && write(weekday, meal, draft)}
 			onkeydown={(e) => keydown(e, weekday, meal)}
+			onbrowse={() => browse(weekday, meal)}
 		/>
 	{:else}
 		{@const text = textOf(weekday, meal)}
@@ -383,6 +418,20 @@
 		{/if}
 	</MenuCard>
 </main>
+
+<DishPicker
+	name={browsing ? `${MEAL_LABELS[browsing.meal]} ${WEEKDAY_NAMES[browsing.weekday - 1]}` : ''}
+	open={picking}
+	{recipes}
+	onpick={(text) => {
+		if (browsing) write(browsing.weekday, browsing.meal, text);
+		picking = false;
+	}}
+	onclose={() => {
+		picking = false;
+		browsing = null;
+	}}
+/>
 
 <m3e-dialog open={asking || undefined} onclosed={onAnswer}>
 	<span slot="header" class="dialog-header">

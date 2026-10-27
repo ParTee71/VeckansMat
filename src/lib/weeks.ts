@@ -1,5 +1,5 @@
 // How weeks are written in the app. A week is given by its Monday, YYYY-MM-DD.
-import { MEAL_LABELS } from './recipes';
+import { MEAL_LABELS, timesText } from './recipes';
 import { listText, plural } from './names';
 import type { Meal } from './server/db/menus';
 
@@ -107,6 +107,43 @@ export const weeksText = (n: number) => plural(n, 'vecka', 'veckor');
 
 export function addWeeks(weekStart: string, weeks: number): string {
 	return iso(addDays(weekStart, weeks * 7));
+}
+
+/** The week planned, and how many weeks a dish rests before it comes again. */
+export interface Rest {
+	weekStart: string;
+	repeatWeeks: number;
+	favouriteRepeatWeeks: number;
+}
+
+/** The first week the dish may come again, when that is after the week planned. */
+export function notBefore(
+	dish: { lastWeek: string | null; favourite: boolean },
+	rest: Rest
+): string | null {
+	if (!dish.lastWeek) return null;
+	const week = addWeeks(
+		dish.lastWeek,
+		dish.favourite ? rest.favouriteRepeatWeeks : rest.repeatWeeks
+	);
+	return week > rest.weekStart ? week : null;
+}
+
+/** "Senast v. 43" for a dish eaten too recently to come again, else how often it was eaten. */
+export function usualText(
+	dish: { timesEaten: number; lastWeek: string | null; favourite: boolean },
+	rest: Rest
+): string {
+	return dish.lastWeek && notBefore(dish, rest)
+		? `Senast v. ${isoWeek(dish.lastWeek).week}`
+		: timesText(dish.timesEaten);
+}
+
+/** "14 gånger · senast v. 38 2026", or "Inte ätit än". */
+export function eatenText(dish: { timesEaten: number; lastWeek: string | null }): string {
+	if (dish.timesEaten === 0) return 'Inte ätit än';
+	const times = timesText(dish.timesEaten);
+	return dish.lastWeek ? `${times} · senast ${shortWeekName(dish.lastWeek)}` : times;
 }
 
 /** Whether the text is a Monday written YYYY-MM-DD. */

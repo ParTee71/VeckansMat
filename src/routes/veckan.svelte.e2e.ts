@@ -81,6 +81,63 @@ test('a day is written with the keyboard alone', async ({ page }) => {
 	await expect(page.getByText('linss', { exact: true })).toHaveCount(0);
 });
 
+test('a day is chosen without writing, from the usual dishes or all of them', async ({ page }) => {
+	await open(page, '/');
+	const loads = countLoads(page);
+	const sunday = page.getByRole('textbox', { name: 'Middag söndag' });
+
+	// The usual dishes show before anything is written. The favourite Ostfrallor is not among
+	// them, since the first test wrote it on the week.
+	await page.getByRole('button', { name: /^Middag söndag/ }).click();
+	const usual = page.locator('.suggestions button');
+	await expect(usual).toHaveText([/^Linssoppa/, 'Alla rätter']);
+	await usual.first().click();
+	await expect(page.getByRole('button', { name: 'Middag söndag: Linssoppa' })).toBeVisible();
+
+	// A day with a dish opens with it selected, so writing replaces it, and a dish already on the
+	// week is not offered again.
+	await page.getByRole('button', { name: 'Middag söndag: Linssoppa' }).click();
+	await expect(sunday).toHaveValue('Linssoppa');
+	expect(await sunday.evaluate((input: HTMLInputElement) => input.selectionEnd)).toBe(9);
+	expect(await sunday.evaluate((input: HTMLInputElement) => input.selectionStart)).toBe(0);
+	await expect(page.getByRole('button', { name: /^Linssoppa/ })).toHaveCount(0);
+	await page.keyboard.type('Fisk');
+	await expect(sunday).toHaveValue('Fisk');
+	await page.keyboard.press('Escape');
+
+	// All the dishes, by sort and by what is written, and a new one.
+	await page.getByRole('button', { name: 'Middag söndag: Linssoppa' }).click();
+	await page.getByRole('button', { name: 'Alla rätter' }).click();
+	const sheet = page.locator('m3e-bottom-sheet', { hasText: 'Middag söndag' });
+	await expect(sheet.getByRole('button', { name: /^Linssoppa/ })).toBeVisible();
+	await sheet.locator('m3e-filter-chip', { hasText: 'Fisk' }).click();
+	await expect(sheet.getByRole('button', { name: /^Fiskgratäng/ })).toBeVisible();
+	await expect(sheet.getByRole('button', { name: /^Linssoppa/ })).toHaveCount(0);
+	await sheet.locator('m3e-filter-chip', { hasText: 'Fisk' }).click();
+	const search = sheet.getByRole('searchbox', { name: 'Sök eller skriv en ny rätt' });
+	await search.fill('soppa');
+	await expect(sheet.getByRole('button', { name: /^Linssoppa/ })).toBeVisible();
+	await expect(sheet.getByRole('button', { name: /^Fiskgratäng/ })).toHaveCount(0);
+	await search.fill('Ugnsomelett');
+	await sheet.getByRole('button', { name: 'Ny rätt: ”Ugnsomelett”' }).click();
+	// Focus goes back to the day.
+	await expect(page.getByRole('button', { name: 'Middag söndag: Ugnsomelett' })).toBeFocused();
+
+	await saved(page);
+	expect(loads()).toBe(0);
+	await page.reload();
+	await expect(page.getByRole('button', { name: 'Middag söndag: Ugnsomelett' })).toBeVisible();
+	await open(page, '/ratter');
+	await expect(page.locator('m3e-list-action', { hasText: 'Ugnsomelett' })).toBeVisible();
+
+	// The day is left as it was.
+	await open(page, '/');
+	await page.getByRole('button', { name: 'Middag söndag: Ugnsomelett' }).click();
+	await page.getByRole('button', { name: 'Töm raden' }).click();
+	await expect(page.getByRole('button', { name: 'Middag söndag: tom' })).toBeVisible();
+	await saved(page);
+});
+
 test('who eats is chosen per week, and shows what they do not eat', async ({ page }) => {
 	const people = ['Ätare Ett', 'Ätare Två'];
 	for (const name of people) {

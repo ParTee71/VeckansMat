@@ -4,13 +4,9 @@ import type Anthropic from '@anthropic-ai/sdk';
 import { afterAll, it } from 'vitest';
 import { nameKey } from '../../src/lib/names';
 import { isDish } from '../../src/lib/recipes';
+import { notBefore } from '../../src/lib/weeks';
 import type { Ask } from '../../src/lib/server/claude/claude';
-import {
-	MENU_PROMPT,
-	menuContent,
-	notBefore,
-	slotName
-} from '../../src/lib/server/claude/menu-prompt';
+import { MENU_PROMPT, menuContent, slotName } from '../../src/lib/server/claude/menu-prompt';
 import {
 	MenuSuggestError,
 	suggestMenu,
