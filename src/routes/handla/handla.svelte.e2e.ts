@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { countLoads, open, saved, writeDay } from '../../../test/e2e';
+import { countLoads, open, saved, swipeAt, writeDay } from '../../../test/e2e';
 
 // Has a Worker of its own in playwright.config.ts, since it writes the same weeks as the tests of
 // Veckan. The made-up dishes come from test/e2e-seed.sql.
@@ -82,19 +82,7 @@ test('the week shopping list is made from the dishes and ticked off in the store
 async function swipe(page: Page, text: string, share: number) {
 	const row = page.locator('li', { has: page.getByRole('checkbox', { name: text }) });
 	const box = (await row.boundingBox())!;
-	const y = box.y + box.height / 2;
-	const x = box.x + box.width - 90;
-	const touch = await page.context().newCDPSession(page);
-	const at = (dx: number) => [{ x: x - dx, y, id: 1 }];
-	await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: at(0) });
-	for (let step = 1; step <= 10; step++) {
-		await touch.send('Input.dispatchTouchEvent', {
-			type: 'touchMove',
-			touchPoints: at((box.width * share * step) / 10)
-		});
-	}
-	await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-	await touch.detach();
+	await swipeAt(page, box.x + box.width - 90, box.y + box.height / 2, -box.width * share);
 }
 
 test('any item is swiped away, and undo puts it back with its dishes', async ({ page }) => {
@@ -112,8 +100,10 @@ test('any item is swiped away, and undo puts it back with its dishes', async ({ 
 	await page.locator('m3e-snackbar').getByRole('button', { name: 'Ångra' }).click();
 	await expect(item).toBeVisible();
 
+	// A long one takes it away, and stays on Handla rather than going to the next view (#105).
 	await swipe(page, 'Till fiskgratäng', 0.7);
 	await expect(item).toHaveCount(0);
+	await expect(page).toHaveURL(/\/handla$/);
 	await page.locator('m3e-snackbar').getByRole('button', { name: 'Ångra' }).click();
 	await expect(item).toBeVisible();
 	await saved(page);
@@ -127,6 +117,11 @@ test('any item is swiped away, and undo puts it back with its dishes', async ({ 
 	await saved(page);
 	await page.reload();
 	await expect(page.getByRole('checkbox', { name: 'Till fiskgratäng' })).toHaveCount(0);
+
+	// To the right a row is the page's, and goes back to Veckan (#105).
+	const row = (await page.locator('li[data-own-swipe]').first().boundingBox())!;
+	await swipeAt(page, row.x + 60, row.y + row.height / 2, 200);
+	await expect(page).toHaveURL(/\/$/);
 });
 
 test('a folded section stays folded on the phone', async ({ page }) => {
