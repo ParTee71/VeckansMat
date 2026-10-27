@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { byName, byOften, formValues, LUNCHBOX_TAG, matching, splitSteps } from './recipes';
+import {
+	byName,
+	byOften,
+	formValues,
+	LUNCHBOX_TAG,
+	matching,
+	nextVote,
+	splitSteps
+} from './recipes';
 
 const dish = (name: string, timesEaten = 0, lastWeek: string | null = null) => ({
 	id: 0,
@@ -7,7 +15,8 @@ const dish = (name: string, timesEaten = 0, lastWeek: string | null = null) => (
 	timesEaten,
 	lastWeek,
 	category: null,
-	base: null
+	base: null,
+	vote: null
 });
 
 describe('finding a dish', () => {
@@ -108,5 +117,14 @@ describe('the steps of a recipe', () => {
 		expect(splitSteps('')).toEqual([]);
 		expect(splitSteps('  \n ')).toEqual([]);
 		expect(splitSteps(null)).toEqual([]);
+	});
+});
+
+describe('a tap on the vote', () => {
+	it('gives thumb up first, then sideways, then down, and round again', () => {
+		expect(nextVote(null)).toBe('favorit');
+		expect(nextVote('favorit')).toBe('ok');
+		expect(nextVote('ok')).toBe('aldrig');
+		expect(nextVote('aldrig')).toBe('favorit');
 	});
 });

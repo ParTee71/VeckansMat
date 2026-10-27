@@ -13,6 +13,7 @@ import { getSettings, listPeople } from './db/household';
 import {
 	getMenuHistory,
 	getWeek,
+	neverSuggested,
 	setWeekWish,
 	setWeekRow,
 	setWeekRows,
@@ -65,13 +66,14 @@ export async function suggestMenu(request: MenuRequest, ask: Ask): Promise<Sugge
 	);
 	const { rows } = answer;
 
-	const passedOn = new Set((request.passedOn ?? []).map(nameKey));
+	// What was passed on, or is never wanted again, is left out even when Claude chooses it.
+	const excluded = new Set([...(request.passedOn ?? []), ...request.neverSuggest].map(nameKey));
 	const suggested: SuggestedRow[] = [];
 	for (const slot of request.slots) {
 		const row = rows.find((r) => r && sameSlot(r, slot));
 		if (!row) continue;
 		// The dish first, then its alternatives, each named once and none passed on before.
-		const seen = new Set(passedOn);
+		const seen = new Set(excluded);
 		const choices: Choice[] = [];
 		for (const c of [row, ...(Array.isArray(row.alternatives) ? row.alternatives : [])]) {
 			// A reason marks a line as Claude's, so it is never blank.
@@ -180,8 +182,8 @@ export async function swapRow(
 	if (!row || row.reason === null) return null;
 	const others = week.rows.filter((r) => !sameSlot(r, slot));
 	const passedOn = [...row.passedOn, row.text];
-	// An alternative written on another day since is passed over.
-	const taken = new Set(others.map((r) => nameKey(r.text)));
+	// An alternative written on another day since, or voted never again, is passed over.
+	const taken = new Set([...others.map((r) => r.text), ...(await neverSuggested(db))].map(nameKey));
 	let choices = row.alternatives.filter((c) => !taken.has(nameKey(c.text)));
 	if (!choices.length) {
 		const fresh = await request(db, week, [slot], others);

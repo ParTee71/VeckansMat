@@ -133,3 +133,13 @@ export function shownWeek(
 	const weekStart = asked === thisWeek || asked === nextWeek ? asked : weekToPlan(today);
 	return { weekStart, thisWeek, nextWeek };
 }
+
+/**
+ * Whether the household may vote on a day's line: a dish never on a week before, on a day that
+ * has passed in Sweden.
+ */
+export const canVote = (
+	row: { weekday: number; recipeId: number | null; isNew: boolean },
+	weekStart: string,
+	today: string
+) => row.recipeId !== null && row.isNew && iso(addDays(weekStart, row.weekday - 1)) < today;

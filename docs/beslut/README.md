@@ -26,3 +26,4 @@ med `/adr` i Claude Code.
 | [0019](0019-typsnitt-i-appen.md)         | Typsnitt som följer med appen                   | Beslutat                                   |
 | [0020](0020-sorter-pa-ratter.md)         | Fasta sorter och baser på rätterna              | Beslutat                                   |
 | [0021](0021-inloggning-med-google.md)    | Inloggning med Google genom Cloudflare Access   | Beslutat                                   |
+| [0022](0022-roster-pa-ratter.md)         | Röster på rätter                                | Beslutat                                   |

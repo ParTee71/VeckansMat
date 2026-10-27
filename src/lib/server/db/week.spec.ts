@@ -5,13 +5,13 @@ import { WEEK } from '../../../../test/fixtures';
 import { createPerson } from './household';
 import { addShoppingItem } from './shopping';
 import { getWeek, listMenus, setWeekEaters, setWeekRow } from './menus';
-import { addRecipe, findRecipeByName, getRecipe, updateRecipe } from './recipes';
+import { addRecipe, findRecipeByName, getRecipe, setRecipeVote, updateRecipe } from './recipes';
 
 let db: D1Database;
 useTestDb((test) => (db = test));
 
-// Lines written by hand have no reason and nothing to swap to.
-const byHand = { reason: null, alternatives: [], passedOn: [] };
+// Lines written by hand have no reason and nothing to swap to, and nobody has voted yet.
+const byHand = { reason: null, alternatives: [], passedOn: [], vote: null };
 const dinner = (weekday: number, text: string) => ({ weekday, meal: 'dinner' as const, text });
 
 describe('a week planned in the app', () => {
@@ -40,6 +40,7 @@ describe('a week planned in the app', () => {
 				text: 'Ärtsoppa',
 				recipeId: soup!.id,
 				lunchbox: false,
+				isNew: true,
 				...byHand
 			},
 			{
@@ -48,9 +49,18 @@ describe('a week planned in the app', () => {
 				text: 'Tacos',
 				recipeId: expect.any(Number),
 				lunchbox: false,
+				isNew: true,
 				...byHand
 			},
-			{ weekday: 6, meal: 'lunch', text: 'Rester', recipeId: null, lunchbox: false, ...byHand }
+			{
+				weekday: 6,
+				meal: 'lunch',
+				text: 'Rester',
+				recipeId: null,
+				lunchbox: false,
+				isNew: false,
+				...byHand
+			}
 		]);
 		// Lines like "Rester" are not dishes.
 		expect(await findRecipeByName(db, 'rester')).toBeNull();
@@ -69,6 +79,7 @@ describe('a week planned in the app', () => {
 				text: 'Kycklinggryta med curry',
 				recipeId: id,
 				lunchbox: true,
+				isNew: true,
 				...byHand
 			}
 		]);
@@ -93,6 +104,41 @@ describe('a week planned in the app', () => {
 		expect((await getWeek(db, WEEK)).rows.map((r) => r.text)).toEqual(['Pannkakor']);
 		const [menu] = await listMenus(db);
 		expect(menu.items.map((i) => i.text)).toEqual(['Linssoppa', 'Pannkakor']);
+	});
+});
+
+describe('a new dish in a week', () => {
+	it('is one never on a week before, in a dated or undated old note', async () => {
+		await saveMenu(db, {
+			weekStart: null,
+			source: 'photo',
+			items: [{ text: 'Linssoppa', recipeName: 'Linssoppa', meal: 'dinner' }]
+		});
+		await setWeekRow(db, '2030-02-25', dinner(1, 'Pannkakor'), []);
+		// A week after does not make the dish old.
+		await setWeekRow(db, '2030-03-11', dinner(1, 'Shakshuka'), []);
+		for (const [weekday, text] of [
+			[1, 'Linssoppa'],
+			[2, 'Pannkakor'],
+			[3, 'Shakshuka']
+		] as const)
+			await setWeekRow(db, WEEK, dinner(weekday, text), []);
+
+		const rows = (await getWeek(db, WEEK)).rows;
+		expect(rows.map((r) => [r.text, r.isNew])).toEqual([
+			['Linssoppa', false],
+			['Pannkakor', false],
+			['Shakshuka', true]
+		]);
+	});
+
+	it('shows the vote, which the household shares and the latest of which counts', async () => {
+		await setWeekRow(db, WEEK, dinner(1, 'Shakshuka'), []);
+		const { id } = (await findRecipeByName(db, 'Shakshuka'))!;
+		await setRecipeVote(db, id, 'favorit');
+		await setRecipeVote(db, id, 'aldrig');
+		expect((await getWeek(db, WEEK)).rows[0].vote).toBe('aldrig');
+		expect((await getRecipe(db, id))!.vote).toBe('aldrig');
 	});
 });
 

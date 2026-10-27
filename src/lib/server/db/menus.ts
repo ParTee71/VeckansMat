@@ -1,5 +1,5 @@
 import { cleanText, nameKey } from '../../names';
-import { isDish, LUNCHBOX_TAG } from '../../recipes';
+import { isDish, LUNCHBOX_TAG, type Vote } from '../../recipes';
 import { addWeeks } from '../../weeks';
 import { upsertRecipeStatement, type RecipeSummary } from './recipes';
 
@@ -72,6 +72,10 @@ export interface WeekRow {
 	alternatives: Choice[];
 	/** The dishes swapped away from the day. */
 	passedOn: string[];
+	/** The dish was never on a week before this one, so the household may vote on it. */
+	isNew: boolean;
+	/** What the household thinks of the dish, or null when nobody has voted. */
+	vote: Vote | null;
 }
 
 export interface Week {
@@ -90,8 +94,9 @@ const LATEST_EATERS_BEFORE = `SELECT m.id FROM menu m
 	WHERE m.week_start < ? AND EXISTS (SELECT 1 FROM menu_person p WHERE p.menu_id = m.id)
 	ORDER BY m.week_start DESC LIMIT 1`;
 
-type WeekRowRow = Omit<WeekRow, 'lunchbox' | 'alternatives' | 'passedOn'> & {
+type WeekRowRow = Omit<WeekRow, 'lunchbox' | 'alternatives' | 'passedOn' | 'isNew'> & {
 	lunchbox: number;
+	isNew: number;
 	alternatives: string | null;
 	passedOn: string | null;
 };
@@ -104,8 +109,13 @@ export async function getWeek(db: D1Database, weekStart: string): Promise<Week> 
 			.prepare(
 				`SELECT i.weekday, i.meal, i.text, i.recipe_id AS recipeId,
 				 EXISTS (SELECT 1 FROM recipe_tag t WHERE t.recipe_id = i.recipe_id AND t.tag = ?) AS lunchbox,
-				 i.reason, i.alternatives, i.passed_on AS passedOn
+				 i.reason, i.alternatives, i.passed_on AS passedOn, r.vote,
+				 r.id IS NOT NULL AND NOT EXISTS (
+				   SELECT 1 FROM menu_item e JOIN menu em ON em.id = e.menu_id
+				   WHERE e.recipe_id = r.id AND (em.week_start IS NULL OR em.week_start < m.week_start)
+				 ) AS isNew
 				 FROM menu_item i JOIN menu m ON m.id = i.menu_id
+				 LEFT JOIN recipe r ON r.id = i.recipe_id
 				 WHERE m.week_start = ? AND i.weekday IS NOT NULL
 				 ORDER BY i.weekday, i.position`
 			)
@@ -127,6 +137,7 @@ export async function getWeek(db: D1Database, weekStart: string): Promise<Week> 
 		rows: (rows.results as unknown as WeekRowRow[]).map((row) => ({
 			...row,
 			lunchbox: Boolean(row.lunchbox),
+			isNew: Boolean(row.isNew),
 			alternatives: row.alternatives ? JSON.parse(row.alternatives) : [],
 			passedOn: row.passedOn ? JSON.parse(row.passedOn) : []
 		})),
@@ -299,7 +310,7 @@ export async function setWeekEaters(
 }
 
 /** A dish in the collection, with how often and when it was eaten before a week. */
-export type DishHistory = Omit<RecipeSummary, 'id'> & { tags: string[] };
+export type DishHistory = Omit<RecipeSummary, 'id' | 'vote'> & { tags: string[] };
 
 /** A week before, with its lines in order. Old notes do not always say the day. */
 export interface PastWeek {
@@ -307,13 +318,24 @@ export interface PastWeek {
 	rows: { weekday: number | null; meal: Meal; text: string }[];
 }
 
-/** What a suggestion for a week builds on: every dish, and the weeks just before. */
+const NEVER_SUGGEST = `SELECT name FROM recipe WHERE vote = 'aldrig' ORDER BY name`;
+
+/** The dishes the household never wants again, by name. */
+export async function neverSuggested(db: D1Database): Promise<string[]> {
+	const { results } = await db.prepare(NEVER_SUGGEST).all<{ name: string }>();
+	return results.map((r) => r.name);
+}
+
+/**
+ * What a suggestion for a week builds on: every dish but those the household never wants again,
+ * which are named apart, and the weeks just before.
+ */
 export async function getMenuHistory(
 	db: D1Database,
 	weekStart: string,
 	weeks: number
-): Promise<{ dishes: DishHistory[]; pastWeeks: PastWeek[] }> {
-	const [dishes, rows] = await db.batch([
+): Promise<{ dishes: DishHistory[]; pastWeeks: PastWeek[]; neverSuggest: string[] }> {
+	const [dishes, rows, never] = await db.batch([
 		db
 			.prepare(
 				`SELECT r.name,
@@ -324,6 +346,7 @@ export async function getMenuHistory(
 				   SELECT i.recipe_id, m.week_start FROM menu_item i JOIN menu m ON m.id = i.menu_id
 				   WHERE m.week_start IS NULL OR m.week_start < ?1
 				 ) e ON e.recipe_id = r.id
+				 WHERE r.vote IS NOT 'aldrig'
 				 GROUP BY r.id
 				 ORDER BY r.name`
 			)
@@ -335,7 +358,8 @@ export async function getMenuHistory(
 				 WHERE m.week_start < ?1 AND m.week_start >= ?2
 				 ORDER BY m.week_start DESC, i.weekday IS NULL, i.weekday, i.meal DESC, i.position`
 			)
-			.bind(weekStart, addWeeks(weekStart, -weeks))
+			.bind(weekStart, addWeeks(weekStart, -weeks)),
+		db.prepare(NEVER_SUGGEST)
 	]);
 	type Row = PastWeek['rows'][number] & { weekStart: string };
 	const byWeek = Map.groupBy(rows.results as unknown as Row[], (row) => row.weekStart);
@@ -346,6 +370,7 @@ export async function getMenuHistory(
 		pastWeeks: [...byWeek].map(([weekStart, rows]) => ({
 			weekStart,
 			rows: rows.map(({ weekday, meal, text }) => ({ weekday, meal, text }))
-		}))
+		})),
+		neverSuggest: (never.results as { name: string }[]).map((r) => r.name)
 	};
 }

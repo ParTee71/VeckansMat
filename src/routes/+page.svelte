@@ -10,16 +10,18 @@
 	import WeekHeader from '#lib/WeekHeader.svelte';
 	import WhoEats from '#lib/WhoEats.svelte';
 	import { plural } from '#lib/names.ts';
-	import { MEAL_LABELS } from '#lib/recipes.ts';
+	import { MEAL_LABELS, type Vote } from '#lib/recipes.ts';
 	import type { Meal, RowInput, Week } from '#lib/server/db/menus.ts';
 	import type { RecipeSummary } from '#lib/server/db/recipes.ts';
 	import {
 		WEEK_DAYS,
 		WEEKDAY_NAMES,
 		WEEKDAYS,
+		canVote,
 		dayList,
 		hasLunch,
 		isoWeek,
+		swedishToday,
 		weekDates
 	} from '#lib/weeks.ts';
 	import type { PageProps } from './$types';
@@ -70,6 +72,15 @@
 	let byHand = $derived(dayList(week.rows.filter((r) => r.reason === null)));
 	// The question before a week that has a menu is suggested again.
 	let asking = $state(false);
+	// Votes just tapped, per dish, before the server has answered.
+	let pendingVotes = $state<Record<number, Vote>>({});
+	// The day in Sweden, as the server saw it and then as the phone sees it once the page is up.
+	let phoneToday = $state<string | null>(null);
+	$effect(() => {
+		void data;
+		phoneToday = swedishToday();
+	});
+	let today = $derived(phoneToday ?? data.today);
 
 	const keyOf = (weekday: number, meal: Meal) => `${week.weekStart}-${meal}-${weekday}`;
 	const stored = (weekday: number, meal: Meal) =>
@@ -214,6 +225,19 @@
 		edit(weekday, 'lunch');
 	}
 
+	// One vote is sent at a time, so the last tap is the one saved.
+	let sendingVote: Promise<unknown> = Promise.resolve();
+
+	function vote(recipeId: number, value: Vote) {
+		pendingVotes[recipeId] = value;
+		const weekStart = week.weekStart;
+		sendingVote = sendingVote.then(async () => {
+			await post('vote', { weekStart, recipeId, vote: value });
+			// A newer tap stays until its own answer comes.
+			if (pendingVotes[recipeId] === value) delete pendingVotes[recipeId];
+		});
+	}
+
 	const extraText = (n: number) => `Matlåda · ${plural(n, 'portion', 'portioner')} extra`;
 	// Why Claude chose the dish, and how much extra to cook of a lunch-box dish.
 	const metaText = (row: { reason: string | null; lunchbox: boolean }) =>
@@ -240,6 +264,7 @@
 		{@const text = textOf(weekday, meal)}
 		{@const current = stored(weekday, meal)}
 		{@const saved = current && text === current.text ? current : null}
+		{@const votable = saved && canVote(saved, week.weekStart, today) ? saved : null}
 		<MenuLine
 			{name}
 			lunch={meal === 'lunch'}
@@ -251,6 +276,8 @@
 			{busy}
 			onedit={() => edit(weekday, meal)}
 			onswap={() => swap(weekday, meal)}
+			vote={votable && (pendingVotes[votable.recipeId!] ?? votable.vote)}
+			onvote={votable ? (v) => vote(votable.recipeId!, v) : undefined}
 		/>
 	{/if}
 {/snippet}
