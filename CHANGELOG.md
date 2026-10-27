@@ -3,6 +3,10 @@
 Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ändringen
 (se `.claude/skills/release/SKILL.md`).
 
+## 0.7.0
+
+- I Hushållet finns Erbjudanden: slå på de kedjor ni handlar hos, ICA, Willys och Lidl, och välj butik genom att söka på ort. Appen hämtar butikens erbjudanden direkt och sedan varje måndag morgon, och visar när det senast hämtades och om något gick fel. Medlemspriser räknas med och kan stängas av. Coop kommer snart. (#107)
+
 ## 0.6.0
 
 - När man öppnar en dag i Veckan visas de rätter hushållet brukar äta direkt, favoriterna först, utan att man behöver skriva något. Under Alla rätter kan man söka och välja bland alla rätter efter sort, och ett nytt namn blir en ny rätt. En dag som redan har en rätt öppnas med texten markerad, så att det man skriver ersätter den. (#103)

@@ -1,7 +1,8 @@
 // A made-up recipe site for the Playwright tests, so reading a link never leaves the machine,
 // and a stand-in for Claude's API under /claude, so no test calls the real one. It reads recipes
-// and suggests weeks.
+// and suggests weeks. Under /butik it stands in for the chains' sites (offer-sites.mjs).
 import { createServer } from 'node:http';
+import { offerSite } from './offer-sites.mjs';
 
 const recipe = (name, extra = {}) => ({
 	'@context': 'https://schema.org',
@@ -159,6 +160,11 @@ const html = (data) =>
 createServer((request, response) => {
 	if (request.method === 'POST' && request.url === '/claude/v1/messages') {
 		return messages(request, response);
+	}
+	if (request.url.startsWith('/butik/')) {
+		const page = offerSite(request.url.slice('/butik'.length));
+		if (page) return response.writeHead(200, { 'content-type': page.type }).end(page.body);
+		return response.writeHead(403).end('Nekad');
 	}
 	const data = pages[new URL(request.url, 'http://localhost').pathname];
 	if (data) response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(html(data));

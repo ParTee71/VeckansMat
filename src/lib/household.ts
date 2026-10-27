@@ -11,6 +11,8 @@ export interface Settings {
 	repeatWeeks: number;
 	/** The same for a favourite. Read as never more than for other dishes. */
 	favouriteRepeatWeeks: number;
+	/** Whether offers only for members, such as Stammis or Willys Plus, count. */
+	memberPrices: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -18,7 +20,8 @@ export const DEFAULT_SETTINGS: Settings = {
 	newDishesPerWeek: 1,
 	lunchboxExtraPortions: 2,
 	repeatWeeks: 4,
-	favouriteRepeatWeeks: 2
+	favouriteRepeatWeeks: 2,
+	memberPrices: true
 };
 
 export const MAX_NEW_DISHES = 3;
@@ -32,6 +35,7 @@ export const favouriteWeeks = (settings: Settings) =>
 /** Whether a value is one the form offers. */
 export function isValidSetting<K extends keyof Settings>(key: K, value: Settings[K]): boolean {
 	if (key === 'menuRules') return typeof value === 'string';
+	if (key === 'memberPrices') return typeof value === 'boolean';
 	const n = value as number;
 	if (key === 'newDishesPerWeek') return Number.isInteger(n) && n >= 0 && n <= MAX_NEW_DISHES;
 	if (key === 'repeatWeeks' || key === 'favouriteRepeatWeeks')

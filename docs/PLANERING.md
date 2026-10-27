@@ -89,10 +89,11 @@ när någon ber om det.
 
 ## Erbjudanden från butiker
 
-**Inte i första versionen.** ICA, Coop och Willys har inga öppna API:er, och
-skrapning av deras sidor är skör och juridiskt oklar. Senare kan vi läsa de
-publika erbjudandesidorna en gång i veckan med respekt för `robots.txt`, eller
-låta hushållet fotografera reklambladet.
+Ändrat 2026-10-27 (#106). Kedjorna har inga öppna API:er, men appen läser
+deras egna erbjudandesidor en gång i veckan, med respekt för `robots.txt`, för
+de kedjor och den butik hushållet valt i Hushållet. Claude väljer gärna rätter
+med det som är på extrapris när veckan föreslås, men hushållets regler och krav
+går först. Se [beslut 0023](beslut/0023-erbjudanden.md).
 
 ## Öppna frågor
 
