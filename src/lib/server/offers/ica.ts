@@ -1,8 +1,17 @@
 // ICA: each store's offers page on ica.se carries them as data for the page's own script, and the
 // stores are listed in ica.se's sitemap. See docs/beslut/0023-erbjudanden.md.
-import { nameKey } from '../../names';
 import type { StoreChoice } from '../../offers';
-import { formatError, getText, isObject, OfferError, perUnit, tidy, type Offer } from './common';
+import {
+	formatError,
+	getText,
+	isObject,
+	OfferError,
+	perUnit,
+	slug,
+	tidy,
+	titled,
+	type Offer
+} from './common';
 
 const LABEL = 'ICA';
 const ORIGIN = 'https://www.ica.se';
@@ -90,17 +99,3 @@ export function parseOffers(page: string): { offers: Offer[]; storeName: string 
 	}
 	return { offers, storeName };
 }
-
-/** The text as ICA names its pages: small letters without å, ä and ö, words joined by "-". */
-const slug = (text: string) =>
-	nameKey(text)
-		.normalize('NFD')
-		.replace(/[̀-ͯ]/g, '')
-		.replace(/[^a-z0-9]+/g, '-');
-
-/** "ica-kvantum-exempelby" as "ICA Kvantum Exempelby", until the store's page gives its name. */
-const titled = (text: string) =>
-	text
-		.split('-')
-		.map((word) => (word === 'ica' ? 'ICA' : word.charAt(0).toUpperCase() + word.slice(1)))
-		.join(' ');

@@ -37,8 +37,6 @@ export interface ChainState {
 	error: string | null;
 	/** How many offers the last fetch that worked gave. */
 	offers: number;
-	/** Whether the app can fetch from the chain yet. Coop comes in #108. */
-	available: boolean;
 }
 
 /** When offers were fetched, as "i dag 06:02" or "mån 26 okt 06:02", in Swedish time. */

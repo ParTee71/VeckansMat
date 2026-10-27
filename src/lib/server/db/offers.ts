@@ -14,7 +14,7 @@ interface ChainRow {
 	offers: number;
 }
 
-export type ChainRecord = Omit<ChainState, 'available'> & { requestedAt: string | null };
+export type ChainRecord = ChainState & { requestedAt: string | null };
 
 const CHAIN_COLUMNS = `chain, enabled, store_id AS storeId, store_name AS storeName,
 	fetched_at AS fetchedAt, requested_at AS requestedAt, error,

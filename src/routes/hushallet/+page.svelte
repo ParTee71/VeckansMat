@@ -52,7 +52,7 @@
 	let pickerOpen = $state(false);
 	let chainError = $state<string | null>(null);
 
-	let shown = $derived(chains.filter((c) => c.enabled && c.available && c.fetchedAt));
+	let shown = $derived(chains.filter((c) => c.enabled && c.fetchedAt));
 	let latest = $derived(
 		shown
 			.map((c) => c.fetchedAt!)
@@ -304,14 +304,11 @@
 					id="chain-{chain.chain}"
 					aria-label={label}
 					checked={chain.enabled || undefined}
-					disabled={!chain.available || undefined}
 					onchange={(e: Event & { currentTarget: HTMLElement & { checked: boolean } }) =>
 						toggle(chain, e.currentTarget.checked)}
 				></m3e-switch>
 			</div>
-			{#if !chain.available}
-				<p class="supporting">Kommer snart</p>
-			{:else if chain.enabled}
+			{#if chain.enabled}
 				{#if hasStores(chain.chain)}
 					<div class="chain-row store">
 						<span class="supporting">{chain.storeName ?? 'Ingen butik vald'}</span>

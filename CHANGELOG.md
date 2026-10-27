@@ -6,7 +6,8 @@ Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ä
 ## 0.7.0
 
 - Man kan svepa åt vänster eller höger för att byta mellan Veckan, Handla, Rätter och Veckor, i menyns ordning. Sidan följer fingret och nästa vy glider in från sidan. I Handla tar ett svep åt vänster på en vara fortfarande bort den. (#105)
-- I Hushållet finns Erbjudanden: slå på de kedjor ni handlar hos, ICA, Willys och Lidl, och välj butik genom att söka på ort. Appen hämtar butikens erbjudanden direkt och sedan varje måndag morgon, och visar när det senast hämtades och om något gick fel. Medlemspriser räknas med och kan stängas av. Coop kommer snart. (#107)
+- I Hushållet finns Erbjudanden: slå på de kedjor ni handlar hos, ICA, Willys och Lidl, och välj butik genom att söka på ort. Appen hämtar butikens erbjudanden direkt och sedan varje måndag morgon, och visar när det senast hämtades och om något gick fel. Medlemspriser räknas med och kan stängas av. (#107)
+- Coop finns nu också bland kedjorna i Erbjudanden. Sök på butikens namn, som oftast har orten i sig, och välj den, så hämtas dess erbjudanden som för de andra. (#108)
 
 ## 0.6.0
 

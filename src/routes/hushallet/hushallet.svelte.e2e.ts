@@ -97,7 +97,6 @@ test('chains and a store are chosen for the offers, and fetched at once', async 
 	await open(page, '/');
 	await page.getByRole('button', { name: /äter$/ }).click();
 	await page.getByRole('link', { name: 'Ändra personer och regler' }).click();
-	await expect(page.getByRole('region', { name: 'Coop' })).toContainText('Kommer snart');
 
 	const lidl = page.getByRole('region', { name: 'Lidl' });
 	await lidl.getByRole('switch', { name: 'Lidl' }).click();
@@ -115,9 +114,19 @@ test('chains and a store are chosen for the offers, and fetched at once', async 
 	await expect(ica).toContainText('ICA Supermarket Exempelby');
 	await expect(page.getByText(/Senast .+: 5 erbjudanden\./)).toBeVisible();
 
+	// Coop's page is read in a browser on Cloudflare; here the made-up site answers in its place.
+	const coop = page.getByRole('region', { name: 'Coop' });
+	await coop.getByRole('switch', { name: 'Coop' }).click();
+	await expect(page.getByText('Välj Coop-butik')).toBeVisible();
+	await page.getByRole('searchbox', { name: 'Sök på ort eller butik' }).fill('exempelby');
+	await page.getByRole('searchbox', { name: 'Sök på ort eller butik' }).press('Enter');
+	await page.getByRole('button', { name: /Stora Coop Exempelby/ }).click();
+	await expect(coop).toContainText('Stora Coop Exempelby');
+	await expect(page.getByText(/Senast .+: 9 erbjudanden\./)).toBeVisible();
+
 	await saved(page);
 	await lidl.getByRole('switch', { name: 'Lidl' }).click();
-	await expect(page.getByText(/: 2 erbjudanden\./)).toBeVisible();
+	await expect(page.getByText(/: 6 erbjudanden\./)).toBeVisible();
 	await page.getByRole('switch', { name: 'Räkna med medlemspriser' }).click();
 
 	await open(page, '/hushallet');
