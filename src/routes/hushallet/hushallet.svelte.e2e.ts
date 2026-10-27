@@ -93,7 +93,10 @@ test('how often the same dish may come is saved as it is changed', async ({ page
 });
 
 test('chains and a store are chosen for the offers, and fetched at once', async ({ page }) => {
-	await open(page, '/hushallet');
+	// Reached from Veckan, as the app's components are then already there (#116).
+	await open(page, '/');
+	await page.getByRole('button', { name: /äter$/ }).click();
+	await page.getByRole('link', { name: 'Ändra personer och regler' }).click();
 	await expect(page.getByRole('region', { name: 'Coop' })).toContainText('Kommer snart');
 
 	const lidl = page.getByRole('region', { name: 'Lidl' });
@@ -105,6 +108,7 @@ test('chains and a store are chosen for the offers, and fetched at once', async 
 	const ica = page.getByRole('region', { name: 'ICA' });
 	await ica.getByRole('switch', { name: 'ICA' }).click();
 	await expect(page.getByText('Välj ICA-butik')).toBeVisible();
+	await expect(page.getByRole('searchbox', { name: 'Sök på ort eller butik' })).toBeInViewport();
 	await page.getByRole('searchbox', { name: 'Sök på ort eller butik' }).fill('exempelby');
 	await page.getByRole('searchbox', { name: 'Sök på ort eller butik' }).press('Enter');
 	await page.getByRole('button', { name: /ICA Supermarket Exempelby/ }).click();

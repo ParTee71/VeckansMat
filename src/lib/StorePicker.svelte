@@ -67,12 +67,13 @@
 	}
 </script>
 
+<!-- detents is a list: a text would be read letter by letter once m3e has loaded (#116). -->
 <m3e-bottom-sheet
 	modal
 	handle
 	handle-label="Stäng"
 	hideable
-	detents="full"
+	detents={['full']}
 	open={open || undefined}
 	onclosed={onclose}
 >
