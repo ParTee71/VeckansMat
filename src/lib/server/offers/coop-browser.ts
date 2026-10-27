@@ -7,12 +7,14 @@ import { LABEL, slimAnswer, type CoopPage, type OpenPage } from './coop';
 // For loading the page and then for its offers, so a fetch never waits more than half a minute.
 const TIMEOUT_MS = 15_000;
 
-/** Run in the page before its own scripts: keeps the answer to the page's ask for its offers. */
+/** Run in the page before its own scripts: keeps the first answer to the page's ask for its offers. */
 const CAPTURE = `(() => {
 	const open = XMLHttpRequest.prototype.open;
 	XMLHttpRequest.prototype.open = function (method, url, ...rest) {
 		if (String(url).includes('/dke/offers/sorting-groups/')) {
-			this.addEventListener('load', () => { window.__coopAnswer = this.responseText; });
+			this.addEventListener('load', () => {
+				if (this.status === 200) window.__coopAnswer ??= this.responseText;
+			});
 		}
 		return open.call(this, method, url, ...rest);
 	};
@@ -29,18 +31,20 @@ export function openInBrowser(binding: BrowserRun): OpenPage {
 			await page.evaluateOnNewDocument(CAPTURE);
 			try {
 				await page.goto(url, { waitUntil: 'domcontentloaded', timeout: TIMEOUT_MS });
-			} catch {
-				throw new OfferError(`${LABEL} svarade inte.`);
+			} catch (e) {
+				throw new OfferError(`${LABEL} svarade inte.`, { cause: e });
 			}
 			try {
 				await page.waitForFunction('window.__coopAnswer !== undefined', { timeout: TIMEOUT_MS });
-			} catch {
-				throw new OfferError(`${LABEL}s sida visade inga erbjudanden i tid.`);
+			} catch (e) {
+				throw new OfferError(`${LABEL}s sida visade inga erbjudanden i tid.`, { cause: e });
 			}
-			// Made smaller in the page, so that the Worker gets a fraction of the answer to read.
-			return (await page.evaluate(
-				`({ name: document.querySelector('h1')?.textContent ?? null, offers: (${slimAnswer})(window.__coopAnswer) })`
-			)) as CoopPage;
+			// Made smaller in the page, so that the Worker gets a fraction of the answer to read. The
+			// store's name is in the page's data for statistics; not every store's page has a heading.
+			return (await page.evaluate(`({
+				name: (window.dataLayer ?? []).find((e) => e?.store_page_name)?.store_page_name ?? null,
+				offers: (${slimAnswer})(window.__coopAnswer)
+			})`)) as CoopPage;
 		} finally {
 			// A browser that fails to close must not hide what went wrong before.
 			await browser.close().catch(() => {});

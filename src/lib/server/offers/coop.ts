@@ -75,7 +75,7 @@ export function slimAnswer(text: string): unknown {
 	try {
 		const offers = new Map<unknown, Record<string, unknown>>();
 		for (const group of JSON.parse(text).sortingGroups) {
-			for (const offer of group.offers) {
+			for (const offer of group.offers ?? []) {
 				const kept = offers.get(offer.id) ?? offer;
 				delete kept.clusterInteriorOffers;
 				if (group.id !== 'alla') kept.group ??= group.name;
