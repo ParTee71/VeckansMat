@@ -3,7 +3,8 @@
 	import { enhance } from '$app/forms';
 	import Icon from '#lib/Icon.svelte';
 	import Initial from '#lib/Initial.svelte';
-	import { LUNCHBOX_EXTRA_CHOICES, MAX_NEW_DISHES } from '#lib/household.ts';
+	import { LUNCHBOX_EXTRA_CHOICES, MAX_NEW_DISHES, MAX_REPEAT_WEEKS } from '#lib/household.ts';
+	import { weeksText } from '#lib/weeks.ts';
 	import type { PageProps, SubmitFunction } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -11,19 +12,23 @@
 	// Shown at once when tapped, and saved right after.
 	let newDishes = $derived(data.settings.newDishesPerWeek);
 	let lunchboxExtra = $derived(data.settings.lunchboxExtraPortions);
+	let repeatWeeks = $derived(data.settings.repeatWeeks);
+	let favouriteRepeatWeeks = $derived(data.settings.favouriteRepeatWeeks);
 
 	let settingsForm: HTMLFormElement;
-	let changed = '';
+	let changed: string[] = [];
 
-	// Only the field that changed is sent, so two quick saves never undo each other. The page
+	// Only the fields that changed are sent, so two quick saves never undo each other. The page
 	// keeps what is shown, without loading again, so nothing on it moves.
 	const sendChanged: SubmitFunction = ({ formData }) => {
-		for (const key of [...formData.keys()]) if (key !== changed) formData.delete(key);
+		for (const key of [...formData.keys()]) if (!changed.includes(key)) formData.delete(key);
+		// Two taps in the same moment are sent together, with what each changed.
+		changed = [];
 		return async ({ update }) => update({ reset: false, invalidateAll: false });
 	};
 
-	async function save(field: string) {
-		changed = field;
+	async function save(...fields: string[]) {
+		changed = [...changed, ...fields];
 		await tick();
 		settingsForm.requestSubmit();
 	}
@@ -72,31 +77,48 @@
 			<m3e-textarea-autosize for="menuRules"></m3e-textarea-autosize>
 		</m3e-form-field>
 
-		<div class="setting">
-			<span id="new-dishes">Nya rätter per vecka</span>
+		{#snippet stepper(
+			id: string,
+			value: number,
+			min: number,
+			max: number,
+			fewer: string,
+			more: string,
+			set: (n: number) => void
+		)}
 			<div class="stepper">
 				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-icon-button is a button with its own keyboard handling) -->
 				<m3e-icon-button
 					variant="tonal"
-					aria-label="Färre nya rätter"
-					disabled={newDishes <= 0 || undefined}
-					onclick={() => {
-						newDishes--;
-						save('newDishesPerWeek');
-					}}><Icon name="remove" /></m3e-icon-button
+					aria-label={fewer}
+					disabled={value <= min || undefined}
+					onclick={() => set(value - 1)}><Icon name="remove" /></m3e-icon-button
 				>
-				<output aria-labelledby="new-dishes">{newDishes}</output>
+				<output aria-labelledby={id}>{value}</output>
 				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-icon-button is a button with its own keyboard handling) -->
 				<m3e-icon-button
 					variant="tonal"
-					aria-label="Fler nya rätter"
-					disabled={newDishes >= MAX_NEW_DISHES || undefined}
-					onclick={() => {
-						newDishes++;
-						save('newDishesPerWeek');
-					}}><Icon name="add" /></m3e-icon-button
+					aria-label={more}
+					disabled={value >= max || undefined}
+					onclick={() => set(value + 1)}><Icon name="add" /></m3e-icon-button
 				>
 			</div>
+		{/snippet}
+
+		<div class="setting">
+			<span id="new-dishes">Nya rätter per vecka</span>
+			{@render stepper(
+				'new-dishes',
+				newDishes,
+				0,
+				MAX_NEW_DISHES,
+				'Färre nya rätter',
+				'Fler nya rätter',
+				(n) => {
+					newDishes = n;
+					save('newDishesPerWeek');
+				}
+			)}
 			<input type="hidden" name="newDishesPerWeek" value={newDishes} />
 		</div>
 
@@ -118,10 +140,60 @@
 			<input type="hidden" name="lunchboxExtraPortions" value={lunchboxExtra} />
 		</div>
 
+		<h2>Hur ofta samma rätt</h2>
+		<div class="setting">
+			<span id="repeat-weeks" class="named">
+				Vanliga rätter
+				<span class="supporting">tidigast efter {weeksText(repeatWeeks)}</span>
+			</span>
+			{@render stepper(
+				'repeat-weeks',
+				repeatWeeks,
+				1,
+				MAX_REPEAT_WEEKS,
+				'Färre veckor för vanliga rätter',
+				'Fler veckor för vanliga rätter',
+				(n) => {
+					repeatWeeks = n;
+					// A favourite never waits longer than other dishes.
+					if (favouriteRepeatWeeks <= n) save('repeatWeeks');
+					else {
+						favouriteRepeatWeeks = n;
+						save('repeatWeeks', 'favouriteRepeatWeeks');
+					}
+				}
+			)}
+			<input type="hidden" name="repeatWeeks" value={repeatWeeks} />
+		</div>
+
+		<div class="setting">
+			<span id="favourite-weeks" class="named">
+				<span class="favourite"><Icon name="thumbUp" />Favoriter</span>
+				<span class="supporting">tidigast efter {weeksText(favouriteRepeatWeeks)}</span>
+			</span>
+			{@render stepper(
+				'favourite-weeks',
+				favouriteRepeatWeeks,
+				1,
+				repeatWeeks,
+				'Färre veckor för favoriter',
+				'Fler veckor för favoriter',
+				(n) => {
+					favouriteRepeatWeeks = n;
+					save('favouriteRepeatWeeks');
+				}
+			)}
+			<input type="hidden" name="favouriteRepeatWeeks" value={favouriteRepeatWeeks} />
+		</div>
+
 		{#if form?.error}
 			<p class="error-text" role="alert">{form.error}</p>
 		{/if}
-		<p class="note">Sparas direkt. Gäller varje vecka, tillsammans med kraven för de som äter.</p>
+		<p class="note">
+			Sparas direkt. Gäller varje vecka, tillsammans med kraven för de som äter. Åts en rätt vecka
+			40 och det står 4 veckor, föreslår Claude den tidigast vecka 44. Favoriter väljer du på
+			rättens sida. Det du skriver in själv bestämmer du alltid.
+		</p>
 	</form>
 </main>
 
@@ -181,6 +253,28 @@
 		display: flex;
 		align-items: center;
 		gap: 0.25rem;
+	}
+
+	.named {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.supporting {
+		font-size: 0.8125rem;
+		color: var(--md-sys-color-on-surface-variant);
+	}
+
+	.favourite {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+	}
+
+	.favourite :global(svg) {
+		width: 1rem;
+		height: 1rem;
+		color: var(--md-sys-color-primary);
 	}
 
 	output {

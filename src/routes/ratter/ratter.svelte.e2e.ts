@@ -222,3 +222,15 @@ test('the plus button on Rätter opens Ny rätt', async ({ page }) => {
 	await open(page, '/veckor');
 	await expect(page.getByRole('link', { name: 'Ny rätt' })).toHaveCount(0);
 });
+
+test('a favourite has a thumb up in Rätter and on its page', async ({ page }) => {
+	await open(page, '/ratter');
+	const row = (name: string) => page.locator('m3e-list-action', { hasText: name });
+	await expect(row('Ostfrallor').getByRole('img', { name: 'Favorit' })).toBeVisible();
+	await expect(row('Fiskgratäng').getByRole('img', { name: 'Favorit' })).toHaveCount(0);
+
+	await row('Ostfrallor').click();
+	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ostfrallor');
+	// Hushållet's tests change how many weeks, so the number is not checked here.
+	await expect(page.getByText(/^Favorit · får komma efter \d+ veck/)).toBeVisible();
+});

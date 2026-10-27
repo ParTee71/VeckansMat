@@ -1,6 +1,6 @@
 // Made-up households, dishes and weeks for the menu eval. Never the household's real data.
 import type { MenuRequest, Slot } from '../../src/lib/server/claude/menu-prompt';
-import type { DishHistory, PastWeek } from '../../src/lib/server/db/menus';
+import type { PastWeek } from '../../src/lib/server/db/menus';
 
 /** The week every case plans: week 46 2030, the first full week of November. */
 export const WEEK = '2030-11-11';
@@ -11,6 +11,9 @@ interface Dish {
 	tags: string[];
 	timesEaten: number;
 	lastWeek: string | null;
+	favourite: boolean;
+	category: null;
+	base: null;
 }
 
 const d = (
@@ -18,12 +21,18 @@ const d = (
 	tags: string[],
 	timesEaten = 3,
 	lastWeek: string | null = '2030-09-02'
-) => ({
+): Dish => ({
 	name,
 	tags,
 	timesEaten,
-	lastWeek
+	lastWeek,
+	favourite: FAVOURITES.includes(name),
+	category: null,
+	base: null
 });
+
+/** The household's favourites: some eaten last week, some free to come again. */
+const FAVOURITES = ['Tacos', 'Pannkakor', 'Fiskgratäng', 'Lasagne', 'Vegetarisk lasagne'];
 
 export const COLLECTION: Dish[] = [
 	d('Fiskgratäng', ['fisk'], 9, '2030-10-07'),
@@ -68,7 +77,7 @@ export const COLLECTION: Dish[] = [
 const dinner = (weekday: number, text: string) => ({ weekday, meal: 'dinner' as const, text });
 const lunch = (weekday: number, text: string) => ({ weekday, meal: 'lunch' as const, text });
 
-/** The three weeks before, newest first. Tacos on Fridays is a habit. */
+/** The five weeks before, newest first. Tacos on Fridays is a habit. */
 export const PAST_WEEKS: PastWeek[] = [
 	{
 		weekStart: '2030-11-04',
@@ -111,6 +120,34 @@ export const PAST_WEEKS: PastWeek[] = [
 			lunch(6, 'Varm korv'),
 			lunch(7, 'Rester')
 		]
+	},
+	{
+		weekStart: '2030-10-14',
+		rows: [
+			dinner(1, 'Grönsakssoppa'),
+			dinner(2, 'Lasagne'),
+			dinner(3, 'Rester'),
+			dinner(4, 'Torsk med äggsås'),
+			dinner(5, 'Tacos'),
+			dinner(6, 'Kycklinglår med rotfrukter'),
+			dinner(7, 'Köttbullar med potatismos'),
+			lunch(6, 'Omelett'),
+			lunch(7, 'Rester')
+		]
+	},
+	{
+		weekStart: '2030-10-07',
+		rows: [
+			dinner(1, 'Blomkålssoppa'),
+			dinner(2, 'Fiskgratäng'),
+			dinner(3, 'Pytt i panna'),
+			dinner(4, 'Kycklinggryta med curry'),
+			dinner(5, 'Tacos'),
+			dinner(6, 'Hemgjord pizza'),
+			dinner(7, 'Pannkakor'),
+			lunch(6, 'Ostfrallor'),
+			lunch(7, 'Rester')
+		]
 	}
 ];
 
@@ -121,9 +158,6 @@ for (const week of PAST_WEEKS) {
 		if (dish && (!dish.lastWeek || dish.lastWeek < week.weekStart)) dish.lastWeek = week.weekStart;
 	}
 }
-
-/** Dishes eaten in the two weeks before, which no suggestion may have. */
-export const RECENT = new Set(PAST_WEEKS.slice(0, 2).flatMap((w) => w.rows.map((r) => r.text)));
 
 const DINNERS: Slot[] = [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ weekday, meal: 'dinner' }));
 const WEEKEND_LUNCH: Slot[] = [6, 7].map((weekday) => ({ weekday, meal: 'lunch' }));
@@ -161,7 +195,7 @@ const MEAT = {
 
 const base = (overrides: Partial<MenuRequest>): MenuRequest => ({
 	weekStart: WEEK,
-	dishes: COLLECTION as DishHistory[],
+	dishes: COLLECTION,
 	pastWeeks: PAST_WEEKS,
 	neverSuggest: [],
 	rules: 'Fisk en gång i veckan.\nVegetariskt på måndagar.',
@@ -173,6 +207,8 @@ const base = (overrides: Partial<MenuRequest>): MenuRequest => ({
 	planned: [],
 	slots: [...DINNERS, ...WEEKEND_LUNCH],
 	newDishes: 1,
+	repeatWeeks: 4,
+	favouriteRepeatWeeks: 2,
 	...overrides
 });
 
@@ -278,10 +314,17 @@ export const CASES: Case[] = [
 		about: 'Rätter som hushållet aldrig vill ha igen, även som alternativ och ny idé',
 		request: base({
 			// As the app sends them: left out of the collection and named apart.
-			dishes: COLLECTION.filter((dish) => !NEVER.includes(dish.name)) as DishHistory[],
+			dishes: COLLECTION.filter((dish) => !NEVER.includes(dish.name)),
 			neverSuggest: NEVER,
 			newDishes: 3
 		}),
+		vegetarianMonday: true,
+		fishOnce: true
+	},
+	{
+		id: 'lang-vila',
+		about: 'Vanliga rätter vilar sex veckor, favoriter bara en',
+		request: base({ repeatWeeks: 6, favouriteRepeatWeeks: 1 }),
 		vegetarianMonday: true,
 		fishOnce: true
 	},

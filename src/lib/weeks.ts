@@ -1,6 +1,6 @@
 // How weeks are written in the app. A week is given by its Monday, YYYY-MM-DD.
 import { MEAL_LABELS } from './recipes';
-import { listText } from './names';
+import { listText, plural } from './names';
 import type { Meal } from './server/db/menus';
 
 const MONTHS = [
@@ -101,6 +101,9 @@ export function mondayOf(date: string): string {
 	const weekday = (new Date(date).getUTCDay() + 6) % 7;
 	return iso(addDays(date, -weekday));
 }
+
+/** "1 vecka", "4 veckor". */
+export const weeksText = (n: number) => plural(n, 'vecka', 'veckor');
 
 export function addWeeks(weekStart: string, weeks: number): string {
 	return iso(addDays(weekStart, weeks * 7));

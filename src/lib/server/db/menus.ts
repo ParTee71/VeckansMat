@@ -310,7 +310,11 @@ export async function setWeekEaters(
 }
 
 /** A dish in the collection, with how often and when it was eaten before a week. */
-export type DishHistory = Omit<RecipeSummary, 'id' | 'vote'> & { tags: string[] };
+export type DishHistory = Omit<RecipeSummary, 'id' | 'vote'> & {
+	tags: string[];
+	/** The household voted the dish a favourite. No vote counts as ok. */
+	favourite: boolean;
+};
 
 /** A week before, with its lines in order. Old notes do not always say the day. */
 export interface PastWeek {
@@ -340,7 +344,8 @@ export async function getMenuHistory(
 			.prepare(
 				`SELECT r.name,
 				   (SELECT json_group_array(tag) FROM (SELECT tag FROM recipe_tag WHERE recipe_id = r.id ORDER BY tag)) AS tags,
-				   count(e.recipe_id) AS timesEaten, max(e.week_start) AS lastWeek
+				   count(e.recipe_id) AS timesEaten, max(e.week_start) AS lastWeek,
+				   coalesce(r.vote = 'favorit', 0) AS favourite
 				 FROM recipe r
 				 LEFT JOIN (
 				   SELECT i.recipe_id, m.week_start FROM menu_item i JOIN menu m ON m.id = i.menu_id
@@ -364,9 +369,12 @@ export async function getMenuHistory(
 	type Row = PastWeek['rows'][number] & { weekStart: string };
 	const byWeek = Map.groupBy(rows.results as unknown as Row[], (row) => row.weekStart);
 	return {
-		dishes: (dishes.results as unknown as (Omit<DishHistory, 'tags'> & { tags: string })[]).map(
-			(dish) => ({ ...dish, tags: JSON.parse(dish.tags) })
-		),
+		dishes: (
+			dishes.results as unknown as (Omit<DishHistory, 'tags' | 'favourite'> & {
+				tags: string;
+				favourite: number;
+			})[]
+		).map((dish) => ({ ...dish, tags: JSON.parse(dish.tags), favourite: Boolean(dish.favourite) })),
 		pastWeeks: [...byWeek].map(([weekStart, rows]) => ({
 			weekStart,
 			rows: rows.map(({ weekday, meal, text }) => ({ weekday, meal, text }))

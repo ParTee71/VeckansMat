@@ -13,7 +13,7 @@
 		timesText,
 		type Vote
 	} from '#lib/recipes.ts';
-	import { weekName } from '#lib/weeks.ts';
+	import { weekName, weeksText } from '#lib/weeks.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -90,8 +90,13 @@
 		{/if}
 		<h1>{recipe.name}</h1>
 		<p class="eaten">{eaten}</p>
-		{#if facts.length}
+		{#if facts.length || vote === 'favorit'}
 			<ul class="facts">
+				{#if vote === 'favorit'}
+					<li class="favourite">
+						<Icon name="thumbUp" />Favorit · får komma efter {weeksText(data.favouriteWeeks)}
+					</li>
+				{/if}
 				{#each facts as fact, i (i)}<li>{fact}</li>{/each}
 			</ul>
 		{/if}
@@ -259,6 +264,17 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.375rem;
+	}
+
+	.facts .favourite {
+		gap: 0.375rem;
+		background: var(--md-sys-color-primary-container);
+		color: var(--md-sys-color-on-primary-container);
+	}
+
+	.favourite :global(svg) {
+		width: 1rem;
+		height: 1rem;
 	}
 
 	.facts li {
