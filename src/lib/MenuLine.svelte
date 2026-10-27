@@ -1,10 +1,12 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
 	import VoteButton from './VoteButton.svelte';
+	import { offerText, type ChosenOffer } from './offers.ts';
 	import { isDish, MEAL_LABELS, type Vote } from './recipes.ts';
 
 	// A dinner or a lunch on the menu, which opens for writing when tapped. Claude's dishes have a
 	// button that swaps them, and a new dish on a day that has passed one to vote on it instead.
+	// A dish chosen for an offer shows its price tag instead of why, which opens the offers.
 	let {
 		name,
 		lunch = false,
@@ -15,7 +17,9 @@
 		swapping = false,
 		busy = false,
 		vote = null,
+		offer = null,
 		onedit,
+		onoffer,
 		onswap,
 		onvote
 	}: {
@@ -37,19 +41,34 @@
 		vote?: Vote | null;
 		/** Given when the household may vote on the dish. */
 		onvote?: (vote: Vote) => void;
+		/** The offer the dish was chosen for. */
+		offer?: ChosenOffer | null;
+		onoffer?: () => void;
 	} = $props();
 </script>
 
 <div class={['menu-line', lunch && 'lunch', swapped && 'swapped']}>
-	<button type="button" class="show" aria-label="{name}: {text || 'tom'}" onclick={onedit}>
-		{#if lunch}<span class="label">{MEAL_LABELS.lunch}</span>{/if}
-		<span class="text">
-			<span class={['dish ink', !text && 'empty', text && !isDish(text) && 'other']}
-				>{text || 'Skriv en rätt'}</span
+	<div class="main">
+		<button type="button" class="show" aria-label="{name}: {text || 'tom'}" onclick={onedit}>
+			{#if lunch}<span class="label">{MEAL_LABELS.lunch}</span>{/if}
+			<span class="text">
+				<span class={['dish ink', !text && 'empty', text && !isDish(text) && 'other']}
+					>{text || 'Skriv en rätt'}</span
+				>
+				{#if meta && !offer}<span class="reason ink">{meta}</span>{/if}
+			</span>
+		</button>
+		{#if offer}
+			<button
+				type="button"
+				class="offer"
+				aria-label="Erbjudande: {offerText(offer)}. Visa veckans erbjudanden"
+				onclick={onoffer}
 			>
-			{#if meta}<span class="reason ink">{meta}</span>{/if}
-		</span>
-	</button>
+				<Icon name="tag" />{offerText(offer)}
+			</button>
+		{/if}
+	</div>
 	{#if onvote}
 		<div class="vote"><VoteButton name={text} {vote} {onvote} /></div>
 	{:else if swapping}
@@ -83,9 +102,16 @@
 		background: var(--md-sys-color-primary-container);
 	}
 
-	.show {
+	.main {
 		flex-grow: 1;
 		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.show {
+		align-self: stretch;
 		min-height: 2.75rem;
 		padding: var(--menu-line-padding);
 		border: 0;
@@ -125,6 +151,31 @@
 		font-size: 0.8125rem;
 		line-height: 1.3;
 		color: var(--md-sys-color-on-surface-variant);
+	}
+
+	/* The price tag, under the dish where the reason would be. */
+	.offer {
+		margin: -0.25rem 0 0.375rem 0.25rem;
+		min-height: 2rem;
+		padding: 0.25rem 0.625rem;
+		border: 0;
+		border-radius: 0.625rem;
+		background: var(--md-sys-color-primary-container);
+		color: var(--md-sys-color-on-primary-container);
+		font: inherit;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		text-align: left;
+		cursor: pointer;
+	}
+
+	.offer :global(svg) {
+		width: 0.875rem;
+		height: 0.875rem;
+		flex-shrink: 0;
 	}
 
 	.label {

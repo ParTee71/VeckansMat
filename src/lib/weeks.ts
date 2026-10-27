@@ -77,6 +77,12 @@ export function shortWeekName(weekStart: string): string {
 	return `v. ${week} ${year}`;
 }
 
+/** "1 november", from YYYY-MM-DD. */
+export function dateText(date: string): string {
+	const day = new Date(date);
+	return `${day.getUTCDate()} ${MONTHS[day.getUTCMonth()]}`;
+}
+
 /** "27 april – 3 maj", or "2 – 8 september" within one month. */
 export function weekDates(weekStart: string): string {
 	const monday = new Date(weekStart);

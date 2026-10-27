@@ -3,6 +3,7 @@
 	import { enhance } from '$app/forms';
 	import Icon from '#lib/Icon.svelte';
 	import Initial from '#lib/Initial.svelte';
+	import OffersSheet from '#lib/OffersSheet.svelte';
 	import StorePicker from '#lib/StorePicker.svelte';
 	import { postAction } from '#lib/actions.ts';
 	import { LUNCHBOX_EXTRA_CHOICES, MAX_NEW_DISHES, MAX_REPEAT_WEEKS } from '#lib/household.ts';
@@ -48,6 +49,7 @@
 	let chains = $derived(data.chains);
 	let memberPrices = $derived(data.settings.memberPrices);
 	let fetching = $state<Chain[]>([]);
+	let showingOffers = $state(false);
 	let picking = $state<Chain | null>(null);
 	let pickerOpen = $state(false);
 	let chainError = $state<string | null>(null);
@@ -350,7 +352,15 @@
 		Sparas direkt. Erbjudandena hämtas varje måndag morgon och när du byter butik.
 		{#if latest}Senast {fetchedText(latest)}: {offerCount} erbjudanden.{/if}
 	</p>
+	{#if offerCount}
+		<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
+		<m3e-button class="show-offers" variant="tonal" onclick={() => (showingOffers = true)}>
+			<span slot="icon" class="slot-icon"><Icon name="tag" /></span>Visa veckans erbjudanden
+		</m3e-button>
+	{/if}
 </main>
+
+<OffersSheet open={showingOffers} onclose={() => (showingOffers = false)} />
 
 <StorePicker
 	chain={picking}
@@ -361,6 +371,10 @@
 />
 
 <style>
+	.show-offers {
+		align-self: flex-start;
+	}
+
 	header {
 		max-width: 40rem;
 		margin: 0 auto;

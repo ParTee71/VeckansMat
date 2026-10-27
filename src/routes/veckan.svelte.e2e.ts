@@ -366,9 +366,10 @@ async function textTop(locator: Locator) {
 	return locator.evaluate((el) => {
 		const box = el.getBoundingClientRect();
 		const style = getComputedStyle(el);
+		// On the page, not the screen: focusing the field may scroll it up into view, which is no jump.
 		return {
-			x: box.left + parseFloat(style.paddingLeft),
-			y: box.top + parseFloat(style.paddingTop)
+			x: box.left + scrollX + parseFloat(style.paddingLeft),
+			y: box.top + scrollY + parseFloat(style.paddingTop)
 		};
 	});
 }

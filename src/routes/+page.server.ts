@@ -9,8 +9,9 @@ import {
 	type Choice,
 	type Meal
 } from '#lib/server/db/menus.ts';
-import { MenuSuggestError, suggestWeek, swapRow } from '#lib/server/menu-suggest.ts';
+import { MenuSuggestError, offersUntil, suggestWeek, swapRow } from '#lib/server/menu-suggest.ts';
 import { sortOffers } from '#lib/server/offer-ingredients.ts';
+import { offerChains } from '#lib/server/db/offers.ts';
 import { offerOf } from '#lib/offers.ts';
 import { listRecipes, setRecipeVote } from '#lib/server/db/recipes.ts';
 import { recipeVoteOf, weekOf } from '#lib/server/forms.ts';
@@ -21,13 +22,24 @@ import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ url }) => {
 	const today = swedishToday();
 	const { weekStart, thisWeek, nextWeek } = shownWeek(url.searchParams.get('vecka'), today);
-	const [week, people, settings, recipes] = await Promise.all([
+	const settings = getSettings(env.DB);
+	const [week, people, recipes, chains] = await Promise.all([
 		getWeek(env.DB, weekStart),
 		listPeople(env.DB),
-		getSettings(env.DB),
-		listRecipes(env.DB)
+		listRecipes(env.DB),
+		// The chains whose offers Claude sees when suggesting the week, for the planning card.
+		settings.then((s) => offerChains(env.DB, today, offersUntil(today), s.memberPrices))
 	]);
-	return { week, people, settings, recipes, thisWeek, nextWeek, today };
+	return {
+		week,
+		people,
+		settings: await settings,
+		recipes,
+		offerChains: chains,
+		thisWeek,
+		nextWeek,
+		today
+	};
 };
 
 const eatersOf = (form: FormData) =>

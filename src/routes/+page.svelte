@@ -9,9 +9,11 @@
 	import Icon from '#lib/Icon.svelte';
 	import MenuCard from '#lib/MenuCard.svelte';
 	import MenuLine from '#lib/MenuLine.svelte';
+	import OffersSheet from '#lib/OffersSheet.svelte';
+	import { chainLabel } from '#lib/offers.ts';
 	import WeekHeader from '#lib/WeekHeader.svelte';
 	import WhoEats from '#lib/WhoEats.svelte';
-	import { plural } from '#lib/names.ts';
+	import { listText, plural } from '#lib/names.ts';
 	import { MEAL_LABELS, usualDishes, type Vote } from '#lib/recipes.ts';
 	import type { Meal, RowInput, Week } from '#lib/server/db/menus.ts';
 	import type { RecipeSummary } from '#lib/server/db/recipes.ts';
@@ -118,6 +120,22 @@
 	let freeLunchDays = $derived(WEEK_DAYS.filter((d) => !lunchDays.includes(d)));
 
 	let extra = $derived(data.settings.lunchboxExtraPortions);
+
+	// The offers sheet, and the offers the week's dishes were chosen for, by day.
+	let showingOffers = $state(false);
+	// Only dinners as shown, so a day being written anew has let its offer go, and only offers
+	// that still hold, as the sheet lists what holds today.
+	let usedOffers = $derived(
+		week.rows.flatMap((r) =>
+			r.offer &&
+			r.meal === 'dinner' &&
+			r.text === textOf(r.weekday, 'dinner') &&
+			r.offer.validTo >= today
+				? [{ offer: r.offer, day: WEEKDAYS[r.weekday - 1] }]
+				: []
+		)
+	);
+	let offerChains = $derived(listText(data.offerChains.map(chainLabel)));
 
 	async function post(action: string, fields: Fields): Promise<ActionResult | null> {
 		const change = ++changes;
@@ -314,6 +332,8 @@
 			onswap={() => swap(weekday, meal)}
 			vote={votable && (pendingVotes[votable.recipeId!] ?? votable.vote)}
 			onvote={votable ? (v) => vote(votable.recipeId!, v) : undefined}
+			offer={saved?.offer}
+			onoffer={() => (showingOffers = true)}
 		/>
 	{/if}
 {/snippet}
@@ -344,6 +364,14 @@
 					bind:value={() => wish, (value) => (wishes[week.weekStart] = value)}
 				/>
 			</m3e-form-field>
+			{#if offerChains}
+				<p class="offers">
+					<Icon name="tag" />
+					{week.weekStart === data.nextWeek
+						? `Med erbjudandena som gäller nu, när ni handlar: ${offerChains}.`
+						: `Med erbjudanden från ${offerChains}.`}
+				</p>
+			{/if}
 			<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
 			<m3e-button
 				class="suggest"
@@ -434,6 +462,8 @@
 	}}
 />
 
+<OffersSheet open={showingOffers} used={usedOffers} onclose={() => (showingOffers = false)} />
+
 <m3e-dialog open={asking || undefined} onclosed={onAnswer}>
 	<span slot="header" class="dialog-header">
 		{hasSuggestion ? 'Föreslå veckan igen?' : 'Föreslå veckan?'}<Icon name="suggest" />
@@ -492,6 +522,22 @@
 
 	.suggest {
 		align-self: flex-start;
+	}
+
+	.offers {
+		margin: 0;
+		padding: 0 0.25rem;
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+		color: var(--md-sys-color-on-surface-variant);
+	}
+
+	.offers :global(svg) {
+		width: 1.125rem;
+		height: 1.125rem;
+		flex-shrink: 0;
 	}
 
 	.suggesting {

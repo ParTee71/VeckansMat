@@ -124,6 +124,12 @@ function weekSlots(week: Week): Slot[] {
 	return [...DINNERS, ...lunches];
 }
 
+/**
+ * The last day an offer must hold for Claude to see it. The household shops the week it plans, so
+ * the offers that hold now count, and for a couple of days more, so there is time to shop.
+ */
+export const offersUntil = (today: string) => daysAfter(today, 2);
+
 async function request(
 	db: D1Database,
 	week: Week,
@@ -138,9 +144,7 @@ async function request(
 		getSettings(db),
 		getMenuHistory(db, week.weekStart, PAST_WEEKS)
 	]);
-	// The household shops the week it plans, so the offers that hold now count, and for a couple
-	// of days more, so there is time to shop.
-	const offers = await currentOffers(db, today, daysAfter(today, 2), settings.memberPrices);
+	const offers = await currentOffers(db, today, offersUntil(today), settings.memberPrices);
 	return {
 		weekStart: week.weekStart,
 		...history,

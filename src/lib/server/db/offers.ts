@@ -1,6 +1,12 @@
 // The chains the household fetches offers from, and the offers fetched.
 // See docs/beslut/0023-erbjudanden.md.
-import type { Chain, ChainState, ChosenOffer } from '../../offers';
+import {
+	CHAINS,
+	type Chain,
+	type ChainState,
+	type ChosenOffer,
+	type ShownOffer
+} from '../../offers';
 import type { OfferToSort } from '../claude/offer-prompt';
 import type { Offer } from '../offers/common';
 
@@ -150,6 +156,16 @@ export async function saveIngredients(
 /** An offer a dinner can be built on, as Claude sees it when suggesting the week. */
 export type MenuOffer = ChosenOffer & { ingredient: string; brand: string; size: string };
 
+/**
+ * Offers a dinner can be built on, from the chains that are on, valid on ?1 and at least until
+ * ?2, with member prices only when ?3 is 1. Shared, so Claude, the sheet and the planning card
+ * agree on which offers there are.
+ */
+const USABLE = `FROM offer o JOIN offer_chain c ON c.chain = o.chain
+	WHERE c.enabled = 1 AND o.ingredient <> ''
+	  AND (o.valid_from IS NULL OR o.valid_from <= ?1) AND o.valid_to >= ?2
+	  AND (?3 OR o.member = 0)`;
+
 /** How many offers Claude sees at most, and of each ingredient. */
 const MENU_OFFERS = 80;
 const PER_INGREDIENT = 2;
@@ -171,14 +187,47 @@ export async function currentOffers(
 			   SELECT * FROM (
 			     SELECT o.*, o.valid_to AS validTo,
 			       row_number() OVER (PARTITION BY o.ingredient ORDER BY o.member, o.chain, o.id) AS n
-			     FROM offer o JOIN offer_chain c ON c.chain = o.chain
-			     WHERE c.enabled = 1 AND o.ingredient <> ''
-			       AND (o.valid_from IS NULL OR o.valid_from <= ?1) AND o.valid_to >= ?2
-			       AND (?3 OR o.member = 0))
+			     ${USABLE})
 			   WHERE n <= ?4 ORDER BY n, ingredient LIMIT ?5)
 			 ORDER BY ingredient, n`
 		)
 		.bind(today, until, memberPrices ? 1 : 0, PER_INGREDIENT, MENU_OFFERS)
 		.all<Omit<MenuOffer, 'member'> & { member: number }>();
 	return results.map((o) => ({ ...o, member: !!o.member }));
+}
+
+/**
+ * Every offer a dinner can be built on from the chains that are on, valid today, for the sheet
+ * Veckans erbjudanden. Member prices only when the household counts them.
+ */
+export async function dinnerOffers(
+	db: D1Database,
+	today: string,
+	memberPrices: boolean
+): Promise<ShownOffer[]> {
+	const { results } = await db
+		.prepare(
+			`SELECT o.chain, o.name, o.price, o.compare_price AS comparePrice, o.member,
+			   o.valid_to AS validTo
+			 ${USABLE}
+			 ORDER BY o.ingredient, o.name, o.id`
+		)
+		.bind(today, today, memberPrices ? 1 : 0)
+		.all<Omit<ShownOffer, 'member'> & { member: number }>();
+	return results.map((o) => ({ ...o, member: !!o.member }));
+}
+
+/** The chains Claude sees offers from when suggesting the week, as `currentOffers` picks them. */
+export async function offerChains(
+	db: D1Database,
+	today: string,
+	until: string,
+	memberPrices: boolean
+): Promise<Chain[]> {
+	const { results } = await db
+		.prepare(`SELECT DISTINCT o.chain ${USABLE}`)
+		.bind(today, until, memberPrices ? 1 : 0)
+		.all<{ chain: Chain }>();
+	const found = new Set(results.map((r) => r.chain));
+	return CHAINS.map((c) => c.key).filter((chain) => found.has(chain));
 }
