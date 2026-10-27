@@ -10,7 +10,7 @@ function worker(name: string, port: number) {
 		command: [
 			`npx wrangler d1 migrations apply DB --local ${persist}`,
 			`npx wrangler d1 execute DB --local ${persist} --file test/e2e-seed.sql`,
-			`npx wrangler dev .svelte-kit/cloudflare/_worker.js --port ${port} ${persist} --var ALLOW_LOCAL_FETCH:true ANTHROPIC_API_KEY:e2e CLAUDE_BASE_URL:http://localhost:4174/claude`
+			`npx wrangler dev --port ${port} ${persist} --var ALLOW_LOCAL_FETCH:true ANTHROPIC_API_KEY:e2e CLAUDE_BASE_URL:http://localhost:4174/claude OFFER_SITE_URL:http://localhost:4174/butik`
 		].join(' && '),
 		port
 	};

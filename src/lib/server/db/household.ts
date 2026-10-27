@@ -52,7 +52,8 @@ const KEYS: Record<keyof Settings, string> = {
 	newDishesPerWeek: 'new_dishes_per_week',
 	lunchboxExtraPortions: 'lunchbox_extra_portions',
 	repeatWeeks: 'repeat_weeks',
-	favouriteRepeatWeeks: 'favourite_repeat_weeks'
+	favouriteRepeatWeeks: 'favourite_repeat_weeks',
+	memberPrices: 'offer_member_prices'
 };
 
 /** The household's settings, with the defaults for those never saved. */
@@ -65,7 +66,9 @@ export async function getSettings(db: D1Database): Promise<Settings> {
 	for (const [name, key] of Object.entries(KEYS) as [keyof Settings, string][]) {
 		const value = stored.get(key);
 		if (value === undefined) continue;
-		const parsed = typeof DEFAULT_SETTINGS[name] === 'number' ? Number(value) : value;
+		const kind = typeof DEFAULT_SETTINGS[name];
+		const parsed =
+			kind === 'number' ? Number(value) : kind === 'boolean' ? value === 'true' : value;
 		// A value the form would not offer is read as never saved.
 		if (isValidSetting(name, parsed)) Object.assign(settings, { [name]: parsed });
 	}

@@ -9,6 +9,24 @@ styrningen är uppbyggd just nu står i
 
 Krockar med samma ställe på `main`.
 
+## 2026-10-27 – Grönt CI är inte samma sak som att PR:en går att merga
+
+**Vad hände:** Två trådar höjde båda versionen från 0.6.0 till 0.7.0 på varsin gren. När den
+ena mergades fick den andra en konflikt i `CHANGELOG.md` och `package.json`, och ingen session
+märkte det förrän ägaren såg det (#113).
+
+**Varför det inte syntes:**
+
+- **En PR med konflikt får inget nytt CI-utfall.** Sessionen väntade på en signal som aldrig
+  kom, och det senaste gröna utfallet såg ut som klartecken.
+- **Regeln räknades mot en gammal bild av `main`.** Versionsregeln var rätt, men tillämpades när
+  grenen skapades och aldrig igen.
+
+**Vad som ändrades:** `implement-issue` kräver att `mergeable_state` läses efter varje push och
+före merge, och säger hur konflikter i versionen löses. Workflowen **Konflikter** sätter
+etiketten `konflikt` och kommenterar när `main` rört sig, så att den session som bevakar PR:en
+väcks av en händelse i stället för att behöva komma ihåg att fråga.
+
 ## 2026-10-25 – En regel som inte följdes blev en spärr
 
 **Vad hände:** En tråd öppnade issue #72 och PR #74 samtidigt och mergade, utan att ägaren

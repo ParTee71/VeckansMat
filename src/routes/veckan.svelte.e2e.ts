@@ -82,7 +82,9 @@ test('a day is written with the keyboard alone', async ({ page }) => {
 });
 
 test('a day is chosen without writing, from the usual dishes or all of them', async ({ page }) => {
-	await open(page, '/');
+	// Reached from another view, as the app's components are then already there (#116).
+	await open(page, '/ratter');
+	await page.getByRole('link', { name: 'Veckan' }).click();
 	const loads = countLoads(page);
 	const sunday = page.getByRole('textbox', { name: 'Middag söndag' });
 
@@ -115,6 +117,7 @@ test('a day is chosen without writing, from the usual dishes or all of them', as
 	await expect(sheet.getByRole('button', { name: /^Linssoppa/ })).toHaveCount(0);
 	await sheet.locator('m3e-filter-chip', { hasText: 'Fisk' }).click();
 	const search = sheet.getByRole('searchbox', { name: 'Sök eller skriv en ny rätt' });
+	await expect(search).toBeInViewport();
 	await search.fill('soppa');
 	await expect(sheet.getByRole('button', { name: /^Linssoppa/ })).toBeVisible();
 	await expect(sheet.getByRole('button', { name: /^Fiskgratäng/ })).toHaveCount(0);

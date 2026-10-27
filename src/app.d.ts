@@ -13,6 +13,8 @@ declare global {
 			ANTHROPIC_API_KEY: string;
 			/** Set only in the browser tests, to a stand-in for Claude's API. */
 			CLAUDE_BASE_URL?: string;
+			/** Set only in the browser tests, to made-up chain sites in place of the real ones. */
+			OFFER_SITE_URL?: string;
 		}
 	}
 }

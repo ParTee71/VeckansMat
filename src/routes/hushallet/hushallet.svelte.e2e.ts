@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { open } from '../../../test/e2e';
+import { open, saved } from '../../../test/e2e';
 
 // Made-up people only. The tests share one database, so they run in order.
 test.describe.configure({ mode: 'serial' });
@@ -90,4 +90,41 @@ test('how often the same dish may come is saved as it is changed', async ({ page
 	await page.reload();
 	await expect(ordinary).toHaveText('3');
 	await expect(favourites).toHaveText('3');
+});
+
+test('chains and a store are chosen for the offers, and fetched at once', async ({ page }) => {
+	// Reached from Veckan, as the app's components are then already there (#116).
+	await open(page, '/');
+	await page.getByRole('button', { name: /äter$/ }).click();
+	await page.getByRole('link', { name: 'Ändra personer och regler' }).click();
+	await expect(page.getByRole('region', { name: 'Coop' })).toContainText('Kommer snart');
+
+	const lidl = page.getByRole('region', { name: 'Lidl' });
+	await lidl.getByRole('switch', { name: 'Lidl' }).click();
+	await expect(lidl).toContainText('Samma erbjudanden i alla butiker');
+	await expect(page.getByText(/Senast .+: 3 erbjudanden\./)).toBeVisible();
+
+	// Switched on without a store, ICA asks for one. The made-up site stands in for ica.se.
+	const ica = page.getByRole('region', { name: 'ICA' });
+	await ica.getByRole('switch', { name: 'ICA' }).click();
+	await expect(page.getByText('Välj ICA-butik')).toBeVisible();
+	await expect(page.getByRole('searchbox', { name: 'Sök på ort eller butik' })).toBeInViewport();
+	await page.getByRole('searchbox', { name: 'Sök på ort eller butik' }).fill('exempelby');
+	await page.getByRole('searchbox', { name: 'Sök på ort eller butik' }).press('Enter');
+	await page.getByRole('button', { name: /ICA Supermarket Exempelby/ }).click();
+	await expect(ica).toContainText('ICA Supermarket Exempelby');
+	await expect(page.getByText(/Senast .+: 5 erbjudanden\./)).toBeVisible();
+
+	await saved(page);
+	await lidl.getByRole('switch', { name: 'Lidl' }).click();
+	await expect(page.getByText(/: 2 erbjudanden\./)).toBeVisible();
+	await page.getByRole('switch', { name: 'Räkna med medlemspriser' }).click();
+
+	await open(page, '/hushallet');
+	await expect(ica.getByRole('switch', { name: 'ICA' })).toHaveAttribute('checked');
+	await expect(ica.getByRole('button', { name: 'Byt butik' })).toBeVisible();
+	await expect(lidl.getByRole('switch', { name: 'Lidl' })).not.toHaveAttribute('checked');
+	await expect(page.getByRole('switch', { name: 'Räkna med medlemspriser' })).not.toHaveAttribute(
+		'checked'
+	);
 });
