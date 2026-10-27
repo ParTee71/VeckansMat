@@ -5,6 +5,10 @@ skrivs vad som provats, varför, och hur det gick. Nyast överst. Hur
 styrningen är uppbyggd just nu står i
 [beslut 0008](beslut/0008-claude-code-uppsattning.md).
 
+## Prov för #113 – stängs utan merge
+
+Krockar med samma ställe på `main`.
+
 ## 2026-10-25 – En regel som inte följdes blev en spärr
 
 **Vad hände:** En tråd öppnade issue #72 och PR #74 samtidigt och mergade, utan att ägaren
