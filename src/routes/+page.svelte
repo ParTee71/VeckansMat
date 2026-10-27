@@ -188,6 +188,7 @@
 			meal: before.meal,
 			text: before.text,
 			reason: before.reason ?? '',
+			offer: JSON.stringify(before.offer ?? null),
 			alternatives: JSON.stringify(before.alternatives ?? []),
 			passedOn: JSON.stringify(before.passedOn ?? [])
 		});

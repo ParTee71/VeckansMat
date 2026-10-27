@@ -22,6 +22,7 @@
 		"eval:meny": "vitest run --config evals/vitest.config.ts evals/meny",
 		"eval:handla": "vitest run --config evals/vitest.config.ts evals/handla",
 		"eval:sort": "vitest run --config evals/vitest.config.ts evals/sort",
+		"eval:erbjudanden": "vitest run --config evals/vitest.config.ts evals/erbjudanden",
 		"verify": "npm run check && npm run lint && npm run test",
 		"types": "wrangler types"
 	},

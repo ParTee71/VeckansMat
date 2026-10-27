@@ -10,6 +10,8 @@ import {
 	type Meal
 } from '#lib/server/db/menus.ts';
 import { MenuSuggestError, suggestWeek, swapRow } from '#lib/server/menu-suggest.ts';
+import { sortOffers } from '#lib/server/offer-ingredients.ts';
+import { offerOf } from '#lib/offers.ts';
 import { listRecipes, setRecipeVote } from '#lib/server/db/recipes.ts';
 import { recipeVoteOf, weekOf } from '#lib/server/forms.ts';
 import { shownWeek, swedishToday } from '#lib/weeks.ts';
@@ -43,14 +45,19 @@ function slotOf(form: FormData): { weekday: number; meal: Meal } {
 	return { weekday, meal };
 }
 
-/** A list sent back as JSON to undo a swap, kept to the size Claude's answers are. */
-function listOf<T>(form: FormData, name: string, valid: (item: unknown) => item is T): T[] {
+/** A value sent back as JSON to undo a swap, or null when it is not JSON. */
+function jsonOf(form: FormData, name: string): unknown {
 	try {
-		const list: unknown = JSON.parse(String(form.get(name) ?? '[]'));
-		return Array.isArray(list) ? list.filter(valid).slice(0, 20) : [];
+		return JSON.parse(String(form.get(name) ?? 'null'));
 	} catch {
-		return [];
+		return null;
 	}
+}
+
+/** A list sent back to undo a swap, kept to the size Claude's answers are. */
+function listOf<T>(form: FormData, name: string, valid: (item: unknown) => item is T): T[] {
+	const list = jsonOf(form, name);
+	return Array.isArray(list) ? list.filter(valid).slice(0, 20) : [];
 }
 
 const isText = (item: unknown): item is string => typeof item === 'string' && item.length <= 100;
@@ -98,6 +105,9 @@ export const actions: Actions = {
 		const weekStart = weekOf(form);
 		try {
 			const wholeWeek = form.get('wholeWeek') === 'true';
+			// Offers not yet sorted after a fetch are sorted first, so Claude sees them: one batch at
+			// most, so the request keeps within D1's queries. It never throws.
+			await sortOffers(env.DB, askFor('offer'), 1);
 			await suggestWeek(env.DB, weekStart, wish, eatersOf(form), askMenu, wholeWeek);
 			return changed(weekStart);
 		} catch (e) {
@@ -121,9 +131,11 @@ export const actions: Actions = {
 			...slotOf(form),
 			text: String(form.get('text') ?? ''),
 			reason: String(form.get('reason') ?? '').slice(0, 100) || null,
-			alternatives: listOf(form, 'alternatives', isChoice).map(({ text, reason }) => ({
+			offer: offerOf(jsonOf(form, 'offer')),
+			alternatives: listOf(form, 'alternatives', isChoice).map(({ text, reason, offer }) => ({
 				text,
-				reason
+				reason,
+				offer: offerOf(offer)
 			})),
 			passedOn: listOf(form, 'passedOn', isText)
 		};

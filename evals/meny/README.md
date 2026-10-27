@@ -1,6 +1,6 @@
 # Eval: Claude föreslår veckan
 
-Mäter prompten i `src/lib/server/claude/menu-prompt.ts` mot tolv påhittade
+Mäter prompten i `src/lib/server/claude/menu-prompt.ts` mot sjutton påhittade
 fall i `cases.ts`: ett hushåll med 37 rätter, fem av dem favoriter, och fem
 veckor bakåt, och olika veckor att planera. Fallen är påhittade, aldrig hushållets egna.
 
@@ -18,8 +18,9 @@ aldrig i CI. Modellen är `claude-sonnet-5-5`, eller den som står i
 En vanlig vecka, någon som inte äter fisk, nötallergi, en vegetarian, noll
 och tre nya rätter, dagar som redan är skrivna, en önskan, lunch en vardag,
 tre nya rätter för en dag som bytts, rätter som hushållet aldrig vill ha igen,
-lång vila för vanliga rätter men kort för favoriter, och en önskan som försöker
-ändra reglerna. Om inget annat sägs vilar en vanlig rätt fyra veckor och en
+lång vila för vanliga rätter men kort för favoriter, en önskan som försöker
+ändra reglerna, och fyra veckor med erbjudanden: en vanlig, någon som inte äter
+fisk, en vegetarian och en önskan. Om inget annat sägs vilar en vanlig rätt fyra veckor och en
 favorit två.
 
 ## Bedömning
@@ -40,6 +41,9 @@ Varje fall bedöms med regler, inte av en annan modell:
 - ett kort skäl,
 - det önskade finns i veckan,
 - vid byte: inget som valts bort, och allt ur samlingen,
+- inga påhittade erbjudanden: numret finns i listan, och utan erbjudanden har
+  svaret inget nummer alls,
+- en eller två middagar byggda på erbjudanden, när det finns erbjudanden,
 - ingen rätt ur `<never_suggest>`, varken som rätt, alternativ eller ny idé.
   Den regeln bedöms på Claudes svar innan appen sållat bort något.
 

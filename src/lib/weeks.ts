@@ -105,6 +105,9 @@ export function mondayOf(date: string): string {
 /** "1 vecka", "4 veckor". */
 export const weeksText = (n: number) => plural(n, 'vecka', 'veckor');
 
+/** The date some days after another, both YYYY-MM-DD. */
+export const daysAfter = (date: string, days: number) => iso(addDays(date, days));
+
 export function addWeeks(weekStart: string, weeks: number): string {
 	return iso(addDays(weekStart, weeks * 7));
 }

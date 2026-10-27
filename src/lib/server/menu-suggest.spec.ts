@@ -4,21 +4,26 @@ import { answering, reason } from '../../../test/claude';
 import { useTestDb } from '../../../test/d1';
 import { WEEK } from '../../../test/fixtures';
 import { ClaudeLimitError, type Ask } from './claude/claude';
-import { MENU_PROMPT, MENU_SCHEMA, menuContent, type MenuRequest } from './claude/menu-prompt';
+import { MENU_PROMPT, menuContent, menuSchema, type MenuRequest } from './claude/menu-prompt';
 import { createPerson, saveSettings } from './db/household';
 import { getMenuHistory, getWeek, setWeekEaters, setWeekRow } from './db/menus';
 import { addRecipe, getRecipe, setRecipeVote, updateRecipe } from './db/recipes';
 import { suggestMenu, suggestWeek, swapRow } from './menu-suggest';
 import { addWeeks } from '../weeks';
+import { saveIngredients, saveOffers, setChainEnabled, type MenuOffer } from './db/offers';
 
 let db: D1Database;
 useTestDb((test) => (db = test));
 
+const MONDAY = { weekday: 1, meal: 'dinner' } as const;
 const alt = (dish: string, reason = 'Passar') => ({ dish, reason });
 const dinner = (
 	weekday: number,
 	dish: string,
-	alternatives = [alt(`${dish} 2`), alt(`${dish} 3`)]
+	alternatives: { dish: string; reason: string; offer?: number }[] = [
+		alt(`${dish} 2`),
+		alt(`${dish} 3`)
+	]
 ) => ({
 	weekday,
 	meal: 'dinner',
@@ -54,7 +59,7 @@ describe('asking Claude for a menu', () => {
 		expect(params.system).toBe(MENU_PROMPT);
 		expect(params.output_config).toEqual({
 			effort: 'medium',
-			format: { type: 'json_schema', schema: MENU_SCHEMA }
+			format: { type: 'json_schema', schema: menuSchema(false) }
 		});
 		const [material, plan] = menuContent(request());
 		expect(params.messages).toEqual([
@@ -426,8 +431,6 @@ describe('suggesting a week', () => {
 });
 
 describe('swapping a day', () => {
-	const MONDAY = { weekday: 1, meal: 'dinner' } as const;
-
 	it('passes over an alternative voted never again since the week was suggested', async () => {
 		await suggestWeek(db, WEEK, '', [], answering({ rows: [dinner(1, 'Tacos')] }));
 		await setRecipeVote(db, await addRecipe(db, 'Tacos 2'), 'aldrig');
@@ -445,6 +448,7 @@ describe('swapping a day', () => {
 				...MONDAY,
 				text: 'Tacos',
 				reason: 'Skäl 1',
+				offer: null,
 				alternatives: [
 					{ text: 'Tacos 2', reason: 'Passar' },
 					{ text: 'Tacos 3', reason: 'Passar' }
@@ -507,5 +511,143 @@ describe('swapping a day', () => {
 		expect(await swapRow(db, WEEK, MONDAY, vi.fn<Ask>())).toBeNull();
 		await setWeekRow(db, WEEK, { ...MONDAY, text: 'Äta ute' }, []);
 		expect(await swapRow(db, WEEK, MONDAY, vi.fn<Ask>())).toBeNull();
+	});
+});
+
+describe('the offers', () => {
+	const kyckling: MenuOffer = {
+		chain: 'willys',
+		name: 'Kycklingfilé',
+		brand: 'Exempelgården',
+		size: '900 g',
+		price: '89,90 kr/st',
+		member: true,
+		validTo: '2026-11-01',
+		ingredient: 'kycklingfilé'
+	};
+	const lax: MenuOffer = {
+		...kyckling,
+		chain: 'lidl',
+		name: 'Laxfilé',
+		brand: '',
+		size: '',
+		price: '129 kr/kg',
+		member: false,
+		ingredient: 'laxfilé'
+	};
+	const chosen = ({ chain, name, price, member, validTo }: MenuOffer) => ({
+		chain,
+		name,
+		price,
+		member,
+		validTo
+	});
+
+	it('are numbered for Claude with the week to plan, and left out when there are none', () => {
+		const [material, plan] = menuContent(request({ offers: [kyckling, lax] }));
+		expect(plan).toContain(
+			'<offers>\n1. kycklingfilé: Kycklingfilé, Exempelgården, 900 g · 89,90 kr/st · Willys · members only · until 2026-11-01\n2. laxfilé: Laxfilé · 129 kr/kg · Lidl · until 2026-11-01\n</offers>'
+		);
+		expect(material).not.toContain('<offers>');
+		expect(menuContent(request())[1]).not.toContain('<offers>');
+	});
+
+	it('keep the offer a dish or an alternative was chosen for, and never one not on the list', async () => {
+		const ask = answering({
+			rows: [
+				{
+					...dinner(1, 'Kycklinggryta', [{ ...alt('Laxpudding'), offer: 2 }, alt('Tacos')]),
+					offer: 1
+				},
+				{ ...dinner(2, 'Pizza'), offer: 7 }
+			]
+		});
+		const [monday, tuesday] = await suggestMenu(request({ offers: [kyckling, lax] }), ask);
+		expect(ask.mock.calls[0][0].output_config?.format).toEqual({
+			type: 'json_schema',
+			schema: menuSchema(true)
+		});
+		expect(JSON.stringify(menuSchema(true))).toContain('"offer"');
+		expect(JSON.stringify(menuSchema(false))).not.toContain('"offer"');
+		expect(monday.offer).toEqual(chosen(kyckling));
+		expect(monday.alternatives).toEqual([
+			{ text: 'Laxpudding', reason: 'Passar', offer: chosen(lax) },
+			{ text: 'Tacos', reason: 'Passar' }
+		]);
+		expect(tuesday).not.toHaveProperty('offer');
+	});
+
+	it('are kept for two dinners at most, and never for a lunch', async () => {
+		const slots = [1, 2, 3].map((weekday) => ({ weekday, meal: 'dinner' as const }));
+		const rows = await suggestMenu(
+			request({ offers: [kyckling, lax], slots: [...slots, { weekday: 6, meal: 'lunch' }] }),
+			answering({
+				rows: [
+					{ ...dinner(1, 'Kycklinggryta'), offer: 1 },
+					{ ...dinner(2, 'Laxpudding'), offer: 2 },
+					{ ...dinner(3, 'Kycklingsoppa'), offer: 1 },
+					{ ...dinner(6, 'Laxsallad'), meal: 'lunch', offer: 2 }
+				]
+			})
+		);
+		expect(rows.map((r) => !!r.offer)).toEqual([true, true, false, false]);
+	});
+
+	it('that hold now are given to Claude, the dish keeps its offer, and a swap or a hand takes it', async () => {
+		vi.useFakeTimers({ toFake: ['Date'] });
+		vi.setSystemTime(new Date('2026-10-27T10:00:00Z'));
+		try {
+			await setChainEnabled(db, 'willys', true);
+			await saveOffers(
+				db,
+				'willys',
+				[{ ...kyckling, comparePrice: '', category: '', validFrom: null }],
+				new Date()
+			);
+			await saveIngredients(db, [{ id: 1, ingredient: 'kycklingfilé' }]);
+			await saveSettings(db, { memberPrices: false });
+			const ask = answering({
+				rows: [
+					{
+						...dinner(1, 'Kycklinggryta', [{ ...alt('Kycklingsoppa'), offer: 1 }, alt('Tacos')]),
+						offer: 1
+					}
+				]
+			});
+			await suggestWeek(db, WEEK, '', [], ask);
+			// Member prices are off, so the only offer is left out.
+			expect(ask.mock.calls[0][0].messages[0].content[1]).not.toMatchObject({
+				text: expect.stringContaining('<offers>')
+			});
+
+			await saveSettings(db, { memberPrices: true });
+			await suggestWeek(db, WEEK, '', [], ask);
+			const [, plan] = ask.mock.calls[1][0].messages[0].content as { text: string }[];
+			expect(plan.text).toContain('1. kycklingfilé: Kycklingfilé');
+			expect((await getWeek(db, WEEK)).rows[0]).toMatchObject({
+				text: 'Kycklinggryta',
+				offer: chosen(kyckling)
+			});
+
+			// The alternative brings its own offer, and putting the day back brings the dish's.
+			const swap = await swapRow(db, WEEK, MONDAY, vi.fn<Ask>());
+			expect((await getWeek(db, WEEK)).rows[0]).toMatchObject({
+				text: 'Kycklingsoppa',
+				offer: chosen(kyckling)
+			});
+			await swapRow(db, WEEK, MONDAY, vi.fn<Ask>());
+			expect((await getWeek(db, WEEK)).rows[0]).toMatchObject({ text: 'Tacos', offer: null });
+			await setWeekRow(db, WEEK, swap!.before, []);
+			expect((await getWeek(db, WEEK)).rows[0]).toMatchObject({
+				text: 'Kycklinggryta',
+				offer: chosen(kyckling)
+			});
+
+			// Written by hand, the day has no offer.
+			await setWeekRow(db, WEEK, { ...MONDAY, text: 'Kycklinggryta' }, []);
+			expect((await getWeek(db, WEEK)).rows[0].offer).toBeNull();
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 });

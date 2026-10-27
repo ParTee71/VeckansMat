@@ -52,6 +52,21 @@ SvelteKits adapter ger bara en `fetch`-hanterare, så `src/worker.js` lindar in 
 till `scheduled`. Adaptern får en egen liten konfiguration (`wrangler.sveltekit.jsonc`) som
 säger var den ska skriva sin Worker, eftersom `main` i `wrangler.jsonc` nu är `src/worker.js`.
 
+### Claude väljer rätter efter erbjudandena (#109)
+
+- Efter varje hämtning sorterar Haiku (`OFFER_MODEL`) bort det som ingen middag lagas av och ger
+  resten ett råvarunamn, till exempel "kycklingfilé", i `offer.ingredient`. Det görs i
+  bakgrunden efter en hämtning i Hushållet, efter cronens hämtning och före ett veckoförslag,
+  så det som inte hann sorteras tas då. Prompten mäts med `npm run eval:erbjudanden`.
+- Hushållet handlar samma vecka som de planerar, så Claude får de erbjudanden som gäller i dag
+  och minst två dagar till, från kedjor som är påslagna. Högst två per råvara och 80 totalt.
+  Medlemspriser bara när hushållet räknar med dem.
+- Claude bygger en eller två middagar på ett erbjudande när det passar, och anger dess nummer.
+  Regler, krav och önskan går först. Ett nummer som inte finns i listan ignoreras.
+- Erbjudandet sparas med rätten (`menu_item.offer`) som det var, eftersom kedjans erbjudanden
+  ersätts varje vecka. Ett alternativ som byggs på ett erbjudande har med sitt, och en dag som
+  skrivs för hand har inget.
+
 ## Följder
 
 - Odokumenterade adresser kan ändras utan förvarning. Varje hämtare testas mot påhittade svar i
@@ -69,7 +84,19 @@ säger var den ska skriva sin Worker, eftersom `main` i `wrangler.jsonc` nu är 
 - Lokalt och i Playwright pekar `OFFER_SITE_URL` om alla kedjor till en påhittad sajt. Där är
   Coops butikssida ingen webbläsare, utan JSON med det sidan skulle ha fått.
 - Browser Rendering ingår i gratisnivån med 10 minuter webbläsartid per dygn. En hämtning från
-  Coop tar några sekunder och högst en halv minut, så det räcker gott för en butik i veckan. `wrangler dev` startar en
-  lokal Chromium för bindningen, som kräver `CI=1` om den körs som root.
-- Coops butiksnamn tas ur sidans adress, utan å, ä och ö, tills första hämtningen ger sidans
-  rubrik.
+  Coop tar några sekunder och högst en halv minut, så det räcker gott för en butik i veckan.
+  `wrangler dev` startar en lokal Chromium för bindningen, som kräver `CI=1` om den körs som
+  root.
+- Coops butiksnamn tas ur sidans adress, utan å, ä och ö, tills första hämtningen ger namnet ur
+  sidans data.
+- Sorteringen kostar under 2 cent i veckan med Haiku. Med erbjudanden blir ett veckoförslag
+  någon halv cent dyrare, eftersom Claude läser upp till 80 rader till.
+- Fältet `offer` finns i svarsformen bara när det finns erbjudanden. När det alltid fanns tänkte
+  Claude mer sällan på veckor utan erbjudanden och svarade sämre (`evals/meny`).
+- Erbjudandena sorteras efter varje hämtning och av cronen. Är några ändå osorterade när
+  veckan föreslås sorteras en sats på 150 först, så förslaget kan ta ett Haiku-anrop längre.
+- Claude ser högst 80 erbjudanden, en av varje råvara före en andra. Inom en råvara väljs
+  medlemspris sist och sedan kedja i bokstavsordning, inte lägst pris, eftersom kedjornas
+  priser är text i olika enheter.
+- Appen behåller ett erbjudande på högst två middagar per svar och aldrig på en lunch, även
+  om Claude svarar annorlunda. Ett byte av en enda dag kan ändå ge veckan en tredje.

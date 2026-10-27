@@ -110,6 +110,15 @@ function categories(text) {
 	};
 }
 
+/** Offers of meat, poultry and fish are kept, named by their first word, and the rest left out. */
+function offers(text) {
+	return {
+		offers: [...text.matchAll(/^(\d+)\. ([^ ·\n]+)/gm)]
+			.filter(([, , name]) => /filé|färs|kyckling|lax/i.test(name))
+			.map(([, number, name]) => ({ offer: Number(number), ingredient: name.toLowerCase() }))
+	};
+}
+
 /** What the stand-in reads from a request: a recipe by what the text says, and its cost. */
 function claude(request) {
 	const content = request.messages[0].content;
@@ -118,6 +127,7 @@ function claude(request) {
 	if (properties.rows) return [menu(text)];
 	if (properties.items) return [shopping(text)];
 	if (properties.dishes) return [categories(text)];
+	if (properties.offers) return [offers(text)];
 	// Only photos the phone made smaller, which are always JPEG.
 	if (content.some((block) => block.source?.media_type === 'image/jpeg')) {
 		return [answer('Saffransbullar', ['50 g jäst', '5 dl mjölk'], { servings: 30 })];
