@@ -6,6 +6,7 @@ Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ä
 ## 0.5.0
 
 - En ny rätt får en knapp i Veckan dagen efter: Hur var den? Ett tryck ger tumme upp (Ny favorit), nästa tummen åt sidan (Ok) och nästa tumme ner (Aldrig mer). Samma knapp finns på rättens sida. En rätt med tumme ner föreslår Claude aldrig igen, men den står kvar i Rätter med en liten märkning. (#99)
+- Claude föreslår inte samma rätt för ofta. I Hushållet väljer man hur många veckor det minst ska gå innan en rätt kommer igen, 4 från början, och ett kortare värde för favoriter, 2 från början. Claude väljer gärna en favorit som får komma, och favoriter syns med en tumme upp i Rätter och på rättens sida. (#98)
 
 ## 0.4.0
 

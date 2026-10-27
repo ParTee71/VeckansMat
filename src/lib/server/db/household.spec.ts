@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { useTestDb } from '../../../../test/d1';
-import { DEFAULT_SETTINGS } from '../../household';
+import { DEFAULT_SETTINGS, favouriteWeeks } from '../../household';
 import {
 	createPerson,
 	deletePerson,
@@ -49,10 +49,13 @@ describe('settings', () => {
 		await saveSettings(db, { menuRules: ' Fisk en gång i veckan. ' });
 		await saveSettings(db, { newDishesPerWeek: 0, lunchboxExtraPortions: 1 });
 		await saveSettings(db, { newDishesPerWeek: 3 });
+		await saveSettings(db, { repeatWeeks: 6, favouriteRepeatWeeks: 1 });
 		expect(await getSettings(db)).toEqual({
 			menuRules: 'Fisk en gång i veckan.',
 			newDishesPerWeek: 3,
-			lunchboxExtraPortions: 1
+			lunchboxExtraPortions: 1,
+			repeatWeeks: 6,
+			favouriteRepeatWeeks: 1
 		});
 	});
 
@@ -60,6 +63,9 @@ describe('settings', () => {
 		await expect(saveSettings(db, { newDishesPerWeek: 4 })).rejects.toThrow(RangeError);
 		await expect(saveSettings(db, { newDishesPerWeek: 1.5 })).rejects.toThrow(RangeError);
 		await expect(saveSettings(db, { lunchboxExtraPortions: 3 })).rejects.toThrow(RangeError);
+		await expect(saveSettings(db, { repeatWeeks: 0 })).rejects.toThrow(RangeError);
+		await expect(saveSettings(db, { repeatWeeks: 13 })).rejects.toThrow(RangeError);
+		await expect(saveSettings(db, { favouriteRepeatWeeks: 0 })).rejects.toThrow(RangeError);
 		expect(await getSettings(db)).toEqual(DEFAULT_SETTINGS);
 	});
 
@@ -68,5 +74,19 @@ describe('settings', () => {
 			.prepare("INSERT INTO setting (key, value) VALUES ('new_dishes_per_week', 'många')")
 			.run();
 		expect((await getSettings(db)).newDishesPerWeek).toBe(DEFAULT_SETTINGS.newDishesPerWeek);
+	});
+
+	it('are read with a favourite waiting at most as long as other dishes', async () => {
+		await saveSettings(db, { repeatWeeks: 2, favouriteRepeatWeeks: 3 });
+		expect(await getSettings(db)).toMatchObject({ repeatWeeks: 2, favouriteRepeatWeeks: 2 });
+	});
+
+	it('let a favourite wait at most as long as other dishes', () => {
+		expect(favouriteWeeks({ ...DEFAULT_SETTINGS, repeatWeeks: 4, favouriteRepeatWeeks: 2 })).toBe(
+			2
+		);
+		expect(favouriteWeeks({ ...DEFAULT_SETTINGS, repeatWeeks: 2, favouriteRepeatWeeks: 3 })).toBe(
+			2
+		);
 	});
 });

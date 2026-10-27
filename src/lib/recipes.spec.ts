@@ -12,6 +12,7 @@ import {
 const dish = (name: string, timesEaten = 0, lastWeek: string | null = null) => ({
 	id: 0,
 	name,
+	favourite: false,
 	timesEaten,
 	lastWeek,
 	category: null,

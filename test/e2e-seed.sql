@@ -24,3 +24,6 @@ INSERT INTO menu_item (menu_id, position, weekday, meal, text, recipe_id) VALUES
 	(2, 0, NULL, 'dinner', 'Linssoppa', 2),
 	(2, 1, NULL, 'dinner', 'Fiskgratäng', 1),
 	(3, 0, NULL, 'dinner', 'Linssoppa', 2);
+
+-- A favourite, for the thumb in Rätter (#98).
+UPDATE recipe SET vote = 'favorit' WHERE id = 3;

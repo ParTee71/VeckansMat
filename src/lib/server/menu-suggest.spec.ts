@@ -4,11 +4,18 @@ import { answering, reason } from '../../../test/claude';
 import { useTestDb } from '../../../test/d1';
 import { WEEK } from '../../../test/fixtures';
 import { ClaudeLimitError, type Ask } from './claude/claude';
-import { MENU_PROMPT, MENU_SCHEMA, menuContent, type MenuRequest } from './claude/menu-prompt';
+import {
+	MENU_PROMPT,
+	MENU_SCHEMA,
+	menuContent,
+	notBefore,
+	type MenuRequest
+} from './claude/menu-prompt';
 import { createPerson, saveSettings } from './db/household';
 import { getMenuHistory, getWeek, setWeekEaters, setWeekRow } from './db/menus';
 import { addRecipe, getRecipe, setRecipeVote, updateRecipe } from './db/recipes';
 import { suggestMenu, suggestWeek, swapRow } from './menu-suggest';
+import { addWeeks } from '../weeks';
 
 let db: D1Database;
 useTestDb((test) => (db = test));
@@ -40,6 +47,8 @@ const request = (overrides: Partial<MenuRequest> = {}): MenuRequest => ({
 		{ weekday: 2, meal: 'dinner' }
 	],
 	newDishes: 1,
+	repeatWeeks: 4,
+	favouriteRepeatWeeks: 2,
 	...overrides
 });
 
@@ -122,6 +131,36 @@ describe('asking Claude for a menu', () => {
 		]);
 	});
 
+	it('never gives a dish eaten too recently, but lets a favourite come sooner', async () => {
+		const eaten = (name: string, lastWeek: string, favourite = false) => ({
+			name,
+			tags: [],
+			timesEaten: 3,
+			lastWeek,
+			favourite,
+			category: null,
+			base: null
+		});
+		const dishes = [
+			// Eaten three weeks ago: rests until next week.
+			eaten('Tacos', addWeeks(WEEK, -3)),
+			eaten('Pizza', addWeeks(WEEK, -4)),
+			eaten('Pannkakor', addWeeks(WEEK, -1), true),
+			eaten('Fiskgratäng', addWeeks(WEEK, -2), true)
+		];
+		const ask = answering({
+			rows: [
+				dinner(1, 'Tacos', [alt('Pannkakor'), alt('Pizza'), alt('Paj')]),
+				dinner(2, 'Fiskgratäng', [alt('Tacos'), alt('Soppa')])
+			]
+		});
+		const rows = await suggestMenu(request({ dishes }), ask);
+		expect(rows).toMatchObject([
+			{ text: 'Pizza', alternatives: [{ text: 'Paj' }] },
+			{ text: 'Fiskgratäng', alternatives: [{ text: 'Soppa' }] }
+		]);
+	});
+
 	it('fails when the answer has no day, is not JSON, or the call fails', async () => {
 		expect(await reason(suggestMenu(request(), answering({ rows: [] })))).toBe('failed');
 		expect(await reason(suggestMenu(request(), answering({ menu: 'x' })))).toBe('failed');
@@ -146,6 +185,7 @@ describe('the material Claude gets', () => {
 		const curry = await addRecipe(db, 'Kycklinggryta med curry');
 		const recipe = (await getRecipe(db, curry))!;
 		await updateRecipe(db, curry, { ...recipe, tags: ['matlåda', 'kyckling'] });
+		await db.prepare("UPDATE recipe SET vote = 'favorit' WHERE id = ?").bind(curry).run();
 		await addRecipe(db, 'Linssoppa');
 		await setWeekRow(
 			db,
@@ -166,14 +206,21 @@ describe('the material Claude gets', () => {
 
 		const history = await getMenuHistory(db, WEEK, 8);
 		expect(history.dishes).toEqual([
-			{ name: 'Fiskgratäng', tags: [], timesEaten: 1, lastWeek: '2029-12-31' },
+			{
+				name: 'Fiskgratäng',
+				tags: [],
+				timesEaten: 1,
+				lastWeek: '2029-12-31',
+				favourite: false
+			},
 			{
 				name: 'Kycklinggryta med curry',
 				tags: ['kyckling', 'matlåda'],
 				timesEaten: 2,
-				lastWeek: '2030-02-25'
+				lastWeek: '2030-02-25',
+				favourite: true
 			},
-			{ name: 'Linssoppa', tags: [], timesEaten: 0, lastWeek: null }
+			{ name: 'Linssoppa', tags: [], timesEaten: 0, lastWeek: null, favourite: false }
 		]);
 		expect(history.pastWeeks).toEqual([
 			{
@@ -199,8 +246,9 @@ describe('the material Claude gets', () => {
 			})
 		);
 		expect(material).toContain(
-			'- Kycklinggryta med curry [kyckling, matlåda] · eaten 2 times, last v. 9 2030'
+			'- Kycklinggryta med curry [kyckling, matlåda] · eaten 2 times, last v. 9 2030 · favourite · not before v. 11 2030'
 		);
+		expect(material).toContain('- Fiskgratäng · eaten 1 time, last v. 1 2030\n');
 		expect(material).toContain('- Linssoppa · never eaten');
 		expect(material).toContain(
 			'v. 9 2030:\n  Monday dinner: Kycklinggryta med curry\n  Saturday lunch: Rester'
@@ -212,6 +260,25 @@ describe('the material Claude gets', () => {
 		expect(plan).toContain('<wish>\nNågot med pumpa\n</wish>');
 		expect(plan).toContain('Plan these, in this order: Monday dinner, Tuesday dinner.');
 		expect(plan).toContain('New dishes among the dinners: exactly 1.');
+	});
+
+	it('counts the weeks a dish rests across the new year', () => {
+		const dish = {
+			name: 'Tacos',
+			tags: [],
+			timesEaten: 1,
+			lastWeek: '2030-12-23',
+			favourite: false,
+			category: null,
+			base: null
+		};
+		const rest = { repeatWeeks: 4, favouriteRepeatWeeks: 2 };
+		expect(notBefore(dish, { ...rest, weekStart: '2031-01-06' })).toBe('2031-01-20');
+		expect(notBefore(dish, { ...rest, weekStart: '2031-01-20' })).toBeNull();
+		expect(
+			notBefore({ ...dish, favourite: true }, { ...rest, weekStart: '2031-01-06' })
+		).toBeNull();
+		expect(notBefore({ ...dish, lastWeek: null }, { ...rest, weekStart: '2031-01-06' })).toBeNull();
 	});
 
 	it('asks for no more new dishes than there are dinners to fill', () => {
@@ -285,6 +352,18 @@ describe('suggesting a week', () => {
 				{ text: 'Rätt 1 3', reason: 'Passar' }
 			]
 		});
+	});
+
+	it('lets dishes rest as long as the household set', async () => {
+		await setWeekRow(db, addWeeks(WEEK, -5), { weekday: 5, meal: 'dinner', text: 'Tacos' }, []);
+		const material = async () => {
+			const ask = answering(fullWeek('Rätt'));
+			await suggestWeek(db, WEEK, '', [], ask, true);
+			return (ask.mock.calls[0][0].messages[0].content as { text: string }[])[0].text;
+		};
+		expect(await material()).not.toContain('not before');
+		await saveSettings(db, { repeatWeeks: 6 });
+		expect(await material()).toContain('· not before v. 11 2030');
 	});
 
 	it('keeps what was written by hand, and asks again for the rest', async () => {

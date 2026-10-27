@@ -34,6 +34,12 @@ in och $10 ut, och månadstaket är $5 (0006).
   lapp.
 - **Antalet nya rätter** per vecka är husets inställning (0–3). En ny rätt blir ett recept med
   bara namn när den står i veckan, som när den skrivs för hand.
+- **Samma rätt inte för ofta** (#98). Hur många veckor en rätt vilar efter att den ätits är
+  husets inställning (1–12, från början 4), och favoriter har en egen, kortare (från början 2,
+  aldrig längre än för andra rätter). Favorit är `recipe.vote = 'favorit'`; ingen röst räknas
+  som ok. Koden räknar ut vilka rätter som vilar och skriver "not before v. N" och "favourite" i
+  samlingen, så att Claude inte behöver räkna veckor. Ett svar eller alternativ som ändå vilar
+  sållas bort i koden, som det som valts bort. Det man skriver in själv styr man alltid.
 - **Medel effort.** Evalen gav 99,8 % med medel och 95 % med låg, och låg föreslog en gång fisk
   till den som inte äter fisk. Medel tar 15–20 sekunder och kostar ungefär 3 cent per vecka.
 - **Prompt caching** på hushållets material (samlingen, veckorna och reglerna), som är lika

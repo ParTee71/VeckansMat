@@ -1,11 +1,12 @@
 // Claude suggests a week's dinners and lunches, and new dishes for a day the household swaps.
 // See docs/beslut/0014-veckoforslag.md.
-import { answerText, nameKey } from '../names';
+import { answerText, nameKey, stripTags } from '../names';
 import { askJson, type Ask } from './claude/claude';
 import {
 	MENU_PROMPT,
 	MENU_SCHEMA,
 	menuContent,
+	notBefore,
 	type MenuRequest,
 	type Slot
 } from './claude/menu-prompt';
@@ -66,13 +67,20 @@ export async function suggestMenu(request: MenuRequest, ask: Ask): Promise<Sugge
 	);
 	const { rows } = answer;
 
-	// What was passed on, or is never wanted again, is left out even when Claude chooses it.
-	const excluded = new Set([...(request.passedOn ?? []), ...request.neverSuggest].map(nameKey));
+	// What was passed on, is never wanted again, or was eaten too recently is left out even when
+	// Claude chooses it.
+	const excluded = new Set([
+		...[...(request.passedOn ?? []), ...request.neverSuggest].map(nameKey),
+		// Named as Claude saw them.
+		...request.dishes
+			.filter((dish) => notBefore(dish, request))
+			.map((dish) => nameKey(stripTags(dish.name)))
+	]);
 	const suggested: SuggestedRow[] = [];
 	for (const slot of request.slots) {
 		const row = rows.find((r) => r && sameSlot(r, slot));
 		if (!row) continue;
-		// The dish first, then its alternatives, each named once and none passed on before.
+		// The dish first, then its alternatives, each named once and none left out above.
 		const seen = new Set(excluded);
 		const choices: Choice[] = [];
 		for (const c of [row, ...(Array.isArray(row.alternatives) ? row.alternatives : [])]) {
@@ -127,7 +135,9 @@ async function request(
 		wish,
 		planned: planned.map(({ weekday, meal, text }) => ({ weekday, meal, text })),
 		slots: fill,
-		newDishes: settings.newDishesPerWeek
+		newDishes: settings.newDishesPerWeek,
+		repeatWeeks: settings.repeatWeeks,
+		favouriteRepeatWeeks: settings.favouriteRepeatWeeks
 	};
 }
 

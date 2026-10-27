@@ -5,7 +5,12 @@ import { afterAll, it } from 'vitest';
 import { nameKey } from '../../src/lib/names';
 import { isDish } from '../../src/lib/recipes';
 import type { Ask } from '../../src/lib/server/claude/claude';
-import { MENU_PROMPT, menuContent, slotName } from '../../src/lib/server/claude/menu-prompt';
+import {
+	MENU_PROMPT,
+	menuContent,
+	notBefore,
+	slotName
+} from '../../src/lib/server/claude/menu-prompt';
 import {
 	MenuSuggestError,
 	suggestMenu,
@@ -13,7 +18,7 @@ import {
 } from '../../src/lib/server/menu-suggest';
 import { liveClaude, type Effort } from '../live';
 import { report, score, type Scored } from '../report';
-import { CASES, COLLECTION, RECENT, type Case } from './cases';
+import { CASES, COLLECTION, type Case } from './cases';
 
 const MODEL = process.env.MENU_MODEL ?? 'claude-sonnet-5-5';
 // To compare efforts without changing the app.
@@ -53,6 +58,10 @@ interface Choice {
 /** Each rule passed or failed, by its name. */
 function grade(c: Case, rows: SuggestedRow[], answered: string[] | null): Record<string, boolean> {
 	const { request } = c;
+	const rests = (text: string) => {
+		const dish = byKey.get(nameKey(text));
+		return !!dish && !!notBefore(dish, request);
+	};
 	const checks: Record<string, boolean> = {};
 	// The app leaves these out in code too, so the answer itself is graded.
 	if (request.neverSuggest.length) {
@@ -76,7 +85,6 @@ function grade(c: Case, rows: SuggestedRow[], answered: string[] | null): Record
 		const choices = [row.text, ...row.alternatives.map((a) => a.text)];
 		checks[`två alternativ, ${where}`] = row.alternatives.length === 2;
 		checks[`kort skäl, ${where}`] = !!row.reason && row.reason.split(/\s+/).length <= 6;
-		if (isDish(row.text)) checks[`inte de två senaste veckorna, ${where}`] = !RECENT.has(row.text);
 		checks[`alternativ inte i veckan, ${where}`] = row.alternatives.every(
 			(alt) => !keys.includes(nameKey(alt.text))
 		);
@@ -94,6 +102,9 @@ function grade(c: Case, rows: SuggestedRow[], answered: string[] | null): Record
 			checks[`ny rätt märkt Ny idé, ${where}`] = row.reason.startsWith('Ny idé');
 		}
 	}
+
+	// The app leaves out a dish that rests, so this is graded on what Claude answered.
+	checks['ingen rätt som vilar'] = !!answered && !answered.some(rests);
 
 	if (request.passedOn) {
 		const passed = new Set(request.passedOn.map(nameKey));
@@ -113,6 +124,24 @@ function grade(c: Case, rows: SuggestedRow[], answered: string[] | null): Record
 			(byKey.has(nameKey(monday.text))
 				? tagged(monday.text, 'vegetariskt')
 				: !hasWord(monday.text, ['kött', 'korv', 'kyckling', 'fläsk', 'fisk', 'lax', 'färs']));
+	}
+	// A favourite that is free and that everyone eating can eat is chosen gladly.
+	const free = COLLECTION.filter(
+		(dish) =>
+			dish.favourite &&
+			!rests(dish.name) &&
+			![...request.planned.map((r) => r.text), ...request.neverSuggest].some(
+				(text) => nameKey(text) === nameKey(dish.name)
+			) &&
+			!(
+				c.forbidden &&
+				(dish.tags.includes(c.forbidden.tag) || hasWord(dish.name, c.forbidden.words))
+			)
+	);
+	if (!request.passedOn && free.length) {
+		checks['en ledig favorit i veckan'] = rows.some((r) =>
+			free.some((dish) => nameKey(dish.name) === nameKey(r.text))
+		);
 	}
 	if (c.fishOnce) {
 		checks['fisk en gång'] = dinners.filter((r) => tagged(r.text, 'fisk')).length === 1;

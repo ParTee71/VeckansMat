@@ -176,11 +176,17 @@
 				<m3e-list>
 					{#each group.recipes as recipe (recipe.id)}
 						<m3e-list-action href="/ratter/{recipe.id}">
-							{recipe.name}
-							{#if recipe.vote === 'aldrig'}
-								<span class="never" role="img" aria-label="Aldrig mer"><Icon name="thumbUp" /></span
-								>
-							{/if}
+							<span
+								>{recipe.name}{#if recipe.vote === 'favorit'}<span
+										class="vote"
+										role="img"
+										aria-label="Favorit"><Icon name="thumbUp" /></span
+									>{:else if recipe.vote === 'aldrig'}<span
+										class="vote never"
+										role="img"
+										aria-label="Aldrig mer"><Icon name="thumbUp" /></span
+									>{/if}</span
+							>
 							<span slot="trailing" class="meta">{meta(recipe.timesEaten, recipe.lastWeek)}</span>
 						</m3e-list-action>
 					{/each}
@@ -265,15 +271,22 @@
 		padding-bottom: 0.25rem;
 	}
 
-	.never {
+	.vote {
 		margin-left: 0.25rem;
 		vertical-align: -0.125rem;
+		color: var(--md-sys-color-primary);
+	}
+
+	.vote :global(svg) {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.never {
 		color: var(--md-sys-color-on-surface-variant);
 	}
 
 	.never :global(svg) {
-		width: 1rem;
-		height: 1rem;
 		transform: scaleY(-1);
 	}
 

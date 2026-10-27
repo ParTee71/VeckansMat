@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS, isValidSetting, type Settings } from '../../household';
+import { DEFAULT_SETTINGS, favouriteWeeks, isValidSetting, type Settings } from '../../household';
 
 interface Person {
 	id: number;
@@ -50,7 +50,9 @@ export async function deletePerson(db: D1Database, id: number): Promise<void> {
 const KEYS: Record<keyof Settings, string> = {
 	menuRules: 'menu_rules',
 	newDishesPerWeek: 'new_dishes_per_week',
-	lunchboxExtraPortions: 'lunchbox_extra_portions'
+	lunchboxExtraPortions: 'lunchbox_extra_portions',
+	repeatWeeks: 'repeat_weeks',
+	favouriteRepeatWeeks: 'favourite_repeat_weeks'
 };
 
 /** The household's settings, with the defaults for those never saved. */
@@ -67,7 +69,7 @@ export async function getSettings(db: D1Database): Promise<Settings> {
 		// A value the form would not offer is read as never saved.
 		if (isValidSetting(name, parsed)) Object.assign(settings, { [name]: parsed });
 	}
-	return settings;
+	return { ...settings, favouriteRepeatWeeks: favouriteWeeks(settings) };
 }
 
 /** Saves the given settings and leaves the others as they are. Throws on a value out of range. */

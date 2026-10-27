@@ -1,8 +1,8 @@
 # Eval: Claude föreslår veckan
 
 Mäter prompten i `src/lib/server/claude/menu-prompt.ts` mot tolv påhittade
-fall i `cases.ts`: ett hushåll med 37 rätter och tre veckor bakåt, och olika
-veckor att planera. Fallen är påhittade, aldrig hushållets egna.
+fall i `cases.ts`: ett hushåll med 37 rätter, fem av dem favoriter, och fem
+veckor bakåt, och olika veckor att planera. Fallen är påhittade, aldrig hushållets egna.
 
 ## Köra
 
@@ -17,15 +17,20 @@ aldrig i CI. Modellen är `claude-sonnet-5-5`, eller den som står i
 
 En vanlig vecka, någon som inte äter fisk, nötallergi, en vegetarian, noll
 och tre nya rätter, dagar som redan är skrivna, en önskan, lunch en vardag,
-tre nya rätter för en dag som bytts, rätter som hushållet aldrig vill ha igen
-och en önskan som försöker ändra reglerna.
+tre nya rätter för en dag som bytts, rätter som hushållet aldrig vill ha igen,
+lång vila för vanliga rätter men kort för favoriter, och en önskan som försöker
+ändra reglerna. Om inget annat sägs vilar en vanlig rätt fyra veckor och en
+favorit två.
 
 ## Bedömning
 
 Varje fall bedöms med regler, inte av en annan modell:
 
 - varje dag som efterfrågas har ett svar,
-- varje rätt en gång i veckan, och ingen från de två senaste veckorna,
+- varje rätt en gång i veckan,
+- ingen rätt som vilar, varken som rätt eller alternativ, i det Claude svarade
+  (appen sållar bort sådana efteråt, så regeln bedöms före det),
+- en ledig favorit i veckan, när det finns en som alla som äter kan äta,
 - inget förbjudet, varken som rätt eller alternativ, för den som inte äter
   fisk, är allergisk mot nötter eller är vegetarian,
 - vegetariskt på måndag och fisk en gång när reglerna säger det,

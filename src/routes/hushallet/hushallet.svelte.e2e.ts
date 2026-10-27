@@ -53,10 +53,41 @@ test('the rules for every week are saved as they are changed', async ({ page }) 
 
 	await page.reload();
 	await expect(rules).toHaveValue('Fisk en gång i veckan.\nVegetariskt på måndagar.');
-	await expect(page.getByRole('status')).toHaveText('2');
+	await expect(page.getByRole('status', { name: 'Nya rätter per vecka' })).toHaveText('2');
 	// m3e drops aria-pressed from a button that is not a toggle, so the variant shows the choice.
 	await expect(page.getByRole('button', { name: '1 extra portion', exact: true })).toHaveAttribute(
 		'variant',
 		'filled'
 	);
+});
+
+test('how often the same dish may come is saved as it is changed', async ({ page }) => {
+	await open(page, '/hushallet');
+	const ordinary = page.getByRole('status', { name: /^Vanliga rätter/ });
+	const favourites = page.getByRole('status', { name: /^Favoriter/ });
+	await expect(ordinary).toHaveText('4');
+	await expect(favourites).toHaveText('2');
+
+	const saving = () => page.waitForResponse((r) => r.url().includes('/settings'));
+	let saved = saving();
+	await page.getByRole('button', { name: 'Fler veckor för favoriter' }).click();
+	await saved;
+	await expect(favourites).toHaveText('3');
+	// A favourite never waits longer than other dishes.
+	saved = saving();
+	await page.getByRole('button', { name: 'Fler veckor för favoriter' }).click();
+	await saved;
+	await expect(page.getByRole('button', { name: 'Fler veckor för favoriter' })).toHaveAttribute(
+		'disabled'
+	);
+	saved = saving();
+	await page.getByRole('button', { name: 'Färre veckor för vanliga rätter' }).click();
+	await saved;
+	await expect(ordinary).toHaveText('3');
+	await expect(favourites).toHaveText('3');
+	await expect(page.getByText('tidigast efter 3 veckor')).toHaveCount(2);
+
+	await page.reload();
+	await expect(ordinary).toHaveText('3');
+	await expect(favourites).toHaveText('3');
 });
