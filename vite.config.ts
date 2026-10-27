@@ -12,7 +12,11 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
-			adapter: adapter(),
+			// The adapter's own config says where it writes the Worker that src/worker.js wraps.
+			adapter: adapter({
+				config: 'wrangler.sveltekit.jsonc',
+				platformProxy: { configPath: 'wrangler.jsonc' }
+			}),
 			// Shown in the app and /api/health; a new name also tells open tabs to reload.
 			version: { name: pkg.version }
 		})

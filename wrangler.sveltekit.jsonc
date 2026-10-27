@@ -1,0 +1,12 @@
+// Only for adapter-cloudflare, which writes SvelteKit's Worker to `main` here. The Worker that is
+// run, src/worker.js, wraps it; everything else is in wrangler.jsonc.
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "veckansmat",
+	"compatibility_date": "2026-10-23",
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	}
+}

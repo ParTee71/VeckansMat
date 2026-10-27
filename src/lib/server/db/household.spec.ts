@@ -50,13 +50,17 @@ describe('settings', () => {
 		await saveSettings(db, { newDishesPerWeek: 0, lunchboxExtraPortions: 1 });
 		await saveSettings(db, { newDishesPerWeek: 3 });
 		await saveSettings(db, { repeatWeeks: 6, favouriteRepeatWeeks: 1 });
+		await saveSettings(db, { memberPrices: false });
 		expect(await getSettings(db)).toEqual({
 			menuRules: 'Fisk en gång i veckan.',
 			newDishesPerWeek: 3,
 			lunchboxExtraPortions: 1,
 			repeatWeeks: 6,
-			favouriteRepeatWeeks: 1
+			favouriteRepeatWeeks: 1,
+			memberPrices: false
 		});
+		await saveSettings(db, { memberPrices: true });
+		expect((await getSettings(db)).memberPrices).toBe(true);
 	});
 
 	it('out of range are refused', async () => {

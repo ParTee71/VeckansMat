@@ -4,6 +4,9 @@ DELETE FROM recipe;
 DELETE FROM claude_call;
 DELETE FROM person;
 DELETE FROM setting;
+DELETE FROM offer;
+UPDATE offer_chain SET enabled = 0, store_id = NULL, store_name = NULL, fetched_at = NULL,
+	requested_at = NULL, error = NULL;
 
 INSERT INTO recipe (id, name, name_key, servings, time_minutes) VALUES
 	(1, 'Fiskgratäng', 'fiskgratäng', 4, 45),

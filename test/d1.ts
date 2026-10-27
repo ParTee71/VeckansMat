@@ -21,14 +21,19 @@ export async function createTestDb() {
 	};
 }
 
-/** Empties the database, so each test starts clean. The other tables follow by cascade. */
+/** Empties the database, so each test starts clean. The other tables follow by cascade, and
+ * the chains, which are always there, are set back. */
 async function clearTestDb(db: D1Database) {
 	await db.batch([
 		db.prepare('DELETE FROM menu'),
 		db.prepare('DELETE FROM recipe'),
 		db.prepare('DELETE FROM claude_call'),
 		db.prepare('DELETE FROM person'),
-		db.prepare('DELETE FROM setting')
+		db.prepare('DELETE FROM setting'),
+		db.prepare('DELETE FROM offer'),
+		db.prepare(
+			'UPDATE offer_chain SET enabled = 0, store_id = NULL, store_name = NULL, fetched_at = NULL, requested_at = NULL, error = NULL'
+		)
 	]);
 }
 

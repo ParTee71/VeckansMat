@@ -3,12 +3,16 @@
 	"name": "veckansmat",
 	"compatibility_date": "2026-10-23",
 	"compatibility_flags": ["nodejs_als"],
-	"main": ".svelte-kit/cloudflare/_worker.js",
+	// Wraps the Worker adapter-cloudflare builds (see wrangler.sveltekit.jsonc) with the cron.
+	"main": "src/worker.js",
 	"assets": {
 		"binding": "ASSETS",
 		"directory": ".svelte-kit/cloudflare"
 	},
 	"workers_dev": true,
+	// The week's offers, every ten minutes on Monday morning, one chain each run. Within the hours
+	// Willys's robots.txt asks for. Inherited by env.preview. See docs/beslut/0023-erbjudanden.md.
+	"triggers": { "crons": ["*/10 5 * * 1"] },
 	"preview_urls": false,
 	// Workers Logs keeps console.error from the app, such as why a call to Claude failed, so it can
 	// be read in the dashboard afterwards. Inherited by env.preview.

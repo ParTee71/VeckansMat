@@ -3,7 +3,17 @@
 	import { enhance } from '$app/forms';
 	import Icon from '#lib/Icon.svelte';
 	import Initial from '#lib/Initial.svelte';
+	import StorePicker from '#lib/StorePicker.svelte';
+	import { postAction } from '#lib/actions.ts';
 	import { LUNCHBOX_EXTRA_CHOICES, MAX_NEW_DISHES, MAX_REPEAT_WEEKS } from '#lib/household.ts';
+	import {
+		chainLabel,
+		fetchedText,
+		hasStores,
+		type Chain,
+		type ChainState,
+		type StoreChoice
+	} from '#lib/offers.ts';
 	import { weeksText } from '#lib/weeks.ts';
 	import type { PageProps, SubmitFunction } from './$types';
 
@@ -31,6 +41,89 @@
 		changed = [...changed, ...fields];
 		await tick();
 		settingsForm.requestSubmit();
+	}
+
+	// The chains change at once when tapped. Fetching their offers takes a few seconds, shown
+	// on the chain, and the chain's row is then replaced with what the server answers.
+	let chains = $derived(data.chains);
+	let memberPrices = $derived(data.settings.memberPrices);
+	let fetching = $state<Chain[]>([]);
+	let picking = $state<Chain | null>(null);
+	let pickerOpen = $state(false);
+	let chainError = $state<string | null>(null);
+
+	let shown = $derived(chains.filter((c) => c.enabled && c.available && c.fetchedAt));
+	let latest = $derived(
+		shown
+			.map((c) => c.fetchedAt!)
+			.sort()
+			.at(-1)
+	);
+	let offerCount = $derived(shown.reduce((sum, c) => sum + c.offers, 0));
+
+	function update(chain: Chain, change: Partial<ChainState>) {
+		chains = chains.map((c) => (c.chain === chain ? { ...c, ...change } : c));
+	}
+
+	// Each chain's latest change, so an answer to an earlier one never overwrites it.
+	const sent: Partial<Record<Chain, number>> = {};
+
+	/** Saves a change to the chain, or puts back how it was when the save fails. */
+	async function send(
+		before: ChainState,
+		action: 'chain' | 'store',
+		fields: Record<string, string>
+	) {
+		const { chain } = before;
+		const id = (sent[chain] = (sent[chain] ?? 0) + 1);
+		fetching = [...fetching, chain];
+		const result = await postAction(action, { chain, ...fields });
+		if (sent[chain] !== id) return;
+		fetching = fetching.filter((c) => c !== chain);
+		if (result?.type === 'success' && result.data?.chain) {
+			update(chain, result.data.chain as ChainState);
+			chainError = null;
+		} else {
+			update(chain, before);
+			chainError = 'Det gick inte att spara. Försök igen.';
+		}
+	}
+
+	function toggle(chain: ChainState, enabled: boolean) {
+		update(chain.chain, { enabled });
+		// A chain without a store is saved when the store is chosen.
+		if (enabled && hasStores(chain.chain) && !chain.storeId) choose(chain.chain);
+		else send(chain, 'chain', { enabled: String(enabled) });
+	}
+
+	function choose(chain: Chain) {
+		picking = chain;
+		pickerOpen = true;
+	}
+
+	function pick(store: StoreChoice) {
+		const before = chains.find((c) => c.chain === picking)!;
+		pickerOpen = false;
+		update(before.chain, { enabled: true, storeId: store.id, storeName: store.name, error: null });
+		send(before, 'store', { id: store.id, name: store.name });
+	}
+
+	/** Closed without a store, a chain that had none is off again, as it is saved. */
+	function closePicker() {
+		const chain = chains.find((c) => c.chain === picking);
+		if (chain && !chain.storeId) update(chain.chain, { enabled: false });
+		pickerOpen = false;
+		picking = null;
+	}
+
+	async function toggleMemberPrices(on: boolean) {
+		memberPrices = on;
+		const result = await postAction('settings', { memberPrices: String(on) });
+		if (result?.type === 'success') chainError = null;
+		else {
+			memberPrices = !on;
+			chainError = 'Det gick inte att spara. Försök igen.';
+		}
 	}
 </script>
 
@@ -195,7 +288,80 @@
 			rättens sida. Det du skriver in själv bestämmer du alltid.
 		</p>
 	</form>
+
+	<h2>Erbjudanden</h2>
+	<p class="note">
+		Claude väljer gärna rätter med det som är på extrapris i de butiker ni handlar i. Slå på de
+		kedjor ni brukar handla hos.
+	</p>
+	{#each chains as chain (chain.chain)}
+		{@const label = chainLabel(chain.chain)}
+		<section class="chain" aria-label={label}>
+			<div class="chain-row">
+				<label for="chain-{chain.chain}">{label}</label>
+				<!-- m3e-switch takes no name from its label, so it is given its own. -->
+				<m3e-switch
+					id="chain-{chain.chain}"
+					aria-label={label}
+					checked={chain.enabled || undefined}
+					disabled={!chain.available || undefined}
+					onchange={(e: Event & { currentTarget: HTMLElement & { checked: boolean } }) =>
+						toggle(chain, e.currentTarget.checked)}
+				></m3e-switch>
+			</div>
+			{#if !chain.available}
+				<p class="supporting">Kommer snart</p>
+			{:else if chain.enabled}
+				{#if hasStores(chain.chain)}
+					<div class="chain-row store">
+						<span class="supporting">{chain.storeName ?? 'Ingen butik vald'}</span>
+						<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-button is a button with its own keyboard handling) -->
+						<m3e-button variant="text" onclick={() => choose(chain.chain)}>
+							{chain.storeId ? 'Byt butik' : 'Välj butik'}
+						</m3e-button>
+					</div>
+				{:else}
+					<p class="supporting">Samma erbjudanden i alla butiker</p>
+				{/if}
+				{#if fetching.includes(chain.chain)}
+					<p class="supporting" role="status">Hämtar erbjudanden …</p>
+				{:else if chain.error}
+					<p class="error-text">Kunde inte hämta senast. {chain.error}</p>
+				{/if}
+			{/if}
+		</section>
+	{/each}
+
+	<div class="setting">
+		<span class="named">
+			<label for="member-prices">Räkna med medlemspriser</label>
+			<span class="supporting">Stammis, Willys Plus, Coop-medlem och Lidl Plus</span>
+		</span>
+		<m3e-switch
+			id="member-prices"
+			aria-label="Räkna med medlemspriser"
+			checked={memberPrices || undefined}
+			onchange={(e: Event & { currentTarget: HTMLElement & { checked: boolean } }) =>
+				toggleMemberPrices(e.currentTarget.checked)}
+		></m3e-switch>
+	</div>
+
+	{#if chainError}
+		<p class="error-text" role="alert">{chainError}</p>
+	{/if}
+	<p class="note">
+		Sparas direkt. Erbjudandena hämtas varje måndag morgon och när du byter butik.
+		{#if latest}Senast {fetchedText(latest)}: {offerCount} erbjudanden.{/if}
+	</p>
 </main>
+
+<StorePicker
+	chain={picking}
+	open={pickerOpen}
+	chosen={chains.find((c) => c.chain === picking)?.storeId ?? null}
+	onpick={pick}
+	onclose={closePicker}
+/>
 
 <style>
 	header {
@@ -275,6 +441,36 @@
 		width: 1rem;
 		height: 1rem;
 		color: var(--md-sys-color-primary);
+	}
+
+	.chain {
+		padding: 0.25rem 0.5rem 0.25rem 1rem;
+		border-radius: 1rem;
+		background: var(--md-sys-color-surface-container);
+	}
+
+	.chain-row {
+		min-height: 3.25rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+
+	.chain-row label {
+		font-size: 1.0625rem;
+		font-weight: 500;
+	}
+
+	.chain-row.store {
+		min-height: 2.75rem;
+		border-top: 1px solid var(--md-sys-color-outline-variant);
+	}
+
+	.chain p {
+		margin: 0;
+		padding: 0.5rem 0;
+		border-top: 1px solid var(--md-sys-color-outline-variant);
 	}
 
 	output {
