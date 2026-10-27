@@ -86,7 +86,15 @@
 			await update({ invalidateAll: false });
 			if (result.type === 'success' && result.data?.added) {
 				const { id, name } = result.data.added as { id: number; name: string };
-				added.push({ id, name, timesEaten: 0, lastWeek: null, category: null, base: null });
+				added.push({
+					id,
+					name,
+					timesEaten: 0,
+					lastWeek: null,
+					category: null,
+					base: null,
+					vote: null
+				});
 				query = '';
 			}
 		};
@@ -169,6 +177,10 @@
 					{#each group.recipes as recipe (recipe.id)}
 						<m3e-list-action href="/ratter/{recipe.id}">
 							{recipe.name}
+							{#if recipe.vote === 'aldrig'}
+								<span class="never" role="img" aria-label="Aldrig mer"><Icon name="thumbUp" /></span
+								>
+							{/if}
 							<span slot="trailing" class="meta">{meta(recipe.timesEaten, recipe.lastWeek)}</span>
 						</m3e-list-action>
 					{/each}
@@ -251,6 +263,18 @@
 		--m3e-list-item-one-line-top-space: 0.25rem;
 		--m3e-list-item-one-line-bottom-space: 0.25rem;
 		padding-bottom: 0.25rem;
+	}
+
+	.never {
+		margin-left: 0.25rem;
+		vertical-align: -0.125rem;
+		color: var(--md-sys-color-on-surface-variant);
+	}
+
+	.never :global(svg) {
+		width: 1rem;
+		height: 1rem;
+		transform: scaleY(-1);
 	}
 
 	.meta {

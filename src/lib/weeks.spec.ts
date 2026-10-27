@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	addWeeks,
+	canVote,
 	dayList,
 	isWeekStart,
 	isoWeek,
@@ -78,5 +79,29 @@ describe('the week to plan', () => {
 	it('follows the date in Sweden', () => {
 		// 23:30 UTC on a Tuesday is already Wednesday in Sweden.
 		expect(swedishToday(new Date('2026-10-27T23:30:00Z'))).toBe('2026-10-28');
+	});
+});
+
+describe('voting on a line', () => {
+	// Week 10 2030 starts on Monday 4 March.
+	const row = (weekday: number, isNew = true, recipeId: number | null = 1) => ({
+		weekday,
+		isNew,
+		recipeId
+	});
+
+	it('is for a new dish on a day that has passed, in an old week too', () => {
+		expect(canVote(row(2), '2030-03-04', '2030-03-06')).toBe(true);
+		expect(canVote(row(7), '2030-03-04', '2030-04-01')).toBe(true);
+	});
+
+	it('is not for today or a day to come', () => {
+		expect(canVote(row(3), '2030-03-04', '2030-03-06')).toBe(false);
+		expect(canVote(row(4), '2030-03-04', '2030-03-06')).toBe(false);
+	});
+
+	it('is not for a dish eaten a week before, nor a line that is no dish', () => {
+		expect(canVote(row(1, false), '2030-03-04', '2030-03-06')).toBe(false);
+		expect(canVote(row(1, false, null), '2030-03-04', '2030-03-06')).toBe(false);
 	});
 });

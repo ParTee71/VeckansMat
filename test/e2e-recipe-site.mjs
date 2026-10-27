@@ -46,9 +46,13 @@ const DINNERS = [
 	'Pannkakor'
 ];
 
-/** A week for the days the request asks for, or new dishes for a day swapped. */
+/**
+ * A week for the days the request asks for, or new dishes for a day swapped. Like a model that
+ * slips, it chooses the first dish never to be suggested for Monday, which the app leaves out.
+ */
 function menu(text) {
 	if (text.includes('Krascha')) return 'inget menyförslag';
+	const never = text.match(/<never_suggest>\n- (.+)/)?.[1];
 	const asked = text.split('\n').find((line) => /^(Plan these|Suggest)/.test(line));
 	const slots = [...asked.matchAll(/(\w+day) (dinner|lunch)/g)].map(([, day, meal]) => ({
 		weekday: DAYS.indexOf(day) + 1,
@@ -59,7 +63,11 @@ function menu(text) {
 		rows: slots.map(({ weekday, meal }) => ({
 			weekday,
 			meal,
-			dish: again ? 'Fiskpinnar' : meal === 'lunch' ? 'Varm korv' : DINNERS[weekday - 1],
+			dish: again
+				? 'Fiskpinnar'
+				: meal === 'lunch'
+					? 'Varm korv'
+					: (weekday === 1 && never) || DINNERS[weekday - 1],
 			reason: again ? 'Snabbt' : 'Senast v. 36',
 			alternatives: (again ? ['Köttbullar', 'Lasagne'] : ['Pytt i panna', 'Korv stroganoff']).map(
 				(dish) => ({ dish, reason: 'Ett annat förslag' })

@@ -1,5 +1,5 @@
 import { nameKey } from '../../names';
-import type { Base, Category } from '../../recipes';
+import type { Base, Category, Vote } from '../../recipes';
 import type { Meal } from './menus';
 
 /** Inserts a recipe with just a name, unless one with the same key exists. */
@@ -19,6 +19,8 @@ export interface RecipeSummary {
 	/** Null until Claude has guessed, or when the household left it empty. */
 	category: Category | null;
 	base: Base | null;
+	/** What the household thinks of the dish, or null when nobody has voted. */
+	vote: Vote | null;
 }
 
 /** All recipes with how often and when they were last eaten, in no particular order. */
@@ -26,7 +28,7 @@ export async function listRecipes(db: D1Database): Promise<RecipeSummary[]> {
 	const { results } = await db
 		.prepare(
 			`SELECT r.id, r.name, count(i.id) AS timesEaten, max(m.week_start) AS lastWeek, r.category,
-			   r.base
+			   r.base, r.vote
 			 FROM recipe r
 			 LEFT JOIN menu_item i ON i.recipe_id = r.id
 			 LEFT JOIN menu m ON m.id = i.menu_id
@@ -58,6 +60,7 @@ export interface Recipe {
 	base: Base | null;
 	/** The sort and base are Claude's guess, not chosen by the household. */
 	categoryGuessed: boolean;
+	vote: Vote | null;
 	/** The weeks with the dish, newest first and undated last. */
 	weeks: RecipeWeek[];
 }
@@ -68,7 +71,7 @@ export async function getRecipe(db: D1Database, id: number): Promise<Recipe | nu
 		db
 			.prepare(
 				`SELECT id, name, servings, time_minutes AS timeMinutes, instructions, source_url AS sourceUrl,
-				 ingredients_guessed AS ingredientsGuessed, category, base, category_guessed AS categoryGuessed
+				 ingredients_guessed AS ingredientsGuessed, category, base, category_guessed AS categoryGuessed, vote
 				 FROM recipe WHERE id = ?`
 			)
 			.bind(id),
@@ -176,13 +179,18 @@ export const guessCategoryStatement = (
 		)
 		.bind(category, base, recipeId);
 
+/** Keeps what the household thinks of a dish. */
+export async function setRecipeVote(db: D1Database, id: number, vote: Vote): Promise<void> {
+	await db.prepare('UPDATE recipe SET vote = ? WHERE id = ?').bind(vote, id).run();
+}
+
 /**
  * A recipe as the household writes it. The sort and base are left as they are when undefined,
  * since a form need not have them.
  */
 export type RecipeInput = Omit<
 	Recipe,
-	'id' | 'weeks' | 'ingredientsGuessed' | 'category' | 'base' | 'categoryGuessed'
+	'id' | 'weeks' | 'ingredientsGuessed' | 'category' | 'base' | 'categoryGuessed' | 'vote'
 > & { category?: Category | null; base?: Base | null };
 
 /** Thrown when a recipe is renamed to a name another recipe has. */

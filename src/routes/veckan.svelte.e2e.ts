@@ -1,5 +1,6 @@
 import { expect, test, type Locator } from '@playwright/test';
-import { countLoads, open, saved } from '../../test/e2e';
+import { countLoads, open, saved, writeDay } from '../../test/e2e';
+import { shownWeek, swedishToday } from '../lib/weeks';
 
 // The made-up dishes come from test/e2e-seed.sql. Veckan shows this week or the next, so the
 // tests do not depend on which day they run.
@@ -235,6 +236,70 @@ test('Claude suggests the week, and a day is swapped with one tap', async ({ pag
 	await page.keyboard.press('Escape');
 	await expect(dialog).not.toHaveAttribute('open');
 });
+
+test('a new dish is voted on with one button, and Aldrig mer is never suggested', async ({
+	page
+}) => {
+	// Saturday in the week Veckan shows, on the phone, so the days before have passed.
+	const { weekStart } = shownWeek(null, swedishToday());
+	await page.clock.setFixedTime(new Date(`${weekStart}T12:00:00+01:00`).getTime() + 5 * DAY);
+	await open(page, '/');
+	// Enter goes on to the next day, which Escape closes.
+	for (const [day, dish] of [
+		['måndag', 'Linssoppa'],
+		['torsdag', 'Shakshuka'],
+		['söndag', 'Pho']
+	]) {
+		await writeDay(page, day, dish);
+		await page.keyboard.press('Escape');
+	}
+
+	// Only a new dish on a day that has passed: not one eaten before, nor one still to come.
+	const vote = (dish: string) => page.locator(`m3e-button[aria-label^="Röst på ${dish}:"]`);
+	await expect(vote('Linssoppa')).toHaveCount(0);
+	await expect(vote('Pho')).toHaveCount(0);
+	await expect(page.locator('m3e-icon-button[aria-label="Byt Middag torsdag"]')).toHaveCount(0);
+
+	// Each tap takes the next vote, saved without loading the page.
+	const loads = countLoads(page);
+	await expect(vote('Shakshuka')).toHaveText('Hur var den?');
+	for (const label of ['Ny favorit', 'Ok', 'Aldrig mer']) {
+		await vote('Shakshuka').click();
+		await expect(vote('Shakshuka')).toHaveText(label);
+		await expect(vote('Shakshuka')).toHaveAttribute(
+			'aria-label',
+			`Röst på Shakshuka: ${label}. Tryck för att ändra.`
+		);
+	}
+	await saved(page);
+	expect(loads()).toBe(0);
+	await page.reload();
+	await expect(vote('Shakshuka')).toHaveText('Aldrig mer');
+
+	// Rätter marks it, and the dish page shows the same vote and changes it.
+	await open(page, '/ratter');
+	const dish = page.locator('m3e-list-action', { hasText: 'Shakshuka' });
+	await expect(dish.getByRole('img', { name: 'Aldrig mer' })).toBeVisible();
+	await dish.click();
+	await expect(vote('Shakshuka')).toHaveText('Aldrig mer');
+	await vote('Shakshuka').click();
+	await expect(vote('Shakshuka')).toHaveText('Ny favorit');
+	await saved(page);
+	await page.reload();
+	await expect(vote('Shakshuka')).toHaveText('Ny favorit');
+	await vote('Shakshuka').click();
+	await vote('Shakshuka').click();
+	await expect(vote('Shakshuka')).toHaveText('Aldrig mer');
+
+	// Claude's stand-in chooses it for Monday, and the app takes the next dish instead.
+	await open(page, '/');
+	await page.locator('m3e-button', { hasText: 'Föreslå veckan' }).click();
+	await page.locator('m3e-dialog m3e-button', { hasText: 'Hela veckan' }).click();
+	await expect(page.getByRole('button', { name: 'Middag måndag: Pytt i panna' })).toBeVisible();
+	await expect(page.getByRole('button', { name: /Shakshuka/ })).toHaveCount(0);
+});
+
+const DAY = 24 * 60 * 60 * 1000;
 
 /** Where the text of an element starts, inside its padding. */
 async function textTop(locator: Locator) {

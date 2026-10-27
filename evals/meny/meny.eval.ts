@@ -1,8 +1,10 @@
 // Suggests every case's week with the real API and the app's own prompt, grades the answers by
 // rules and compares them with the last saved run. See evals/meny/README.md.
+import type Anthropic from '@anthropic-ai/sdk';
 import { afterAll, it } from 'vitest';
 import { nameKey } from '../../src/lib/names';
 import { isDish } from '../../src/lib/recipes';
+import type { Ask } from '../../src/lib/server/claude/claude';
 import { MENU_PROMPT, menuContent, slotName } from '../../src/lib/server/claude/menu-prompt';
 import {
 	MenuSuggestError,
@@ -32,10 +34,32 @@ const tagged = (text: string, tag: string) => byKey.get(nameKey(text))?.tags.inc
 const hasWord = (text: string, words: string[]) =>
 	words.some((word) => text.toLocaleLowerCase('sv').includes(word));
 
+/** Every dish Claude named in its answer, before the app left any out, or null when unreadable. */
+function answeredDishes(message: Anthropic.Message): string[] | null {
+	const text = message.content.map((block) => (block.type === 'text' ? block.text : '')).join('');
+	try {
+		const { rows } = JSON.parse(text) as { rows: Choice[] };
+		return rows.flatMap((row) => [row.dish, ...row.alternatives.map((alt) => alt.dish)]);
+	} catch {
+		return null;
+	}
+}
+
+interface Choice {
+	dish: string;
+	alternatives: { dish: string }[];
+}
+
 /** Each rule passed or failed, by its name. */
-function grade(c: Case, rows: SuggestedRow[]): Record<string, boolean> {
+function grade(c: Case, rows: SuggestedRow[], answered: string[] | null): Record<string, boolean> {
 	const { request } = c;
 	const checks: Record<string, boolean> = {};
+	// The app leaves these out in code too, so the answer itself is graded.
+	if (request.neverSuggest.length) {
+		const never = new Set(request.neverSuggest.map(nameKey));
+		checks['inget som aldrig ska föreslås'] =
+			!!answered && answered.every((dish) => !never.has(nameKey(dish)));
+	}
 	for (const slot of request.slots) {
 		checks[`svar för ${slotName(slot)}`] = rows.some(
 			(r) => r.weekday === slot.weekday && r.meal === slot.meal
@@ -101,7 +125,13 @@ function grade(c: Case, rows: SuggestedRow[]): Record<string, boolean> {
 
 CASES.forEach((c, i) => {
 	it.concurrent(c.id, async () => {
-		const { ask, spent } = claude();
+		const { ask: live, spent } = claude();
+		let answered: string[] | null = null;
+		const ask: Ask = async (params) => {
+			const message = await live(params);
+			answered = answeredDishes(message);
+			return message;
+		};
 		const started = Date.now();
 		let rows: SuggestedRow[] = [];
 		let failure = '';
@@ -111,7 +141,7 @@ CASES.forEach((c, i) => {
 			if (!(e instanceof MenuSuggestError)) throw e;
 			failure = e.reason;
 		}
-		const checks = failure ? { svar: false } : grade(c, rows);
+		const checks = failure ? { svar: false } : grade(c, rows, answered);
 		results[i] = {
 			id: c.id,
 			...score(checks),

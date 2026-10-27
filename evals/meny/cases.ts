@@ -143,6 +143,9 @@ export interface Case {
 	wished?: string[];
 }
 
+/** Dishes the household never wants again: two it often ate, and a likely new idea. */
+const NEVER = ['Köttbullar med potatismos', 'Chili con carne', 'Shakshuka'];
+
 const FISH = {
 	tag: 'fisk',
 	words: ['fisk', 'lax', 'torsk', 'sill', 'räk', 'jansson', 'tonfisk', 'sej', 'abborre', 'kolja']
@@ -160,6 +163,7 @@ const base = (overrides: Partial<MenuRequest>): MenuRequest => ({
 	weekStart: WEEK,
 	dishes: COLLECTION as DishHistory[],
 	pastWeeks: PAST_WEEKS,
+	neverSuggest: [],
 	rules: 'Fisk en gång i veckan.\nVegetariskt på måndagar.',
 	eaters: [
 		{ name: 'Kim', requirements: '' },
@@ -268,6 +272,18 @@ export const CASES: Case[] = [
 			slots: [{ weekday: 5, meal: 'dinner' }],
 			passedOn: ['Hemgjord pizza', 'Chili con carne', 'Kålpudding']
 		})
+	},
+	{
+		id: 'aldrig-mer',
+		about: 'Rätter som hushållet aldrig vill ha igen, även som alternativ och ny idé',
+		request: base({
+			// As the app sends them: left out of the collection and named apart.
+			dishes: COLLECTION.filter((dish) => !NEVER.includes(dish.name)) as DishHistory[],
+			neverSuggest: NEVER,
+			newDishes: 3
+		}),
+		vegetarianMonday: true,
+		fishOnce: true
 	},
 	{
 		id: 'instruktion-i-onskan',

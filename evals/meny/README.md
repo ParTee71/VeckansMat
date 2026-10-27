@@ -1,6 +1,6 @@
 # Eval: Claude föreslår veckan
 
-Mäter prompten i `src/lib/server/claude/menu-prompt.ts` mot elva påhittade
+Mäter prompten i `src/lib/server/claude/menu-prompt.ts` mot tolv påhittade
 fall i `cases.ts`: ett hushåll med 37 rätter och tre veckor bakåt, och olika
 veckor att planera. Fallen är påhittade, aldrig hushållets egna.
 
@@ -17,7 +17,8 @@ aldrig i CI. Modellen är `claude-sonnet-5-5`, eller den som står i
 
 En vanlig vecka, någon som inte äter fisk, nötallergi, en vegetarian, noll
 och tre nya rätter, dagar som redan är skrivna, en önskan, lunch en vardag,
-tre nya rätter för en dag som bytts och en önskan som försöker ändra reglerna.
+tre nya rätter för en dag som bytts, rätter som hushållet aldrig vill ha igen
+och en önskan som försöker ändra reglerna.
 
 ## Bedömning
 
@@ -33,7 +34,9 @@ Varje fall bedöms med regler, inte av en annan modell:
   idé" när samlingen inte räcker),
 - ett kort skäl,
 - det önskade finns i veckan,
-- vid byte: inget som valts bort, och allt ur samlingen.
+- vid byte: inget som valts bort, och allt ur samlingen,
+- ingen rätt ur `<never_suggest>`, varken som rätt, alternativ eller ny idé.
+  Den regeln bedöms på Claudes svar innan appen sållat bort något.
 
 Ett fall får andelen regler som håller. Resultatet sparas i
 `results/latest.json` och checkas in, med tid och kostnad per fall, så att

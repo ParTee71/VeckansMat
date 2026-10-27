@@ -10,21 +10,22 @@ import {
 	type Meal
 } from '#lib/server/db/menus.ts';
 import { MenuSuggestError, suggestWeek, swapRow } from '#lib/server/menu-suggest.ts';
-import { listRecipes } from '#lib/server/db/recipes.ts';
-import { weekOf } from '#lib/server/forms.ts';
-import { shownWeek } from '#lib/weeks.ts';
+import { listRecipes, setRecipeVote } from '#lib/server/db/recipes.ts';
+import { recipeVoteOf, weekOf } from '#lib/server/forms.ts';
+import { shownWeek, swedishToday } from '#lib/weeks.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 // The weeks Veckan shows: this week and the next. Older weeks are under Veckor.
 export const load: PageServerLoad = async ({ url }) => {
-	const { weekStart, thisWeek, nextWeek } = shownWeek(url.searchParams.get('vecka'));
+	const today = swedishToday();
+	const { weekStart, thisWeek, nextWeek } = shownWeek(url.searchParams.get('vecka'), today);
 	const [week, people, settings, recipes] = await Promise.all([
 		getWeek(env.DB, weekStart),
 		listPeople(env.DB),
 		getSettings(env.DB),
 		listRecipes(env.DB)
 	]);
-	return { week, people, settings, recipes, thisWeek, nextWeek };
+	return { week, people, settings, recipes, thisWeek, nextWeek, today };
 };
 
 const eatersOf = (form: FormData) =>
@@ -76,6 +77,13 @@ export const actions: Actions = {
 		const text = String(form.get('text') ?? '');
 		const weekStart = weekOf(form);
 		await setWeekRow(env.DB, weekStart, { ...slotOf(form), text }, eatersOf(form));
+		return changed(weekStart);
+	},
+	vote: async ({ request }) => {
+		const form = await request.formData();
+		const weekStart = weekOf(form);
+		const { recipeId, vote } = recipeVoteOf(form);
+		await setRecipeVote(env.DB, recipeId, vote);
 		return changed(weekStart);
 	},
 	eaters: async ({ request }) => {

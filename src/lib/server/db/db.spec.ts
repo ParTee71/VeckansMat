@@ -22,8 +22,8 @@ import {
 let db: D1Database;
 useTestDb((test) => (db = test));
 
-/** A dish Claude has not sorted yet. */
-const unsorted = { category: null, base: null, categoryGuessed: false };
+/** A dish Claude has not sorted yet, and nobody has voted on. */
+const unsorted = { category: null, base: null, categoryGuessed: false, vote: null };
 
 const recipes = async () =>
 	(await db.prepare('SELECT id, name FROM recipe ORDER BY id').all<{ id: number; name: string }>())
@@ -180,7 +180,8 @@ describe('the recipe list', () => {
 				timesEaten: 0,
 				lastWeek: null,
 				category: null,
-				base: null
+				base: null,
+				vote: null
 			},
 			{
 				id: expect.any(Number),
@@ -188,7 +189,8 @@ describe('the recipe list', () => {
 				timesEaten: 3,
 				lastWeek: '2030-01-14',
 				category: null,
-				base: null
+				base: null,
+				vote: null
 			},
 			{
 				id: expect.any(Number),
@@ -196,7 +198,8 @@ describe('the recipe list', () => {
 				timesEaten: 1,
 				lastWeek: '2030-01-07',
 				category: null,
-				base: null
+				base: null,
+				vote: null
 			}
 		]);
 	});

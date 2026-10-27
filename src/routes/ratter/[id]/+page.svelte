@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { postAction } from '#lib/actions.ts';
 	import FoldCard from '#lib/FoldCard.svelte';
 	import Icon from '#lib/Icon.svelte';
+	import VoteButton from '#lib/VoteButton.svelte';
 	import {
 		BASES,
 		CATEGORIES,
@@ -8,7 +10,8 @@
 		LUNCHBOX_TAG,
 		MEAL_LABELS,
 		splitSteps,
-		timesText
+		timesText,
+		type Vote
 	} from '#lib/recipes.ts';
 	import { weekName } from '#lib/weeks.ts';
 	import type { PageProps } from './$types';
@@ -34,6 +37,28 @@
 		...recipe.tags.map((tag) => (tag === LUNCHBOX_TAG ? 'Passar till matlådor' : tag))
 	]);
 	let steps = $derived(splitSteps(recipe.instructions));
+
+	// The vote as just tapped, saved in the background (ADR 0016).
+	let voted = $state<Vote | null>(null);
+	let voteFailed = $state(false);
+	$effect.pre(() => {
+		void data;
+		voted = null;
+	});
+	let vote = $derived(voted ?? recipe.vote);
+
+	// One vote is sent at a time, so the last tap is the one saved.
+	let sending: Promise<unknown> = Promise.resolve();
+
+	function setVote(value: Vote) {
+		voted = value;
+		sending = sending.then(async () => {
+			const result = await postAction('vote', { vote: value });
+			voteFailed = result?.type !== 'success';
+			// What failed shows as it was saved, unless a newer tap is on its way.
+			if (voteFailed && voted === value) voted = null;
+		});
+	}
 </script>
 
 <svelte:head>
@@ -74,6 +99,21 @@
 			<p class="meta">Sort och bas gissade av Claude. Ändra under Redigera.</p>
 		{/if}
 	</div>
+
+	<section class="card opinion">
+		<div class="opinion-row">
+			<h2>Vad tycker ni?</h2>
+			<VoteButton name={recipe.name} {vote} onvote={setVote} />
+		</div>
+		<p class="hint">
+			Tumme ner: Claude föreslår inte rätten igen, men den går att skriva in själv.
+		</p>
+		{#if voteFailed}
+			<p class="error-text" role="alert">
+				Det gick inte att spara. Kontrollera nätet och försök igen.
+			</p>
+		{/if}
+	</section>
 
 	{#if onlyName}
 		<section class="banner invite">
@@ -233,6 +273,29 @@
 		color: var(--md-sys-color-on-surface-variant);
 		display: flex;
 		align-items: center;
+	}
+
+	.opinion-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+	}
+
+	.opinion h2 {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 500;
+	}
+
+	.opinion p {
+		margin: 0;
+	}
+
+	.hint {
+		font-size: 0.8125rem;
+		line-height: 1.25rem;
+		color: var(--md-sys-color-on-surface-variant);
 	}
 
 	.invite {

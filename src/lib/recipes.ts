@@ -115,6 +115,26 @@ export const categoryOf = (value: unknown): Category | null =>
 export const baseOf = (value: unknown): Base | null =>
 	BASES.find((b) => b.key === value)?.key ?? null;
 
+/**
+ * What the household thinks of a dish, in the order a tap goes through them. No vote counts as
+ * ok. See docs/beslut/0022-roster-pa-ratter.md.
+ */
+export const VOTES = [
+	{ key: 'favorit', label: 'Ny favorit' },
+	{ key: 'ok', label: 'Ok' },
+	{ key: 'aldrig', label: 'Aldrig mer' }
+] as const;
+
+export type Vote = (typeof VOTES)[number]['key'];
+
+/** The key when `value` is one of the votes, else null. */
+export const voteOf = (value: unknown): Vote | null =>
+	VOTES.find((v) => v.key === value)?.key ?? null;
+
+/** The vote a tap gives: the first one when there is none, then round. */
+export const nextVote = (vote: Vote | null): Vote =>
+	VOTES[(VOTES.findIndex((v) => v.key === vote) + 1) % VOTES.length].key;
+
 /** A numbered step of a recipe, or the heading of a part of it, which has no number. */
 export interface Step {
 	text: string;

@@ -7,7 +7,7 @@ import { ClaudeLimitError, type Ask } from './claude/claude';
 import { MENU_PROMPT, MENU_SCHEMA, menuContent, type MenuRequest } from './claude/menu-prompt';
 import { createPerson, saveSettings } from './db/household';
 import { getMenuHistory, getWeek, setWeekEaters, setWeekRow } from './db/menus';
-import { addRecipe, getRecipe, updateRecipe } from './db/recipes';
+import { addRecipe, getRecipe, setRecipeVote, updateRecipe } from './db/recipes';
 import { suggestMenu, suggestWeek, swapRow } from './menu-suggest';
 
 let db: D1Database;
@@ -30,6 +30,7 @@ const request = (overrides: Partial<MenuRequest> = {}): MenuRequest => ({
 	weekStart: WEEK,
 	dishes: [],
 	pastWeeks: [],
+	neverSuggest: [],
 	rules: '',
 	eaters: [],
 	wish: '',
@@ -104,6 +105,20 @@ describe('asking Claude for a menu', () => {
 		expect(ask.mock.calls[0][0].messages[0].content).toEqual([
 			expect.anything(),
 			expect.objectContaining({ text: expect.stringContaining('passed on: Tacos') })
+		]);
+	});
+
+	it('never gives back a dish the household never wants again, as the dish or an alternative', async () => {
+		const ask = answering({
+			rows: [
+				dinner(1, 'Shakshuka', [alt('Pizza'), alt('Soppa')]),
+				dinner(2, 'Paj', [alt('SHAKSHUKA'), alt('Tacos'), alt('Gratäng')])
+			]
+		});
+		const rows = await suggestMenu(request({ neverSuggest: ['Shakshuka'] }), ask);
+		expect(rows).toMatchObject([
+			{ weekday: 1, text: 'Pizza', alternatives: [{ text: 'Soppa' }] },
+			{ weekday: 2, text: 'Paj', alternatives: [{ text: 'Tacos' }, { text: 'Gratäng' }] }
 		]);
 	});
 
@@ -210,6 +225,24 @@ describe('the material Claude gets', () => {
 			request({ slots: [{ weekday: 5, meal: 'dinner' }, ...lunches], newDishes: 3 })
 		);
 		expect(oneDinner).toContain('New dishes among the dinners: exactly 1.');
+	});
+
+	it('names the dishes never wanted again apart, and leaves them out of the collection', async () => {
+		const [shakshuka, tacos, soup] = await Promise.all(
+			['Shakshuka', 'Tacos', 'Linssoppa'].map((name) => addRecipe(db, name))
+		);
+		await setRecipeVote(db, shakshuka, 'aldrig');
+		await setRecipeVote(db, tacos, 'favorit');
+		await setRecipeVote(db, soup, 'ok');
+		// Kålpudding has no vote, which counts as ok.
+		await addRecipe(db, 'Kålpudding');
+
+		const history = await getMenuHistory(db, WEEK, 8);
+		expect(history.dishes.map((d) => d.name)).toEqual(['Kålpudding', 'Linssoppa', 'Tacos']);
+		expect(history.neverSuggest).toEqual(['Shakshuka']);
+		const [material] = menuContent(request(history));
+		expect(material).toContain('<never_suggest>\n- Shakshuka\n</never_suggest>');
+		expect(menuContent(request())[0]).toContain('<never_suggest>\n(none)\n</never_suggest>');
 	});
 
 	it('cannot close a tag and write outside it', () => {
@@ -340,6 +373,13 @@ describe('suggesting a week', () => {
 
 describe('swapping a day', () => {
 	const MONDAY = { weekday: 1, meal: 'dinner' } as const;
+
+	it('passes over an alternative voted never again since the week was suggested', async () => {
+		await suggestWeek(db, WEEK, '', [], answering({ rows: [dinner(1, 'Tacos')] }));
+		await setRecipeVote(db, await addRecipe(db, 'Tacos 2'), 'aldrig');
+		const swap = await swapRow(db, WEEK, MONDAY, vi.fn<Ask>());
+		expect(swap?.text).toBe('Tacos 3');
+	});
 
 	it('takes the next alternative at once, without asking Claude', async () => {
 		await suggestWeek(db, WEEK, '', [], answering({ rows: [dinner(1, 'Tacos')] }));

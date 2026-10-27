@@ -1,9 +1,10 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
-	import { isDish, MEAL_LABELS } from './recipes.ts';
+	import VoteButton from './VoteButton.svelte';
+	import { isDish, MEAL_LABELS, type Vote } from './recipes.ts';
 
 	// A dinner or a lunch on the menu, which opens for writing when tapped. Claude's dishes have a
-	// button that swaps them.
+	// button that swaps them, and a new dish on a day that has passed one to vote on it instead.
 	let {
 		name,
 		lunch = false,
@@ -13,8 +14,10 @@
 		swappable = false,
 		swapping = false,
 		busy = false,
+		vote = null,
 		onedit,
-		onswap
+		onswap,
+		onvote
 	}: {
 		/** The meal and the day, as "Middag måndag". */
 		name: string;
@@ -31,6 +34,9 @@
 		busy?: boolean;
 		onedit: () => void;
 		onswap: () => void;
+		vote?: Vote | null;
+		/** Given when the household may vote on the dish. */
+		onvote?: (vote: Vote) => void;
 	} = $props();
 </script>
 
@@ -44,7 +50,9 @@
 			{#if meta}<span class="reason ink">{meta}</span>{/if}
 		</span>
 	</button>
-	{#if swapping}
+	{#if onvote}
+		<div class="vote"><VoteButton name={text} {vote} {onvote} /></div>
+	{:else if swapping}
 		<m3e-loading-indicator class="swap" aria-label="Byter {name}"></m3e-loading-indicator>
 	{:else if swappable}
 		<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (m3e-icon-button is a button with its own keyboard handling) -->
@@ -129,6 +137,11 @@
 		flex-shrink: 0;
 		margin-top: 0.125rem;
 		color: var(--md-sys-color-on-surface-variant);
+	}
+
+	.vote {
+		flex-shrink: 0;
+		align-self: center;
 	}
 
 	m3e-loading-indicator.swap {

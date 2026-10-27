@@ -11,6 +11,7 @@ How to choose:
 - Follow the household's rules for every week, such as fish once a week or vegetarian on Mondays. The wish for this week goes before habits.
 - Choose dishes from the collection, written exactly as they are named there. The household eats what it knows: dishes eaten often are favourites, and the past weeks show habits worth keeping, such as a dish they often have on a certain day.
 - The exception is new dishes. Exactly as many dinners as the request says are new: dishes not in the collection that suit this household, each written as a short, plain Swedish dish name.
+- Never suggest a dish the household never wants again, listed under never_suggest: not as the dish, not as an alternative, not as a new dish, and not the same dish under another name.
 - Never a dish eaten in the two weeks before, and each dish at most once in the week, counting what is already written in.
 - Keep the week varied: not the same main ingredient, such as fish, chicken, minced meat or pasta, two days in a row.
 - Quick everyday dishes on weekdays; slower or festive dishes fit Friday to Sunday. Think of the season and of Swedish holidays in the week.
@@ -64,6 +65,8 @@ export interface MenuRequest {
 	dishes: DishHistory[];
 	/** The weeks just before, newest first. */
 	pastWeeks: PastWeek[];
+	/** The dishes the household never wants again, which are not in the collection. */
+	neverSuggest: string[];
 	/** The household's rules for every week, as written. */
 	rules: string;
 	eaters: { name: string; requirements: string }[];
@@ -108,6 +111,7 @@ export function menuContent(request: MenuRequest): [string, string] {
 	const material = [
 		`<collection>\n${request.dishes.map(dishLine).join('\n') || '(empty)'}\n</collection>`,
 		`<past_weeks>\n${request.pastWeeks.map(pastWeek).join('\n') || '(none)'}\n</past_weeks>`,
+		`<never_suggest>\n${request.neverSuggest.map((name) => `- ${stripTags(name)}`).join('\n') || '(none)'}\n</never_suggest>`,
 		`<household_rules>\n${stripTags(request.rules) || '(none)'}\n</household_rules>`
 	].join('\n\n');
 
