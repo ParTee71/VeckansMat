@@ -84,7 +84,26 @@ inte hittar något ❌. Kör kontrollerna en sista gång.
   issuet, för GUI mockup-länk och skärmdumpar. `Closes #N`.
 - Prenumerera på PR:en direkt. Rött CI → agenten **`ci-doktor`**, fixa grundorsaken och pusha.
   Kör aldrig bara om.
-- Merga bara när all CI är grön, `Plan godkänd` inräknad.
+- **Går den att merga?** Efter varje push, vid varje PR-händelse och alltid före merge: hämta
+  PR:en (`pull_request_read`, `get`) och läs `mergeable_state`. `dirty`, eller etiketten
+  `konflikt` → lös konflikten (nästa avsnitt). En PR med konflikt får inget nytt CI-utfall, så
+  grönt CI från förut betyder inte att den går att merga. `unknown` → hämta igen.
+- Merga bara när all CI är grön, `Plan godkänd` inräknad, och `mergeable_state` inte är `dirty`.
+
+## Konflikter
+
+Hämta `origin/main` och merga in den i grenen. Ingen rebase, ingen force-push. Kör `npm run
+verify` och pusha. Workflowen **Konflikter** sätter etiketten `konflikt` och tar bort den när
+konflikten är löst, vid den push som löser den.
+
+- **Version och `CHANGELOG.md`:** ta `main`s version och rubriker som de är och tillämpa
+  versionsregeln i `/release` på nytt. Har `main` redan höjt sedan senaste release, flyttas
+  PR:ens rad under `main`s rubrik och versionen höjs bara om PR:en är allvarligare. Ändra
+  versionen med `npm version`, inte för hand i `package-lock.json`. Två rubriker med samma
+  version får aldrig finnas.
+- **Migreringar med samma nummer:** döp om PR:ens migrering till nästa lediga nummer.
+- **Kod:** lös bara när båda sidornas avsikt är tydlig. Annars: stanna och fråga ägaren med
+  filerna och vad som krockar.
 - Lärde du något om hur Claude bör styras, skriv en rad i `docs/ai-styrning.md`.
 
 ## Anti-mönster
@@ -92,6 +111,7 @@ inte hittar något ❌. Kör kontrollerna en sista gång.
 - Issue och PR samtidigt, eller kod innan ägaren godkänt planen.
 - Att själv bedöma att en ändring är för liten för en plan.
 - Nästa issue innan GitHub sagt att föregående PR är mergad.
+- Att vänta på CI på en PR som har konflikt, eller merga utan att ha läst `mergeable_state`.
 - Kod för ny GUI utan godkänd mockup.
 - Bugfix utan regressionstest.
 - Ett rött test borttaget, hoppat eller omkört för att bli grönt.

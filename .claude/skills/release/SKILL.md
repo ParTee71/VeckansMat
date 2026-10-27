@@ -25,6 +25,9 @@ Varje PR som ändrar appen höjer versionen i samma ändring, så att ingen rele
 - Ren dokument-, test-, CI- eller Claude-verktygsändring höjer inte.
 - Är versionen redan höjd sedan senaste release, höj bara om denna PR är allvarligare, och skriv
   då om den befintliga rubriken i `CHANGELOG.md`.
+- Räkna alltid mot aktuell `origin/main`, inte mot `main` som den var när grenen skapades: hämta
+  den innan versionen höjs, och igen om `main` rört sig före merge. Andra trådar kan ha höjt
+  under tiden (se Konflikter i `/implement-issue`).
 
 Agenten `granskare` kontrollerar höjningen.
 
