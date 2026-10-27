@@ -28,6 +28,19 @@ export interface ChosenOffer {
 	validTo: string;
 }
 
+/** An offer a dinner can be built on, as the sheet Veckans erbjudanden lists it. */
+export interface ShownOffer extends ChosenOffer {
+	/** The price per kilo or litre, when the chain gives one: "jfr 50 kr/kg". */
+	comparePrice: string;
+}
+
+/** The offer as a line under the dish: "Kycklingfilé 99 kr/kg · ICA". */
+export const offerText = (offer: ChosenOffer) =>
+	`${offer.name} ${offer.price} · ${chainLabel(offer.chain)}`;
+
+/** The same offer, chosen for a dish or listed, by its chain, name and price. */
+export const offerKey = (offer: ChosenOffer) => `${offer.chain}:${offer.name}:${offer.price}`;
+
 /** The offer in a value sent back from the browser, made anew, or null when it is none. */
 export function offerOf(value: unknown): ChosenOffer | null {
 	if (typeof value !== 'object' || value === null) return null;

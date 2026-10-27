@@ -4,7 +4,14 @@ import { useTestDb } from '../../../test/d1';
 import { ClaudeLimitError } from './claude/claude';
 import { OFFER_PROMPT, OFFER_SCHEMA, offerContent } from './claude/offer-prompt';
 import type { Offer } from './offers/common';
-import { currentOffers, saveOffers, setChainEnabled, unsortedOffers } from './db/offers';
+import {
+	currentOffers,
+	dinnerOffers,
+	offerChains,
+	saveOffers,
+	setChainEnabled,
+	unsortedOffers
+} from './db/offers';
 import { askIngredients, sortOffers } from './offer-ingredients';
 
 let db: D1Database;
@@ -177,5 +184,18 @@ describe('the offers Claude sees for the week', () => {
 			validTo: '2026-11-01',
 			ingredient: 'kycklingfilé'
 		});
+
+		// The sheet lists every one valid today, not two of each, and still none from coop.
+		const listed = async (memberPrices: boolean) =>
+			(await dinnerOffers(db, '2026-10-29', memberPrices)).map((o) => `${o.name} (${o.chain})`);
+		expect(await listed(true)).toEqual([
+			'Fläskfilé (lidl)',
+			'Kycklingbröst (willys)',
+			'Kycklingfilé (lidl)',
+			'Kycklinglår (willys)'
+		]);
+		expect(await listed(false)).not.toContain('Fläskfilé (lidl)');
+		// The planning card names the chains Claude sees offers from, in Hushållet's order.
+		expect(await offerChains(db, '2026-10-27', '2026-10-29', true)).toEqual(['willys', 'lidl']);
 	});
 });

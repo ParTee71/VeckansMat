@@ -60,8 +60,11 @@ function menu(text) {
 		meal
 	}));
 	const again = asked.startsWith('Suggest');
+	// Monday's dinner is built on the first offer, when there are offers.
+	const offer = !again && text.includes('<offers>') ? 1 : null;
 	return {
 		rows: slots.map(({ weekday, meal }) => ({
+			...(weekday === 1 && meal === 'dinner' && offer && { offer }),
 			weekday,
 			meal,
 			dish: again
