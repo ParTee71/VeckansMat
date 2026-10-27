@@ -3,6 +3,10 @@
 Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ändringen
 (se `.claude/skills/release/SKILL.md`).
 
+## 0.7.0
+
+- Man kan svepa åt vänster eller höger för att byta mellan Veckan, Handla, Rätter och Veckor, i menyns ordning. Sidan följer fingret och nästa vy glider in från sidan. I Handla tar ett svep åt vänster på en vara fortfarande bort den. (#105)
+
 ## 0.6.0
 
 - När man öppnar en dag i Veckan visas de rätter hushållet brukar äta direkt, favoriterna först, utan att man behöver skriva något. Under Alla rätter kan man söka och välja bland alla rätter efter sort, och ett nytt namn blir en ny rätt. En dag som redan har en rätt öppnas med texten markerad, så att det man skriver ersätter den. (#103)
