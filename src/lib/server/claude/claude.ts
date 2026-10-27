@@ -49,12 +49,18 @@ export async function spentThisMonth(db: D1Database): Promise<number> {
 	return row?.spent ?? 0;
 }
 
+/**
+ * How long a call may take before it is given up and tried once more. The shopping list may
+ * guess and merge many lines in one answer, so it gets longer than the rest.
+ */
+const TIMEOUT_MS: Partial<Record<Purpose, number>> = { shopping: 120_000 };
+const DEFAULT_TIMEOUT_MS = 60_000;
+
 function client(): Anthropic {
 	return new Anthropic({
 		apiKey: env.ANTHROPIC_API_KEY,
 		// Only the browser tests set it, to a stand-in for the API.
 		baseURL: env.CLAUDE_BASE_URL || undefined,
-		timeout: 60_000,
 		maxRetries: 1
 	});
 }
@@ -134,7 +140,12 @@ export async function ask(
 	const limit = Number(env.CLAUDE_MONTHLY_LIMIT_USD);
 	if (!((await spentThisMonth(db)) < limit)) throw new ClaudeLimitError();
 
-	const message = await claude.messages.create(params);
+	const started = Date.now();
+	const message = await claude.messages.create(params, {
+		timeout: TIMEOUT_MS[purpose] ?? DEFAULT_TIMEOUT_MS
+	});
+	// A call tried once more counts both tries and the wait between them.
+	const durationMs = Date.now() - started;
 	const { usage } = message;
 	const cacheWrite = usage.cache_creation_input_tokens ?? 0;
 	const cacheRead = usage.cache_read_input_tokens ?? 0;
@@ -142,7 +153,7 @@ export async function ask(
 		await db
 			.prepare(
 				`INSERT INTO claude_call (purpose, model, input_tokens, cache_write_tokens, cache_read_tokens,
-				 output_tokens, cost_usd) VALUES (?, ?, ?, ?, ?, ?, ?)`
+				 output_tokens, cost_usd, duration_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 			)
 			.bind(
 				purpose,
@@ -152,7 +163,8 @@ export async function ask(
 				cacheWrite,
 				cacheRead,
 				usage.output_tokens,
-				costUsd(params.model, usage)
+				costUsd(params.model, usage),
+				durationMs
 			)
 			.run();
 	} catch (e) {

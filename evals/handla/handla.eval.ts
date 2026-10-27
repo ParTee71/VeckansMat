@@ -16,14 +16,18 @@ import { CASES, type Case } from './cases';
 const MODEL = process.env.SHOPPING_MODEL ?? 'claude-haiku-5-5';
 // To compare efforts without changing the app.
 const EFFORT = process.env.SHOPPING_EFFORT as Effort;
+// SHOPPING_THINKING=off tries the list without thinking before the answer.
+const THINKING_OFF = process.env.SHOPPING_THINKING === 'off';
 const RESULTS = new URL('results/latest.json', import.meta.url);
 
 interface Result extends Scored {
 	seconds: number;
+	outputTokens: number;
+	thinkingTokens: number;
 	answer: string[] | string;
 }
 
-const claude = liveClaude(MODEL, EFFORT);
+const claude = liveClaude(MODEL, EFFORT, THINKING_OFF ? { type: 'disabled' } : undefined);
 const results: Result[] = [];
 
 // "3 st" and "3" are the same amount.
@@ -98,6 +102,8 @@ CASES.forEach((c, i) => {
 			...score(checks),
 			seconds: Math.round((Date.now() - started) / 1000),
 			costUsd: spent.costUsd,
+			outputTokens: spent.outputTokens,
+			thinkingTokens: spent.thinkingTokens,
 			answer: answer
 				? [
 						...[...answer.guesses].map(
@@ -119,10 +125,11 @@ afterAll(() => {
 		{
 			model: MODEL,
 			effort: EFFORT ?? null,
+			thinking: THINKING_OFF ? 'off' : null,
 			// The prompt and how the material is written, so a change to either shows.
 			prompt: SHOPPING_PROMPT + shoppingContent(CASES[0].dishes),
 			results
 		},
-		(r) => ({ sekunder: r.seconds })
+		(r) => ({ sekunder: r.seconds, ut: r.outputTokens, tänkande: r.thinkingTokens })
 	);
 });

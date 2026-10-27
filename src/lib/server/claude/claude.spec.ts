@@ -44,7 +44,7 @@ describe('a call to Claude', () => {
 	it('is sent as asked and logged with what it cost', async () => {
 		const { client, create } = fakeClaude();
 		await ask(db, 'recipe', params, client);
-		expect(create).toHaveBeenCalledWith(params);
+		expect(create).toHaveBeenCalledWith(params, { timeout: 60_000 });
 		expect(await logged()).toEqual([
 			{
 				purpose: 'recipe',
@@ -54,6 +54,24 @@ describe('a call to Claude', () => {
 				cost_usd: (1000 * 0.1 + 200 * 0.5) / 1e6
 			}
 		]);
+	});
+
+	it('logs how long it took', async () => {
+		const { client, create } = fakeClaude();
+		// The clock moves only while Claude answers.
+		let time = 1_000;
+		const now = vi.spyOn(Date, 'now').mockImplementation(() => time);
+		create.mockImplementation(async () => {
+			time += 3_250;
+			return { content: [], usage: usage(1000, 200) };
+		});
+		try {
+			await ask(db, 'recipe', params, client);
+		} finally {
+			now.mockRestore();
+		}
+		const row = await db.prepare('SELECT duration_ms FROM claude_call').first();
+		expect(row).toEqual({ duration_ms: 3_250 });
 	});
 
 	it('logs what was written to and read from the cache apart', async () => {
@@ -150,6 +168,14 @@ describe('a call for a purpose', () => {
 			['menu', 'claude-sonnet-5-5'],
 			['shopping', 'claude-haiku-5-5']
 		]);
+	});
+
+	it('gives the shopping list two minutes before it is given up, and the rest one', async () => {
+		const { client, create } = fakeClaude();
+		const unmodelled = { max_tokens: 100, messages: params.messages };
+		await askFor('shopping', db, client)(unmodelled);
+		await askFor('menu', db, client)(unmodelled);
+		expect(create.mock.calls.map(([, options]) => options.timeout)).toEqual([120_000, 60_000]);
 	});
 });
 
