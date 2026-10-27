@@ -1,7 +1,7 @@
 {
 	"name": "veckansmat",
 	"private": true,
-	"version": "0.5.0",
+	"version": "0.6.0",
 	"description": "Veckomeny och inköpslista för hushållet",
 	"type": "module",
 	"engines": {
