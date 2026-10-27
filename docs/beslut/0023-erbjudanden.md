@@ -69,7 +69,7 @@ säger var den ska skriva sin Worker, eftersom `main` i `wrangler.jsonc` nu är 
 - Lokalt och i Playwright pekar `OFFER_SITE_URL` om alla kedjor till en påhittad sajt. Där är
   Coops butikssida ingen webbläsare, utan JSON med det sidan skulle ha fått.
 - Browser Rendering ingår i gratisnivån med 10 minuter webbläsartid per dygn. En hämtning från
-  Coop tar några sekunder, så det räcker gott för en butik i veckan. `wrangler dev` startar en
+  Coop tar några sekunder och högst en halv minut, så det räcker gott för en butik i veckan. `wrangler dev` startar en
   lokal Chromium för bindningen, som kräver `CI=1` om den körs som root.
 - Coops butiksnamn tas ur sidans adress, utan å, ä och ö, tills första hämtningen ger sidans
   rubrik.

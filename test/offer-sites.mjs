@@ -209,7 +209,7 @@ export const coopAnswer = {
 };
 
 /**
- * What the made-up site answers at a path, which starts with the chain's host as offerFetch() asks:
+ * What the made-up site answers at a path, which starts with the chain's host as offerSites() asks:
  * /www.willys.se/search/campaigns/offline?q=9001. Null for an address it does not have.
  */
 export function offerSite(path) {

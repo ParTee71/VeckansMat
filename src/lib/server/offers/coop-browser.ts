@@ -4,7 +4,8 @@
 import { OfferError } from './common';
 import { LABEL, slimAnswer, type CoopPage, type OpenPage } from './coop';
 
-const TIMEOUT_MS = 20_000;
+// For loading the page and then for its offers, so a fetch never waits more than half a minute.
+const TIMEOUT_MS = 15_000;
 
 /** Run in the page before its own scripts: keeps the answer to the page's ask for its offers. */
 const CAPTURE = `(() => {
@@ -41,7 +42,8 @@ export function openInBrowser(binding: BrowserRun): OpenPage {
 				`({ name: document.querySelector('h1')?.textContent ?? null, offers: (${slimAnswer})(window.__coopAnswer) })`
 			)) as CoopPage;
 		} finally {
-			await browser.close();
+			// A browser that fails to close must not hide what went wrong before.
+			await browser.close().catch(() => {});
 		}
 	};
 }
