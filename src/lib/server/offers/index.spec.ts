@@ -10,7 +10,8 @@ import {
 	setChainEnabled,
 	setChainStore
 } from '../db/offers';
-import { fetchChain, fetchNextChain, isStale, searchStores } from './index';
+import { OfferError } from './common';
+import { fetchChain, fetchNextChain, isStale, openMadeUpPage, searchStores } from './index';
 
 let db: D1Database;
 useTestDb((test) => (db = test));
@@ -19,10 +20,13 @@ afterEach(() => vi.restoreAllMocks());
 
 const MONDAY_MORNING = new Date('2026-10-26T05:00:00Z');
 
+/** The made-up sites, asked through the fetcher, with Coop's pages read from them too. */
+const sites = (fetcher: typeof fetch) => ({ fetch: fetcher, openCoop: openMadeUpPage(fetcher) });
+
 describe('fetching a chain', () => {
 	it("saves the offers and the store's name, and replaces them on the next fetch", async () => {
 		await setChainStore(db, 'ica', 'ica-supermarket-exempelby-1000001', 'ICA Supermarket Exempelb');
-		await fetchChain(db, 'ica', siteFetch());
+		await fetchChain(db, 'ica', sites(siteFetch()));
 		const chain = await getChain(db, 'ica');
 		expect(chain).toMatchObject({
 			enabled: true,
@@ -32,7 +36,7 @@ describe('fetching a chain', () => {
 		});
 		expect(chain.fetchedAt).not.toBeNull();
 
-		await fetchChain(db, 'ica', siteFetch());
+		await fetchChain(db, 'ica', sites(siteFetch()));
 		expect((await listOffers(db, 'ica')).map((o) => o.name)).toEqual(['Fläskfilé', 'Gul lök']);
 	});
 
@@ -58,30 +62,57 @@ describe('fetching a chain', () => {
 	it('keeps the last offers and notes why when a fetch fails', async () => {
 		vi.spyOn(console, 'error').mockImplementation(() => {});
 		await setChainEnabled(db, 'lidl', true);
-		await fetchChain(db, 'lidl', siteFetch());
-		await fetchChain(
-			db,
-			'lidl',
-			siteFetch(() => new Response('', { status: 503 }))
-		);
+		await fetchChain(db, 'lidl', sites(siteFetch()));
+		await fetchChain(db, 'lidl', sites(siteFetch(() => new Response('', { status: 503 }))));
 		expect(await getChain(db, 'lidl')).toMatchObject({
 			error: 'Lidl svarade med fel 503.',
 			offers: 3
 		});
 
 		// A fault that is not the chain's is told in general terms.
-		await fetchChain(db, 'lidl', () => Promise.reject(new TypeError('x')) as never);
+		await fetchChain(
+			db,
+			'lidl',
+			sites(() => Promise.reject(new TypeError('x')) as never)
+		);
 		expect((await getChain(db, 'lidl')).error).toBe('Lidl svarade inte.');
 	});
 
-	it('does nothing for a chain that is off, lacks a store or cannot be fetched yet', async () => {
+	it('does nothing for a chain that is off or lacks a store', async () => {
 		const fetcher = siteFetch();
-		await fetchChain(db, 'lidl', fetcher);
+		await fetchChain(db, 'lidl', sites(fetcher));
 		await setChainEnabled(db, 'willys', true);
-		await fetchChain(db, 'willys', fetcher);
-		await setChainStore(db, 'coop', '1', 'Coop Exempelby');
-		await fetchChain(db, 'coop', fetcher);
+		await fetchChain(db, 'willys', sites(fetcher));
+		await setChainStore(db, 'coop', 'coop/coop-exempelstad-centrum', 'Coop Exempelstad Centrum');
+		await setChainEnabled(db, 'coop', false);
+		await fetchChain(db, 'coop', sites(fetcher));
 		expect(fetcher.asked).toEqual([]);
+	});
+
+	it("reads Coop's offers from the store's page, and a failed page leaves the others", async () => {
+		vi.spyOn(console, 'error').mockImplementation(() => {});
+		await setChainStore(db, 'coop', 'stora-coop/stora-coop-exempelby', 'Stora Coop Exempelby');
+		await fetchChain(db, 'coop', sites(siteFetch()));
+		expect(await getChain(db, 'coop')).toMatchObject({
+			storeName: 'Stora Coop Exempelby',
+			error: null,
+			offers: 4
+		});
+	});
+
+	it('goes on with the other chains when Coop fails', async () => {
+		vi.spyOn(console, 'error').mockImplementation(() => {});
+		await setChainStore(db, 'coop', 'stora-coop/stora-coop-exempelby', 'Stora Coop Exempelby');
+		await setChainEnabled(db, 'lidl', true);
+		await markRequested(db, 'coop', new Date('2026-10-19T05:00:00Z'));
+		const slow = {
+			fetch: siteFetch(),
+			openCoop: () => Promise.reject(new OfferError('Coops sida visade inga erbjudanden i tid.'))
+		};
+		await fetchNextChain(db, slow, MONDAY_MORNING);
+		await fetchNextChain(db, slow, MONDAY_MORNING);
+		expect((await getChain(db, 'coop')).error).toBe('Coops sida visade inga erbjudanden i tid.');
+		expect((await getChain(db, 'lidl')).offers).toBe(3);
 	});
 
 	it('waits ten seconds after the last ask to Willys, as its robots.txt asks', async () => {
@@ -89,7 +120,7 @@ describe('fetching a chain', () => {
 		await markRequested(db, 'willys', new Date(Date.now() - 4_000));
 		const fetcher = siteFetch();
 		const waits: number[] = [];
-		await fetchChain(db, 'willys', fetcher, async (ms) => {
+		await fetchChain(db, 'willys', sites(fetcher), async (ms) => {
 			expect(fetcher.asked).toEqual([]);
 			waits.push(ms);
 		});
@@ -100,7 +131,7 @@ describe('fetching a chain', () => {
 
 		// Lidl asks for no wait.
 		await setChainEnabled(db, 'lidl', true);
-		await fetchChain(db, 'lidl', siteFetch(), async () => waits.push(0));
+		await fetchChain(db, 'lidl', sites(siteFetch()), async () => waits.push(0));
 		expect(waits).toHaveLength(1);
 	});
 });
@@ -116,20 +147,20 @@ describe('the Monday fetch', () => {
 			url.includes('ica.se') ? new Response('', { status: 500 }) : undefined
 		);
 
-		await fetchNextChain(db, down, MONDAY_MORNING);
+		await fetchNextChain(db, sites(down), MONDAY_MORNING);
 		expect((await getChain(db, 'lidl')).offers).toBe(0);
 		expect((await getChain(db, 'ica')).error).toBe('ICA svarade med fel 500.');
 
-		await fetchNextChain(db, down, MONDAY_MORNING);
+		await fetchNextChain(db, sites(down), MONDAY_MORNING);
 		expect((await getChain(db, 'lidl')).offers).toBe(3);
 
 		const fetcher = siteFetch();
-		await fetchNextChain(db, fetcher, MONDAY_MORNING);
+		await fetchNextChain(db, sites(fetcher), MONDAY_MORNING);
 		expect((await getChain(db, 'ica')).offers).toBe(2);
 		expect(await isStaleNow('ica')).toBe(false);
 
 		// Both are fetched this week, so the runs left on Monday ask nothing.
-		await fetchNextChain(db, fetcher, MONDAY_MORNING);
+		await fetchNextChain(db, sites(fetcher), MONDAY_MORNING);
 		expect(fetcher.asked).toHaveLength(1);
 	});
 

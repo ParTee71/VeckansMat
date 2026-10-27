@@ -20,6 +20,8 @@
 	// No database_id: wrangler finds the database by name, so the public repo
 	// carries no account identifiers. CI creates it if it is missing.
 	"d1_databases": [{ "binding": "DB", "database_name": "veckansmat" }],
+	// Cloudflare's Browser Rendering, for Coop's offers, which its pages load in the browser.
+	"browser": { "binding": "BROWSER" },
 	// The key is a secret, ANTHROPIC_API_KEY, set on each Worker. See docs/beslut/0006-claude-i-appen.md.
 	"vars": {
 		"RECIPE_MODEL": "claude-haiku-5-5",
@@ -33,7 +35,8 @@
 		// never touches the household's data.
 		"preview": {
 			"d1_databases": [{ "binding": "DB", "database_name": "veckansmat-preview" }],
-			// Not inherited from the top level, so repeated here.
+			// Bindings and vars are not inherited from the top level, so repeated here.
+			"browser": { "binding": "BROWSER" },
 			"vars": {
 				"RECIPE_MODEL": "claude-haiku-5-5",
 				"MENU_MODEL": "claude-sonnet-5-5",

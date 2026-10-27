@@ -1,4 +1,4 @@
-// Made-up chain sites for the tests, in the shapes Willys, ICA and Lidl answer with, cut down to
+// Made-up chain sites for the tests, in the shapes Willys, ICA, Lidl and Coop answer with, cut down to
 // what the app reads. Every store and product here is made up. The unit tests read the parts, and
 // the browser tests' stand-in site (e2e-recipe-site.mjs) serves them by address.
 
@@ -137,6 +137,77 @@ export const lidlCampaigns = {
 	])
 };
 
+const coopStores = [
+	'stora-coop/stora-coop-exempelby',
+	'coop/coop-exempelstad-centrum',
+	'coop-konsum/coop-konsum-angen'
+];
+
+export const coopSitemap = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://www.coop.se/butiker-erbjudanden/</loc></url>${coopStores
+	.map((id) => `<url><loc>https://www.coop.se/butiker-erbjudanden/${id}/</loc></url>`)
+	.join('')}<url><loc>https://www.coop.se/recept/</loc></url></urlset>`;
+
+const coopOffer = (id, title, priceInformation, extra = {}) => ({
+	id,
+	campaignStartDate: '2026-10-26T00:00:00',
+	campaignEndDate: '2026-11-01T23:59:59',
+	categoryTeam: { name: 'Färskt Protein' },
+	priceInformation: { dealType: 'styckpris', unit: 'st', quantity: 1, ...priceInformation },
+	content: { title, brand: 'Exempel', imageUrl: '//bilder.example/1.png' },
+	clusterInteriorOffers: [],
+	...extra
+});
+
+const coopMince = coopOffer(
+	'1-1',
+	'Nötfärs',
+	{ discountValue: 109, unit: 'kg', isMemberPrice: true },
+	{ content: { title: 'Nötfärs', brand: 'Exempelgården', amountInformation: 'Ca 1 kg.' } }
+);
+
+/** A store's offers, in groups, as Coop's page gets them: each offer in "Alla" and its own group. */
+export const coopAnswer = {
+	sortingGroups: [
+		{
+			name: 'Alla',
+			id: 'alla',
+			offers: [
+				coopMince,
+				coopOffer(
+					'1-2',
+					'Krossade tomater',
+					{ dealType: 'pris', discountValue: 20, quantity: 3 },
+					{
+						content: {
+							title: 'Krossade tomater',
+							brand: 'Exempel',
+							amountInformation: '390-500 g.',
+							comparativePriceText: '13,33-17,09/kg.'
+						},
+						clusterInteriorOffers: [coopOffer('1-3', 'Krossade tomater med basilika', {})]
+					}
+				),
+				coopOffer(
+					'1-4',
+					'Lösviktsgodis',
+					{ discountValue: 69.9, unit: 'kg' },
+					{
+						content: { title: 'Lösviktsgodis', brand: '.' }
+					}
+				),
+				coopOffer('1-5', 'Ved', {
+					dealType: 'Ladder Deal',
+					steps: [
+						{ discountValue: 199, quantity: 2, unit: 'st', dealType: 'pris' },
+						{ discountValue: 369, quantity: 4, unit: 'st', dealType: 'pris' }
+					]
+				})
+			]
+		},
+		{ name: 'Fågel, fisk & kött', id: 'fagel-fisk-kott', offers: [coopMince] }
+	]
+};
+
 /**
  * What the made-up site answers at a path, which starts with the chain's host as offerFetch() asks:
  * /www.willys.se/search/campaigns/offline?q=9001. Null for an address it does not have.
@@ -159,6 +230,13 @@ export function offerSite(path) {
 	if (host === 'www.ica.se') {
 		if (at === '/butiker/sitemap.xml') return { type: 'application/xml', body: icaSitemap };
 		if (icaStores.some(([, , id]) => at === `/erbjudanden/${id}/`)) return html(icaPage());
+	}
+	if (host === 'www.coop.se') {
+		if (at === '/sitemap_pages.xml') return { type: 'application/xml', body: coopSitemap };
+		// A real store's page needs a browser; here it is what the page would have held.
+		if (coopStores.some((id) => at === `/butiker-erbjudanden/${id}/`)) {
+			return json({ name: 'Stora Coop Exempelby', answer: coopAnswer });
+		}
 	}
 	if (host === 'www.lidl.se') {
 		if (at === '/') return html(lidlStart);

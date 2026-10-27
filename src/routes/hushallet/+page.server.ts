@@ -1,16 +1,10 @@
 import { fail } from '@sveltejs/kit';
 import { env } from 'cloudflare:workers';
 import { getSettings, listPeople, saveSettings } from '#lib/server/db/household.ts';
-import {
-	getChain,
-	listChains,
-	setChainEnabled,
-	setChainStore,
-	type ChainRecord
-} from '#lib/server/db/offers.ts';
-import { fetchChain, isAvailable, isStale, offerFetch } from '#lib/server/offers/index.ts';
+import { getChain, listChains, setChainEnabled, setChainStore } from '#lib/server/db/offers.ts';
+import { fetchChain, isStale, offerSites } from '#lib/server/offers/index.ts';
 import type { Settings } from '#lib/household.ts';
-import { hasStores, isChain, type Chain, type ChainState } from '#lib/offers.ts';
+import { hasStores, isChain, type Chain } from '#lib/offers.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 const NUMBERS = [
@@ -20,18 +14,13 @@ const NUMBERS = [
 	'favouriteRepeatWeeks'
 ] as const;
 
-const chainState = (chain: ChainRecord): ChainState => ({
-	...chain,
-	available: isAvailable(chain.chain)
-});
-
 export const load: PageServerLoad = async () => {
 	const [people, settings, chains] = await Promise.all([
 		listPeople(env.DB),
 		getSettings(env.DB),
 		listChains(env.DB)
 	]);
-	return { people, settings, chains: chains.map(chainState) };
+	return { people, settings, chains };
 };
 
 /** The chain the form names, or null when it names none. */
@@ -43,9 +32,9 @@ function chainOf(form: FormData): Chain | null {
 /** Fetches the chain's offers when it has none from this week, and answers with how it went. */
 async function fetchIfStale(chain: Chain) {
 	if (isStale(await getChain(env.DB, chain), new Date())) {
-		await fetchChain(env.DB, chain, offerFetch(env.OFFER_SITE_URL));
+		await fetchChain(env.DB, chain, offerSites(env));
 	}
-	return { chain: chainState(await getChain(env.DB, chain)) };
+	return { chain: await getChain(env.DB, chain) };
 }
 
 export const actions: Actions = {
@@ -69,10 +58,10 @@ export const actions: Actions = {
 	chain: async ({ request }) => {
 		const form = await request.formData();
 		const chain = chainOf(form);
-		if (!chain || !isAvailable(chain)) return fail(400, { error: 'Okänd kedja.' });
+		if (!chain) return fail(400, { error: 'Okänd kedja.' });
 		const enabled = form.get('enabled') === 'true';
 		await setChainEnabled(env.DB, chain, enabled);
-		return enabled ? fetchIfStale(chain) : { chain: chainState(await getChain(env.DB, chain)) };
+		return enabled ? fetchIfStale(chain) : { chain: await getChain(env.DB, chain) };
 	},
 
 	/** Chooses the chain's store, and fetches its offers at once. */
@@ -81,7 +70,7 @@ export const actions: Actions = {
 		const chain = chainOf(form);
 		const id = String(form.get('id') ?? '').trim();
 		const name = String(form.get('name') ?? '').trim();
-		if (!chain || !isAvailable(chain) || !hasStores(chain) || !id || !name) {
+		if (!chain || !hasStores(chain) || !id || !name) {
 			return fail(400, { error: 'Det gick inte att välja butiken. Försök igen.' });
 		}
 		await setChainStore(env.DB, chain, id, name);

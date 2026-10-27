@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	coopAnswer,
 	icaOffers,
 	icaPage,
 	lidlStart,
@@ -7,6 +8,7 @@ import {
 	willysOffers
 } from '../../../../test/offer-sites.mjs';
 import { OfferError } from './common';
+import * as coop from './coop';
 import * as ica from './ica';
 import * as lidl from './lidl';
 import * as willys from './willys';
@@ -168,5 +170,79 @@ describe('Lidl', () => {
 			url.includes('/a101') ? new Response('', { status: 500 }) : undefined
 		);
 		await expect(lidl.fetchOffers(broken)).rejects.toThrow('Lidl svarade med fel 500.');
+	});
+});
+
+describe('Coop', () => {
+	const slim = () => coop.slimAnswer(JSON.stringify(coopAnswer));
+
+	it('makes the answer smaller in the browser: each offer once, with its group', () => {
+		const offers = slim() as Record<string, unknown>[];
+		expect(offers.map((o) => o.id)).toEqual(['1-1', '1-2', '1-4', '1-5']);
+		expect(offers[0].group).toBe('Fågel, fisk & kött');
+		expect(offers[1]).not.toHaveProperty('clusterInteriorOffers');
+		expect(coop.slimAnswer('<html>Ny sida</html>')).toBeNull();
+		expect(coop.slimAnswer('{"offers":[]}')).toBeNull();
+	});
+
+	it('runs from its source text alone, as the browser runs it', () => {
+		const inPage = new Function(`return (${coop.slimAnswer})(arguments[0])`);
+		expect(inPage(JSON.stringify(coopAnswer))).toEqual(slim());
+	});
+
+	it('reads the offers, with member prices and the price as Coop shows it', () => {
+		expect(coop.parseOffers(slim())).toEqual([
+			{
+				name: 'Nötfärs',
+				brand: 'Exempelgården',
+				size: 'Ca 1 kg',
+				price: '109 kr/kg',
+				comparePrice: '',
+				category: 'Fågel, fisk & kött',
+				member: true,
+				validFrom: '2026-10-26',
+				validTo: '2026-11-01'
+			},
+			expect.objectContaining({
+				name: 'Krossade tomater',
+				size: '390-500 g',
+				price: '3 för 20 kr',
+				comparePrice: '13,33-17,09 kr/kg',
+				category: 'Färskt Protein',
+				member: false
+			}),
+			expect.objectContaining({ name: 'Lösviktsgodis', brand: '', price: '69,90 kr/kg' }),
+			expect.objectContaining({ name: 'Ved', price: '2 för 199 kr, 4 för 369 kr' })
+		]);
+	});
+
+	it("finds stores in the sitemap by name, without å, ä and ö, and opens the store's page", async () => {
+		const fetcher = siteFetch();
+		expect(await coop.searchStores('exempelby', fetcher)).toEqual([
+			{ id: 'stora-coop/stora-coop-exempelby', name: 'Stora Coop Exempelby', place: '' }
+		]);
+		expect(await coop.searchStores('Ängen', fetcher)).toHaveLength(1);
+		expect(await coop.searchStores('Ingenstans', fetcher)).toEqual([]);
+
+		const opened: string[] = [];
+		const open = async (url: string) => {
+			opened.push(url);
+			return { name: ' Stora Coop Exempelby ', offers: slim() };
+		};
+		const { offers, storeName } = await coop.fetchOffers('stora-coop/stora-coop-exempelby', open);
+		expect(offers).toHaveLength(4);
+		expect(storeName).toBe('Stora Coop Exempelby');
+		expect(opened).toEqual([
+			'https://www.coop.se/butiker-erbjudanden/stora-coop/stora-coop-exempelby/'
+		]);
+		await expect(coop.fetchOffers('../mitt-coop', open)).rejects.toThrow(OfferError);
+	});
+
+	it('says so when the answer has changed or has no offers', () => {
+		expect(() => coop.parseOffers(null)).toThrow(
+			'Coop svarade i ett format appen inte känner igen.'
+		);
+		expect(() => coop.parseOffers([])).toThrow('Coop visade inga erbjudanden för butiken.');
+		expect(() => coop.parseOffers([{ id: 'x', content: {} }])).toThrow(OfferError);
 	});
 });

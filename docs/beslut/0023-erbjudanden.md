@@ -21,7 +21,12 @@ samma form:
   sidans data. Butiker från `ica.se/butiker/sitemap.xml`, som Cloudflare får spara ett dygn.
 - **Lidl:** samma i hela landet. Startsidans kampanjsidor under "Den här veckan", utom de utan
   mat, och varje varas data på sidan.
-- **Coop** kräver en webbläsare och kommer i #108.
+- **Coop:** butikens sida `coop.se/butiker-erbjudanden/<sort>/<butik>/` hämtar erbjudandena först
+  i webbläsaren, med en nyckel som Coop skickar till alla besökare. Appen använder inte nyckeln
+  själv. Sidan öppnas i Cloudflares Browser Rendering (bindningen `BROWSER`), och svaret som
+  sidan själv får läses av ett skript som lagts in före sidans egna (#108). Svaret, upp till
+  1,5 MB, görs mindre redan i webbläsaren, så att Workern bara läser det appen behöver. Butiker
+  från `coop.se/sitemap_pages.xml`, som Cloudflare får spara ett dygn.
 
 Reglerna:
 
@@ -61,4 +66,10 @@ säger var den ska skriva sin Worker, eftersom `main` i `wrangler.jsonc` nu är 
   tillåter 50 frågor per anrop på gratisnivån och en butik kan ha flera hundra erbjudanden.
 - Välja en Willys-butik tar upp till tio sekunder, eftersom appen väntar efter butikssöket.
 - Preview-Workern har samma cron men egen databas, så den hämtar bara om någon valt butik där.
-- Lokalt och i Playwright pekar `OFFER_SITE_URL` om alla kedjor till en påhittad sajt.
+- Lokalt och i Playwright pekar `OFFER_SITE_URL` om alla kedjor till en påhittad sajt. Där är
+  Coops butikssida ingen webbläsare, utan JSON med det sidan skulle ha fått.
+- Browser Rendering ingår i gratisnivån med 10 minuter webbläsartid per dygn. En hämtning från
+  Coop tar några sekunder, så det räcker gott för en butik i veckan. `wrangler dev` startar en
+  lokal Chromium för bindningen, som kräver `CI=1` om den körs som root.
+- Coops butiksnamn tas ur sidans adress, utan å, ä och ö, tills första hämtningen ger sidans
+  rubrik.

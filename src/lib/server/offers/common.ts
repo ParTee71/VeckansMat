@@ -1,5 +1,7 @@
 // What every chain's fetcher shares: the shape of an offer, how the chains are asked, and how
-// their numbers and dates are written. See docs/beslut/0023-erbjudanden.md.
+// their numbers, dates and page names are written. See docs/beslut/0023-erbjudanden.md.
+import { nameKey } from '../../names';
+
 export interface Offer {
 	name: string;
 	brand: string;
@@ -80,3 +82,17 @@ export function perUnit(text: string): string {
 /** Whether the value is an object, to read its fields from. */
 export const isObject = (value: unknown): value is Record<string, unknown> =>
 	typeof value === 'object' && value !== null;
+
+/** The text as ICA and Coop name their pages: small letters without å, ä and ö, joined by "-". */
+export const slug = (text: string) =>
+	nameKey(text)
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.replace(/[^a-z0-9]+/g, '-');
+
+/** A page name such as "ica-kvantum-exempelby" as "ICA Kvantum Exempelby", for a store's name. */
+export const titled = (text: string) =>
+	text
+		.split('-')
+		.map((word) => (word === 'ica' ? 'ICA' : word.charAt(0).toUpperCase() + word.slice(1)))
+		.join(' ');
