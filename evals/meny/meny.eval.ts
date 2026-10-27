@@ -35,12 +35,16 @@ const tagged = (text: string, tag: string) => byKey.get(nameKey(text))?.tags.inc
 const hasWord = (text: string, words: string[]) =>
 	words.some((word) => text.toLocaleLowerCase('sv').includes(word));
 
-/** Every dish Claude named in its answer, before the app left any out, or null when unreadable. */
-function answeredDishes(message: Anthropic.Message): string[] | null {
+/**
+ * Every dish and offer Claude named in its answer, before the app left any out, or null when
+ * unreadable.
+ */
+function answeredChoices(message: Anthropic.Message): Answered | null {
 	const text = message.content.map((block) => (block.type === 'text' ? block.text : '')).join('');
 	try {
-		const { rows } = JSON.parse(text) as { rows: Choice[] };
-		return rows.flatMap((row) => [row.dish, ...row.alternatives.map((alt) => alt.dish)]);
+		const { rows } = JSON.parse(text) as { rows: (Choice & { alternatives: Choice[] })[] };
+		const choices = rows.flatMap((row) => [row, ...row.alternatives]);
+		return { dishes: choices.map((c) => c.dish), offers: choices.map((c) => c.offer) };
 	} catch {
 		return null;
 	}
@@ -48,11 +52,17 @@ function answeredDishes(message: Anthropic.Message): string[] | null {
 
 interface Choice {
 	dish: string;
-	alternatives: { dish: string }[];
+	offer: unknown;
+}
+
+interface Answered {
+	dishes: string[];
+	offers: unknown[];
 }
 
 /** Each rule passed or failed, by its name. */
-function grade(c: Case, rows: SuggestedRow[], answered: string[] | null): Record<string, boolean> {
+function grade(c: Case, rows: SuggestedRow[], answer: Answered | null): Record<string, boolean> {
+	const answered = answer?.dishes ?? null;
 	const { request } = c;
 	const rests = (text: string) => {
 		const dish = byKey.get(nameKey(text));
@@ -142,6 +152,19 @@ function grade(c: Case, rows: SuggestedRow[], answered: string[] | null): Record
 	if (c.fishOnce) {
 		checks['fisk en gång'] = dinners.filter((r) => tagged(r.text, 'fisk')).length === 1;
 	}
+	// An offer is always one from the list. Without a list the answer has no offer at all.
+	const offers = request.offers ?? [];
+	checks['inga påhittade erbjudanden'] =
+		!!answer &&
+		answer.offers.every(
+			(n) =>
+				(offers.length ? n === null : n === undefined) ||
+				(Number.isInteger(n) && (n as number) >= 1 && (n as number) <= offers.length)
+		);
+	if (c.usesOffers) {
+		const built = dinners.filter((r) => 'offer' in r && r.offer).length;
+		checks['en eller två middagar på erbjudanden'] = built >= 1 && built <= 2;
+	}
 	for (const word of c.wished ?? []) {
 		checks[`önskat: ${word}`] = week.some((r) => hasWord(r.text, [word]));
 	}
@@ -151,10 +174,10 @@ function grade(c: Case, rows: SuggestedRow[], answered: string[] | null): Record
 CASES.forEach((c, i) => {
 	it.concurrent(c.id, async () => {
 		const { ask: live, spent } = claude();
-		let answered: string[] | null = null;
+		let answered: Answered | null = null;
 		const ask: Ask = async (params) => {
 			const message = await live(params);
-			answered = answeredDishes(message);
+			answered = answeredChoices(message);
 			return message;
 		};
 		const started = Date.now();
@@ -176,7 +199,7 @@ CASES.forEach((c, i) => {
 				failure ||
 				rows.map(
 					(r) =>
-						`${slotName(r)}: ${r.text} (${r.reason}) | ${r.alternatives.map((a) => a.text).join(' | ')}`
+						`${slotName(r)}: ${r.text} (${r.reason})${r.offer ? ` [${r.offer.name}]` : ''} | ${r.alternatives.map((a) => a.text).join(' | ')}`
 				)
 		};
 	});

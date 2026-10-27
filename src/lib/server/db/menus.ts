@@ -1,4 +1,5 @@
 import { cleanText, nameKey } from '../../names';
+import type { ChosenOffer } from '../../offers';
 import { isDish, LUNCHBOX_TAG, type Vote } from '../../recipes';
 import { addWeeks } from '../../weeks';
 import { upsertRecipeStatement, type RecipeSummary } from './recipes';
@@ -55,6 +56,8 @@ export async function listMenus(db: D1Database): Promise<Menu[]> {
 export interface Choice {
 	text: string;
 	reason: string;
+	/** The offer the dish was chosen for, if any. */
+	offer?: ChosenOffer | null;
 }
 
 /** A day's dinner or lunch on a week planned in the app. */
@@ -68,6 +71,8 @@ export interface WeekRow {
 	lunchbox: boolean;
 	/** Why Claude chose the dish, or null when it was written by hand. */
 	reason: string | null;
+	/** The offer Claude chose the dish for, if any. */
+	offer: ChosenOffer | null;
 	/** What a tap on swap goes through, in order. */
 	alternatives: Choice[];
 	/** The dishes swapped away from the day. */
@@ -94,8 +99,9 @@ const LATEST_EATERS_BEFORE = `SELECT m.id FROM menu m
 	WHERE m.week_start < ? AND EXISTS (SELECT 1 FROM menu_person p WHERE p.menu_id = m.id)
 	ORDER BY m.week_start DESC LIMIT 1`;
 
-type WeekRowRow = Omit<WeekRow, 'lunchbox' | 'alternatives' | 'passedOn' | 'isNew'> & {
+type WeekRowRow = Omit<WeekRow, 'lunchbox' | 'offer' | 'alternatives' | 'passedOn' | 'isNew'> & {
 	lunchbox: number;
+	offer: string | null;
 	isNew: number;
 	alternatives: string | null;
 	passedOn: string | null;
@@ -109,7 +115,7 @@ export async function getWeek(db: D1Database, weekStart: string): Promise<Week> 
 			.prepare(
 				`SELECT i.weekday, i.meal, i.text, i.recipe_id AS recipeId,
 				 EXISTS (SELECT 1 FROM recipe_tag t WHERE t.recipe_id = i.recipe_id AND t.tag = ?) AS lunchbox,
-				 i.reason, i.alternatives, i.passed_on AS passedOn, r.vote,
+				 i.reason, i.offer, i.alternatives, i.passed_on AS passedOn, r.vote,
 				 r.id IS NOT NULL AND NOT EXISTS (
 				   SELECT 1 FROM menu_item e JOIN menu em ON em.id = e.menu_id
 				   WHERE e.recipe_id = r.id AND (em.week_start IS NULL OR em.week_start < m.week_start)
@@ -138,6 +144,7 @@ export async function getWeek(db: D1Database, weekStart: string): Promise<Week> 
 			...row,
 			lunchbox: Boolean(row.lunchbox),
 			isNew: Boolean(row.isNew),
+			offer: row.offer ? JSON.parse(row.offer) : null,
 			alternatives: row.alternatives ? JSON.parse(row.alternatives) : [],
 			passedOn: row.passedOn ? JSON.parse(row.passedOn) : []
 		})),
@@ -202,6 +209,7 @@ export interface RowInput {
 	meal: Meal;
 	text: string;
 	reason?: string | null;
+	offer?: ChosenOffer | null;
 	alternatives?: Choice[];
 	passedOn?: string[];
 	/** The text written by hand that this row replaces, if it is still there. */
@@ -250,7 +258,8 @@ function rowStatements(db: D1Database, menuId: number, row: RowInput): D1Prepare
 		text,
 		row.reason || null,
 		row.alternatives?.length ? JSON.stringify(row.alternatives) : null,
-		row.passedOn?.length ? JSON.stringify(row.passedOn) : null
+		row.passedOn?.length ? JSON.stringify(row.passedOn) : null,
+		row.offer ? JSON.stringify(row.offer) : null
 	];
 	return [
 		...(dish ? [upsertRecipeStatement(db, text)] : []),
@@ -262,19 +271,19 @@ function rowStatements(db: D1Database, menuId: number, row: RowInput): D1Prepare
 				   -- A dish already in the collection is written as it is named there.
 				   text = coalesce((SELECT name FROM recipe WHERE name_key = ?4), ?5),
 				   recipe_id = (SELECT id FROM recipe WHERE name_key = ?4),
-				   reason = ?6, alternatives = ?7, passed_on = ?8
+				   reason = ?6, alternatives = ?7, passed_on = ?8, offer = ?9
 				 WHERE menu_id = ?1 AND weekday = ?2 AND meal = ?3
 				   -- Claude's line, which has a reason, replaces one written by hand only when asked to
 				   -- and it is unchanged, never one written meanwhile.
-				   AND (?6 IS NULL OR reason IS NOT NULL OR text = ?9)`
+				   AND (?6 IS NULL OR reason IS NOT NULL OR text = ?10)`
 			)
 			.bind(...args, row.replaces ?? null),
 		db
 			.prepare(
-				`INSERT INTO menu_item (menu_id, position, weekday, meal, text, recipe_id, reason, alternatives, passed_on)
+				`INSERT INTO menu_item (menu_id, position, weekday, meal, text, recipe_id, reason, alternatives, passed_on, offer)
 				 SELECT ?1, (SELECT coalesce(max(position) + 1, 0) FROM menu_item WHERE menu_id = ?1),
 				   ?2, ?3, coalesce((SELECT name FROM recipe WHERE name_key = ?4), ?5),
-				   (SELECT id FROM recipe WHERE name_key = ?4), ?6, ?7, ?8
+				   (SELECT id FROM recipe WHERE name_key = ?4), ?6, ?7, ?8, ?9
 				 WHERE NOT EXISTS (
 				   SELECT 1 FROM menu_item WHERE menu_id = ?1 AND weekday = ?2 AND meal = ?3)`
 			)

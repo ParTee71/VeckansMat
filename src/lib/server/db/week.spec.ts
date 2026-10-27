@@ -11,7 +11,7 @@ let db: D1Database;
 useTestDb((test) => (db = test));
 
 // Lines written by hand have no reason and nothing to swap to, and nobody has voted yet.
-const byHand = { reason: null, alternatives: [], passedOn: [], vote: null };
+const byHand = { reason: null, offer: null, alternatives: [], passedOn: [], vote: null };
 const dinner = (weekday: number, text: string) => ({ weekday, meal: 'dinner' as const, text });
 
 describe('a week planned in the app', () => {

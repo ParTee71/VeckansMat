@@ -1,5 +1,7 @@
 import { fail } from '@sveltejs/kit';
-import { env } from 'cloudflare:workers';
+import { env, waitUntil } from 'cloudflare:workers';
+import { askFor } from '#lib/server/claude/claude.ts';
+import { sortOffers } from '#lib/server/offer-ingredients.ts';
 import { getSettings, listPeople, saveSettings } from '#lib/server/db/household.ts';
 import { getChain, listChains, setChainEnabled, setChainStore } from '#lib/server/db/offers.ts';
 import { fetchChain, isStale, offerSites } from '#lib/server/offers/index.ts';
@@ -33,6 +35,8 @@ function chainOf(form: FormData): Chain | null {
 async function fetchIfStale(chain: Chain) {
 	if (isStale(await getChain(env.DB, chain), new Date())) {
 		await fetchChain(env.DB, chain, offerSites(env));
+		// After the answer, so choosing a store is not slower for it.
+		waitUntil(sortOffers(env.DB, askFor('offer')));
 	}
 	return { chain: await getChain(env.DB, chain) };
 }

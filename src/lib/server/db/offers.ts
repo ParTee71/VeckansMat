@@ -1,6 +1,7 @@
 // The chains the household fetches offers from, and the offers fetched.
 // See docs/beslut/0023-erbjudanden.md.
-import type { Chain, ChainState } from '../../offers';
+import type { Chain, ChainState, ChosenOffer } from '../../offers';
+import type { OfferToSort } from '../claude/offer-prompt';
 import type { Offer } from '../offers/common';
 
 interface ChainRow {
@@ -115,5 +116,69 @@ export async function listOffers(db: D1Database, chain: Chain): Promise<Offer[]>
 		)
 		.bind(chain)
 		.all<Omit<Offer, 'member'> & { member: number }>();
+	return results.map((o) => ({ ...o, member: !!o.member }));
+}
+
+/** Offers Claude has not yet sorted into ingredients, oldest first. */
+export async function unsortedOffers(db: D1Database, limit: number) {
+	const { results } = await db
+		.prepare(
+			'SELECT id, name, brand, size, category FROM offer WHERE ingredient IS NULL ORDER BY id LIMIT ?'
+		)
+		.bind(limit)
+		.all<OfferToSort & { id: number }>();
+	return results;
+}
+
+/**
+ * Saves what Claude made of the offers: each its ingredient, or '' when no dinner is made of it.
+ * One query, however many offers.
+ */
+export async function saveIngredients(
+	db: D1Database,
+	offers: { id: number; ingredient: string }[]
+) {
+	await db
+		.prepare(
+			`UPDATE offer SET ingredient = j.value ->> 'ingredient'
+			 FROM json_each(?) j WHERE offer.id = j.value ->> 'id'`
+		)
+		.bind(JSON.stringify(offers))
+		.run();
+}
+
+/** An offer a dinner can be built on, as Claude sees it when suggesting the week. */
+export type MenuOffer = ChosenOffer & { ingredient: string; brand: string; size: string };
+
+/** How many offers Claude sees at most, and of each ingredient. */
+const MENU_OFFERS = 80;
+const PER_INGREDIENT = 2;
+
+/**
+ * The offers a dinner can be built on from the chains that are on, valid today and at least
+ * until `until`, by ingredient. Member prices only when the household counts them.
+ */
+export async function currentOffers(
+	db: D1Database,
+	today: string,
+	until: string,
+	memberPrices: boolean
+): Promise<MenuOffer[]> {
+	const { results } = await db
+		.prepare(
+			// One of each ingredient comes before a second, so the cap leaves out seconds first.
+			`SELECT chain, name, brand, size, price, member, validTo, ingredient FROM (
+			   SELECT * FROM (
+			     SELECT o.*, o.valid_to AS validTo,
+			       row_number() OVER (PARTITION BY o.ingredient ORDER BY o.member, o.chain, o.id) AS n
+			     FROM offer o JOIN offer_chain c ON c.chain = o.chain
+			     WHERE c.enabled = 1 AND o.ingredient <> ''
+			       AND (o.valid_from IS NULL OR o.valid_from <= ?1) AND o.valid_to >= ?2
+			       AND (?3 OR o.member = 0))
+			   WHERE n <= ?4 ORDER BY n, ingredient LIMIT ?5)
+			 ORDER BY ingredient, n`
+		)
+		.bind(today, until, memberPrices ? 1 : 0, PER_INGREDIENT, MENU_OFFERS)
+		.all<Omit<MenuOffer, 'member'> & { member: number }>();
 	return results.map((o) => ({ ...o, member: !!o.member }));
 }

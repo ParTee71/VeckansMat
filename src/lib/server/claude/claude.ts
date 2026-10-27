@@ -4,7 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { env } from 'cloudflare:workers';
 
 /** What a call is for, kept with its cost. */
-type Purpose = 'recipe' | 'menu' | 'shopping' | 'category';
+type Purpose = 'recipe' | 'menu' | 'shopping' | 'category' | 'offer';
 
 /** Sends a request without its model, which the caller chooses. */
 export type Ask = (
@@ -69,7 +69,8 @@ const MODELS = {
 	recipe: 'RECIPE_MODEL',
 	menu: 'MENU_MODEL',
 	shopping: 'SHOPPING_MODEL',
-	category: 'CATEGORY_MODEL'
+	category: 'CATEGORY_MODEL',
+	offer: 'OFFER_MODEL'
 } as const satisfies Record<Purpose, keyof Env>;
 
 /**

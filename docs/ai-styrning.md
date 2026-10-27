@@ -295,3 +295,14 @@ appen använts några veckor, utifrån till exempel:
 
 En läsning sparar 90 % av priset och en skrivning kostar 25 % extra. Läses mindre än ungefär
 28 % av det som skrivs kostar cachen alltså mer än den sparar, och då tas `cache_control` bort.
+
+## 2026-10-27 – Ett fält i svarsschemat kan stänga av tänkandet
+
+**Vad:** När erbjudanden kom in i veckoförslaget (#109) fick schemat ett fält `offer` på varje
+rätt. Med fältet alltid med hoppade Sonnet över tänkandet i ett fall med en önskan, tre gånger
+av fem, och svaren blev sämre. Nu finns fältet bara när det finns erbjudanden (`menuSchema`).
+
+**Varför så:** Med adaptivt tänkande avgör modellen själv om den ska tänka, och schemat är en
+del av det den ser. Ett fält som oftast ska vara `null` gjorde uppgiften till synes mekanisk.
+Lärdomen: ändra inte schemat för alla anrop när bara några behöver fältet, och kör evalen på
+de fall som inte rör ändringen också, inte bara de nya.

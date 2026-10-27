@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fetchedText, hasStores, isChain } from './offers';
+import { fetchedText, hasStores, isChain, offerOf } from './offers';
 
 describe('offers', () => {
 	it('tell when they were fetched in Swedish time', () => {
@@ -15,5 +15,24 @@ describe('offers', () => {
 		expect(isChain('hemköp')).toBe(false);
 		expect(hasStores('lidl')).toBe(false);
 		expect(hasStores('ica')).toBe(true);
+	});
+});
+
+describe('an offer sent back from the browser', () => {
+	const offer = {
+		chain: 'coop',
+		name: 'Nötfärs',
+		price: '109 kr/kg',
+		member: true,
+		validTo: '2026-11-01'
+	};
+
+	it('is made anew from what it should hold, and nothing else', () => {
+		expect(offerOf({ ...offer, extra: 'x' })).toEqual(offer);
+		expect(offerOf(null)).toBeNull();
+		expect(offerOf({ ...offer, chain: 'hemköp' })).toBeNull();
+		expect(offerOf({ ...offer, member: 'ja' })).toBeNull();
+		expect(offerOf({ ...offer, validTo: '1 nov' })).toBeNull();
+		expect(offerOf({ ...offer, name: 'x'.repeat(201) })).toBeNull();
 	});
 });

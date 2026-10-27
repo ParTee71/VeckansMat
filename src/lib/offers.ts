@@ -17,6 +17,28 @@ export const chainLabel = (chain: Chain) => CHAINS.find((c) => c.key === chain)!
 /** Lidl has the same offers in every store, so no store is chosen there. */
 export const hasStores = (chain: Chain) => chain !== 'lidl';
 
+/** The offer a dish was chosen for, kept as it was when chosen. */
+export interface ChosenOffer {
+	chain: Chain;
+	name: string;
+	/** As the chain puts it: "89 kr/kg", "2 för 40 kr". */
+	price: string;
+	member: boolean;
+	/** The last day, in Sweden, YYYY-MM-DD. */
+	validTo: string;
+}
+
+/** The offer in a value sent back from the browser, made anew, or null when it is none. */
+export function offerOf(value: unknown): ChosenOffer | null {
+	if (typeof value !== 'object' || value === null) return null;
+	const { chain, name, price, member, validTo } = value as Record<string, unknown>;
+	const text = (t: unknown, max: number): t is string => typeof t === 'string' && t.length <= max;
+	if (!isChain(chain) || !text(name, 200) || !text(price, 100) || typeof member !== 'boolean')
+		return null;
+	if (!text(validTo, 10) || !/^\d{4}-\d{2}-\d{2}$/.test(validTo)) return null;
+	return { chain, name, price, member, validTo };
+}
+
 /** A store found when searching, to choose from. */
 export interface StoreChoice {
 	id: string;
