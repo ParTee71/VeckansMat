@@ -124,5 +124,102 @@ export const CASES: Case[] = [
 			dish('Grönsakssoppa', 2, [], null)
 		],
 		absent: ['champagne']
+	},
+	{
+		// A whole week of new dishes with only a name: the slowest list to make.
+		id: 'åtta-bara-namn',
+		dishes: [
+			dish('Spaghetti carbonara', 4, [], null),
+			dish('Kycklinggryta med ris', 6, [], null),
+			dish('Fiskpinnar med potatismos', 4, [], null),
+			dish('Vegetarisk lasagne', 6, [], null),
+			dish('Tacos', 4, [], null),
+			dish('Pytt i panna', 4, [], null),
+			dish('Laxpudding', 4, [], null),
+			dish('Tomatsoppa', 4, [], null)
+		],
+		guessed: {
+			'Spaghetti carbonara': [
+				['spaghetti', 'pasta'],
+				['bacon', 'pancetta', 'fläsk']
+			],
+			'Kycklinggryta med ris': [['kyckling'], ['ris']],
+			'Fiskpinnar med potatismos': [['fiskpinnar'], ['potatis']],
+			'Vegetarisk lasagne': [['lasagne'], ['ost']],
+			Tacos: [
+				['taco', 'tortilla'],
+				['färs', 'bönor']
+			],
+			'Pytt i panna': [['potatis'], ['korv', 'kött', 'skinka']],
+			Laxpudding: [['lax'], ['ägg'], ['potatis']],
+			Tomatsoppa: [['tomat']]
+		},
+		merged: ['potatis'],
+		sections: { kyckling: 'Kött och fisk', lax: 'Kött och fisk', ägg: 'Mejeri och ägg' }
+	},
+	{
+		// The same week with every dish's lines written: only the merging is left.
+		id: 'åtta-med-rader',
+		dishes: [
+			dish('Spaghetti carbonara', 4, [
+				'400 g spaghetti',
+				'140 g bacon',
+				'3 ägg',
+				'1 dl riven parmesan',
+				'svartpeppar'
+			]),
+			dish('Kycklinggryta med ris', 6, [
+				'600 g kycklingfilé',
+				'1 gul lök',
+				'2 dl matlagningsgrädde',
+				'1 msk curry',
+				'3 dl ris'
+			]),
+			dish('Fiskpinnar med potatismos', 4, [
+				'15 fiskpinnar',
+				'1 kg potatis',
+				'2 dl mjölk',
+				'25 g smör'
+			]),
+			dish('Vegetarisk lasagne', 6, [
+				'12 lasagneplattor',
+				'1 aubergine',
+				'2 burkar krossade tomater',
+				'1 gul lök',
+				'5 dl mjölk',
+				'200 g riven ost'
+			]),
+			dish('Tacos', 4, [
+				'500 g nötfärs',
+				'1 påse tacokrydda',
+				'8 tortillabröd',
+				'1 gurka',
+				'2 tomater',
+				'100 g riven ost'
+			]),
+			dish('Pytt i panna', 4, ['800 g potatis', '300 g falukorv', '1 gul lök', '4 ägg']),
+			dish('Laxpudding', 4, [
+				'400 g gravad lax',
+				'1 kg potatis',
+				'4 ägg',
+				'5 dl mjölk',
+				'1 knippe dill'
+			]),
+			dish('Tomatsoppa', 4, [
+				'2 burkar krossade tomater',
+				'1 gul lök',
+				'1 grönsaksbuljongtärning',
+				'1 dl matlagningsgrädde'
+			])
+		],
+		merged: ['lök', 'potatis', 'ägg', 'mjölk', 'krossade tomater', 'riven ost'],
+		scaled: [{ word: 'lök', amounts: ['4 st', '4', '5 st', '5'] }],
+		sections: {
+			kyckling: 'Kött och fisk',
+			lax: 'Kött och fisk',
+			ägg: 'Mejeri och ägg',
+			mjölk: 'Mejeri och ägg',
+			curry: 'Finns kanske hemma'
+		}
 	}
 ];

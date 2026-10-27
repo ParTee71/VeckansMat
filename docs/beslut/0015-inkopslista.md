@@ -38,7 +38,13 @@ när veckan ändras. Butikens erbjudanden ingår inte i v1.
   rätterna, portionerna och raderna). Skiljer det sig från veckan som den är nu
   erbjuder appen att uppdatera listan.
 - **Låg effort.** Evalen gav samma resultat med låg som med medel, och låg är snabbare. Ett
-  anrop tar 2–9 sekunder och kostar under en tiondels cent per vecka.
+  anrop tar 2–11 sekunder för en vanlig vecka, men upp till en halv minut för åtta rätter med
+  bara namn, och kostar under en cent per vecka.
+- **Tänkandet behålls, och allt görs i ett anrop** (#96). Även med låg effort går 60–75 % av
+  tokens ut till tänkande. Utan tänkande blev listan 2–3 gånger snabbare men tappade ibland en
+  rad, och gissningarna blev sämre. Att gissa varje rätt för sig samtidigt blev inte snabbare,
+  eftersom det är sammanslagningen av många rader som tar tid. Inköpslistan får två minuter innan
+  anropet ges upp, och varje lyckat anrop loggar hur lång tid det tog (`claude_call.duration_ms`).
 - Prompten mäts med evalen i `evals/handla/`, som körs för hand mot det riktiga API:et.
 
 ## Följder

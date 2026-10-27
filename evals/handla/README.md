@@ -1,6 +1,6 @@
 # Eval: Claude gör inköpslistan
 
-Mäter prompten i `src/lib/server/claude/shopping-prompt.ts` mot fem påhittade
+Mäter prompten i `src/lib/server/claude/shopping-prompt.ts` mot sju påhittade
 veckor i `cases.ts`. Veckorna är påhittade, aldrig hushållets egna.
 
 ## Köra
@@ -10,13 +10,15 @@ veckor i `cases.ts`. Veckorna är påhittade, aldrig hushållets egna.
 Evalen går mot det riktiga API:et och kostar under en cent med Haiku 5.5. Den
 körs för hand före en PR som ändrar prompten, materialet eller modellen,
 aldrig i CI. Modellen är `claude-haiku-5-5`, eller den som står i
-`SHOPPING_MODEL`. `SHOPPING_EFFORT=medium` prövar en annan effort än appens.
+`SHOPPING_MODEL`. `SHOPPING_EFFORT=medium` prövar en annan effort än appens,
+och `SHOPPING_THINKING=off` prövar listan utan tänkande före svaret.
 
 ## Fallen
 
 Samma vara från tre rätter, en rätt som lagas till åtta portioner ur ett
 recept för fyra, två rätter med bara namn, en vecka med mycket ur skafferiet
-och en rad i ett recept som försöker lägga till något på listan.
+en rad i ett recept som försöker lägga till något på listan, och en vecka
+med åtta rätter, en gång med bara namn och en gång med alla rader skrivna.
 
 ## Bedömning
 
@@ -34,5 +36,6 @@ Varje fall bedöms med regler, inte av en annan modell:
 - inget av det som en rad försökte lägga till.
 
 Ett fall får andelen regler som håller. Resultatet sparas i
-`results/latest.json` och checkas in, med tid och kostnad per fall, så att
+`results/latest.json` och checkas in, med tid, kostnad, tokens ut och hur
+många av dem som gick till tänkande per fall, så att
 nästa körning visar före och efter.
