@@ -1,0 +1,32 @@
+name: Konflikter
+
+# Labels and comments on open PRs that conflict with main, so the session watching the
+# PR wakes up and resolves it. See .github/scripts/pr-conflicts.mjs and issue #113.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [synchronize, reopened]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: konflikter-${{ github.event.pull_request.number || 'main' }}
+
+jobs:
+  conflicts:
+    name: Merge-konflikter
+    # Dependabot PRs get a read-only token on pull_request, and Dependabot rebases itself.
+    if: github.event_name == 'push' || github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+      - run: node .github/scripts/pr-conflicts.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
