@@ -3,6 +3,10 @@
 Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ändringen
 (se `.claude/skills/release/SKILL.md`).
 
+## 0.8.4
+
+- Arket Vilka äter i Veckan har nu bara valet av vilka som äter veckan. Kraven, reglerna och länken till dem finns under Inställningar. (#135)
+
 ## 0.8.3
 
 - Rubriken överst i Veckan och Handla står nu på två tätt satta rader: veckonumret på den första och "den här veckan" eller "nästa vecka" på den andra. (#133)
