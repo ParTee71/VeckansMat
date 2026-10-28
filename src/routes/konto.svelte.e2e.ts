@@ -33,7 +33,7 @@ test.describe('with a Google picture', () => {
 		const asked = await identity(page, {
 			email: ALEX,
 			name: 'Alex Exempel',
-			custom: { picture: 'http://localhost:4174/access/bild=s96-c' }
+			oidc_fields: { picture: 'http://localhost:4174/access/bild=s96-c' }
 		});
 		// The first load shows the letter, and the picture once the browser has fetched it.
 		await open(page, '/');
@@ -69,11 +69,15 @@ test.describe('without a Google picture', () => {
 	test.use(as(SAM));
 
 	test('the first letter of the name is shown', async ({ page }) => {
-		await identity(page, { email: SAM, name: 'Sam Exempel' });
+		const asked = await identity(page, { email: SAM, name: 'Sam Exempel' });
 		await open(page, '/ratter');
 		await expect(account(page)).toHaveAccessibleName('Konto och inställningar, Sam Exempel');
 		await expect(account(page)).toHaveText('S');
 		await expect(account(page).locator('img')).toHaveCount(0);
+		// Asked again later for a picture, but not again within ten minutes.
+		await open(page, '/handla');
+		await expect(account(page)).toHaveText('S');
+		expect(asked()).toBe(1);
 	});
 });
 

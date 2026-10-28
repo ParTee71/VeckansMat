@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useTestDb } from '../../../test/d1';
-import { isStale, pictureUrl, saveIdentity } from './account';
+import { isStale, needsRefresh, pictureUrl, saveIdentity } from './account';
 import { getAccount, getPicture, saveAccount } from './db/account';
 
 let db: D1Database;
@@ -32,6 +32,17 @@ it('what was fetched is fetched again after a week', () => {
 	expect(isStale(fetched, new Date('2030-01-08T08:00:00Z'))).toBe(true);
 });
 
+it('the browser is asked for a missing account or picture, or an old one', () => {
+	const now = new Date('2030-01-02T08:00:00Z');
+	const fetchedAt = '2030-01-01T08:00:00.000Z';
+	expect(needsRefresh(null, now)).toBe(true);
+	expect(needsRefresh({ name: 'Alex', fetchedAt, hasPicture: false }, now)).toBe(true);
+	expect(needsRefresh({ name: 'Alex', fetchedAt, hasPicture: true }, now)).toBe(false);
+	expect(
+		needsRefresh({ name: 'Alex', fetchedAt, hasPicture: true }, new Date('2030-01-09T08:00:00Z'))
+	).toBe(true);
+});
+
 describe('an identity from Access', () => {
 	/** Answers as Google would, and keeps what was asked for. */
 	function stubGoogle(picture: Response = image()) {
@@ -49,12 +60,12 @@ describe('an identity from Access', () => {
 	const image = (bytes = 3, type = 'image/png') =>
 		new Response(new Uint8Array(bytes), { headers: { 'content-type': type } });
 
-	it('gives the account its name and the Google picture Access keeps under custom', async () => {
+	it('gives the account its name and the Google picture Access keeps under oidc_fields', async () => {
 		const asked = stubGoogle();
 		const identity = {
 			email: 'Alex@exempel.se',
 			name: 'Alex Exempel',
-			custom: { picture: GOOGLE_PICTURE }
+			oidc_fields: { picture: GOOGLE_PICTURE }
 		};
 		expect(await saveIdentity(db, 'alex@exempel.se', identity)).toBe(true);
 		expect(asked).toEqual(['https://lh3.googleusercontent.com/a/exempel=s192-c']);
