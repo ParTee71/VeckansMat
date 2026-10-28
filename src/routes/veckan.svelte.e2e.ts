@@ -1,6 +1,6 @@
 import { expect, test, type Locator } from '@playwright/test';
 import { countLoads, open, saved, writeDay } from '../../test/e2e';
-import { shownWeek, swedishToday } from '../lib/weeks';
+import { mondayOf, shownWeek, swedishToday } from '../lib/weeks';
 
 // The made-up dishes come from test/e2e-seed.sql. Veckan shows this week or the next, so the
 // tests do not depend on which day they run.
@@ -221,7 +221,9 @@ test('the handwriting comes with the app, and nothing is fetched from elsewhere'
 });
 
 test('Claude suggests the week, and a day is swapped with one tap', async ({ page }) => {
-	// The other week than the one the first test writes in.
+	// The other week than the one the first test writes in. From Wednesday that is this week, so
+	// the phone's clock is this Monday morning, when no day of either week has passed.
+	await page.clock.setFixedTime(new Date(`${mondayOf(swedishToday())}T08:00:00+01:00`));
 	await open(page, '/');
 	await page.locator('m3e-icon-button[href]').click();
 	await expect(page.getByRole('button', { name: 'Middag måndag: tom' })).toBeVisible();
