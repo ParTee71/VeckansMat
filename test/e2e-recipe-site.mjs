@@ -1,7 +1,7 @@
 // A made-up recipe site for the Playwright tests, so reading a link never leaves the machine,
 // and a stand-in for Claude's API under /claude, so no test calls the real one. It reads recipes
 // and suggests weeks. Under /butik it stands in for the chains' sites (offer-sites.mjs), and under
-// /access for Cloudflare Access's identity endpoint and Google's profile pictures.
+// /access/bild for Google's profile pictures.
 import { createServer } from 'node:http';
 import { offerSite } from './offer-sites.mjs';
 
@@ -166,32 +166,11 @@ function messages(request, response) {
 	});
 }
 
-// Made-up accounts, told apart by the token Access would send along. The picture is a claim of
-// Google's, which Access keeps apart from its own fields.
-const identities = {
-	'e2e-med-bild': {
-		email: 'alex@exempel.se',
-		name: 'Alex Exempel',
-		custom: { picture: 'http://localhost:4174/access/bild=s96-c' }
-	},
-	'e2e-utan-bild': { email: 'sam@exempel.se', name: 'Sam Exempel' }
-};
-
 // A picture of one terracotta pixel.
 const PICTURE = Buffer.from(
 	'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGPo9zEFAAJ+AREsc1ByAAAAAElFTkSuQmCC',
 	'base64'
 );
-
-function access(request, response) {
-	if (request.url.startsWith('/access/bild')) {
-		return response.writeHead(200, { 'content-type': 'image/png' }).end(PICTURE);
-	}
-	const token = request.headers.cookie?.match(/CF_Authorization=([^;]+)/)?.[1];
-	const identity = identities[token];
-	if (!identity) return response.writeHead(400).end();
-	response.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(identity));
-}
 
 const html = (data) =>
 	typeof data === 'string'
@@ -202,7 +181,9 @@ createServer((request, response) => {
 	if (request.method === 'POST' && request.url === '/claude/v1/messages') {
 		return messages(request, response);
 	}
-	if (request.url.startsWith('/access/')) return access(request, response);
+	if (request.url.startsWith('/access/bild')) {
+		return response.writeHead(200, { 'content-type': 'image/png' }).end(PICTURE);
+	}
 	if (request.url.startsWith('/butik/')) {
 		const page = offerSite(request.url.slice('/butik'.length));
 		if (page) return response.writeHead(200, { 'content-type': page.type }).end(page.body);
