@@ -3,6 +3,10 @@
 Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ändringen
 (se `.claude/skills/release/SKILL.md`).
 
+## 0.8.2
+
+- Google-bilden syns nu på riktigt. 0.8.1 hämtade namnet men letade efter bilden på fel ställe i svaret från Cloudflare. Saknas bilden frågar appen igen vid nästa besök. (#131)
+
 ## 0.8.1
 
 - Google-bilden syns nu i kontoikonen och på Inställningar. I 0.8.0 visades bara första bokstaven, eftersom appen inte fick fram bilden från Cloudflare. (#129)

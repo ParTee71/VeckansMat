@@ -1,4 +1,4 @@
-import { saveAccount, type Picture } from './db/account';
+import { saveAccount, type Picture, type StoredAccount } from './db/account';
 
 // Who is logged in comes from Cloudflare Access, which stands in front of the whole app
 // (docs/beslut/0021-inloggning-med-google.md). Access sends the email in a header. The name and
@@ -18,10 +18,22 @@ export function isStale(fetchedAt: string, now: Date): boolean {
 	return now.getTime() - Date.parse(fetchedAt) >= REFRESH_DAYS * 24 * 60 * 60 * 1000;
 }
 
-/** A claim of the identity: Access's own field, else Google's claim, which it keeps under custom. */
+/**
+ * Whether the browser should fetch the name and picture: when there are none, no picture, or
+ * they are old. The browser asks at most every ten minutes, so an account without a Google
+ * picture costs little.
+ */
+export function needsRefresh(stored: StoredAccount | null, now: Date): boolean {
+	return !stored || !stored.hasPicture || isStale(stored.fetchedAt, now);
+}
+
+/**
+ * A claim of the identity: Access's own field, else Google's claim, which Access keeps under
+ * oidc_fields (custom for other identity providers).
+ */
 function claim(identity: Record<string, unknown>, key: string): string | null {
-	const custom = identity.custom as Record<string, unknown> | undefined;
-	const value = identity[key] ?? custom?.[key];
+	const nested = (field: string) => (identity[field] as Record<string, unknown> | undefined)?.[key];
+	const value = identity[key] ?? nested('oidc_fields') ?? nested('custom');
 	return typeof value === 'string' && value ? value : null;
 }
 
