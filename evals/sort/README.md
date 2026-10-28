@@ -13,6 +13,8 @@ körs för hand före en PR som ändrar prompten, materialet eller modellen,
 aldrig i CI. Modellen är `claude-haiku-5-5`, eller den som står i
 `CATEGORY_MODEL`. `CATEGORY_EFFORT=medium` prövar en annan effort än appens.
 
+Tak, delkörningar och kostnadslogg: se [`evals/README.md`](../README.md).
+
 ## Fallen
 
 Alla rätter skickas i ett anrop, som när appen sorterar de gamla rätterna.

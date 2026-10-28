@@ -13,6 +13,8 @@ aldrig i CI. Modellen är `claude-haiku-5-5`, eller den som står i
 `SHOPPING_MODEL`. `SHOPPING_EFFORT=medium` prövar en annan effort än appens,
 och `SHOPPING_THINKING=off` prövar listan utan tänkande före svaret.
 
+Tak, delkörningar och kostnadslogg: se [`evals/README.md`](../README.md).
+
 ## Fallen
 
 Samma vara från tre rätter, en rätt som lagas till åtta portioner ur ett

@@ -306,3 +306,15 @@ av fem, och svaren blev sämre. Nu finns fältet bara när det finns erbjudanden
 del av det den ser. Ett fält som oftast ska vara `null` gjorde uppgiften till synes mekanisk.
 Lärdomen: ändra inte schemat för alla anrop när bara några behöver fältet, och kör evalen på
 de fall som inte rör ändringen också, inte bara de nya.
+
+## 2026-10-28 – Evalerna kostar, appen nästan ingenting
+
+**Vad:** Under 25–27 oktober kostade appens egna anrop ungefär $0,17. Evalerna kostade
+uppskattningsvis $4–7, mest menyevalen med Sonnet, och arbetsytans utgiftsgräns tog slut mitt
+i ett bygge (#123). Nu sparar en körning av bara några fall (`-t`) i `partial.json` i stället
+för att skriva över den sparade körningen. Varje körning har ett tak (`EVAL_MAX_USD`, $1) och
+får en rad i `evals/costs.jsonl`. Evalerna har en egen nyckel i en egen arbetsyta.
+
+**Varför så:** Det dyra var inte en enskild körning utan att det var krångligt att köra bara
+några fall. Då kördes allt, gång på gång. Lärdomen: gör det billiga sättet till det enkla
+sättet, sätt ett tak som stoppar misstag, och mät vad utvecklingen kostar, inte bara appen.

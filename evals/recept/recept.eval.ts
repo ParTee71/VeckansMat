@@ -75,4 +75,10 @@ CASES.forEach((c, i) => {
 	});
 });
 
-afterAll(() => report(RESULTS, { model: MODEL, prompt: RECIPE_PROMPT, results }));
+afterAll(() =>
+	report(
+		RESULTS,
+		{ cases: CASES.length, spentUsd: claude.spentUsd() },
+		{ model: MODEL, prompt: RECIPE_PROMPT, results }
+	)
+);

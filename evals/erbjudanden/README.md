@@ -14,6 +14,8 @@ Evalen går mot det riktiga API:et och kostar under en tiondels cent med Haiku
 modellen, aldrig i CI. Modellen är `claude-haiku-5-5`, eller den som står i
 `OFFER_MODEL`. `OFFER_EFFORT=medium` prövar en annan effort än appens.
 
+Tak, delkörningar och kostnadslogg: se [`evals/README.md`](../README.md).
+
 ## Fallen
 
 Alla erbjudanden skickas i ett anrop, som när appen sorterar en butiks vecka.

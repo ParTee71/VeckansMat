@@ -23,7 +23,7 @@ export default defineConfig({
 	],
 	test: {
 		environment: 'node',
-		include: ['src/**/*.{test,spec}.ts', 'test/**/*.spec.ts'],
+		include: ['src/**/*.{test,spec}.ts', 'test/**/*.spec.ts', 'evals/*.spec.ts'],
 		alias: {
 			'cloudflare:workers': fileURLToPath(new URL('test/cloudflare-workers.ts', import.meta.url))
 		},
