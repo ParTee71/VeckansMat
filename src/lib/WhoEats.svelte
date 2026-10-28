@@ -1,19 +1,16 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
 	import Icon from './Icon.svelte';
 	import { listText } from './names.ts';
 
-	// Who eats the week, as a line on the menu that opens a sheet: a chip for each person, what
-	// they do not eat and the household's rules for every week.
+	// Who eats the week, as a line on the menu that opens a sheet with a chip for each person. The
+	// people, what they do not eat and the rules are set in Inställningar.
 	let {
 		people,
 		eaterIds,
-		rules,
 		ontoggle
 	}: {
-		people: { id: number; name: string; requirements: string }[];
+		people: { id: number; name: string }[];
 		eaterIds: number[];
-		rules: string;
 		ontoggle: (id: number, selected: boolean) => void;
 	} = $props();
 
@@ -37,7 +34,7 @@
 	<span slot="header">Vilka äter?</span>
 	<div class="body">
 		{#if people.length === 0}
-			<p class="hint">Lägg till de som brukar äta, med det de inte äter.</p>
+			<p class="hint">Lägg till personer under Inställningar.</p>
 		{:else}
 			<div class="choices">
 				{#each people as person (person.id)}
@@ -48,14 +45,7 @@
 					>
 				{/each}
 			</div>
-			{#each eaters.filter((p) => p.requirements) as person (person.id)}
-				<p class="hint">{person.name}: {person.requirements.replace(/\n+/g, ', ')}</p>
-			{/each}
 		{/if}
-		{#if rules}
-			<p class="hint">{rules.replace(/\n+/g, ' ')}</p>
-		{/if}
-		<a href={resolve('/installningar')}>Ändra personer och regler</a>
 	</div>
 </m3e-bottom-sheet>
 
@@ -104,12 +94,5 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.625rem;
-	}
-
-	a {
-		align-self: flex-start;
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: var(--md-sys-color-primary);
 	}
 </style>

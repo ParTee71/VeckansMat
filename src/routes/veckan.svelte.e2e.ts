@@ -141,7 +141,7 @@ test('a day is chosen without writing, from the usual dishes or all of them', as
 	await saved(page);
 });
 
-test('who eats is chosen per week, and shows what they do not eat', async ({ page }) => {
+test('who eats is chosen per week, and nothing more is set there', async ({ page }) => {
 	const people = ['Ätare Ett', 'Ätare Två'];
 	for (const name of people) {
 		await open(page, '/installningar/ny');
@@ -152,7 +152,7 @@ test('who eats is chosen per week, and shows what they do not eat', async ({ pag
 	}
 
 	await open(page, '/');
-	// Who eats is a line on the menu, which opens a sheet with a chip for each person.
+	// Who eats is a line on the menu, which opens a sheet with a chip for each person and nothing else.
 	const line = page.getByRole('button', { name: /äter$/ });
 	await line.click();
 	const chips = people.map((name) => page.locator('m3e-filter-chip', { hasText: name }));
@@ -160,7 +160,9 @@ test('who eats is chosen per week, and shows what they do not eat', async ({ pag
 	// Two quick taps both count, even before the first is saved.
 	await chips[0].click();
 	await chips[1].click();
-	await expect(page.getByText('Ätare Två: Ätare Två äter inte svamp')).toBeVisible();
+	// What they do not eat is set in Inställningar, so the sheet neither shows it nor links there.
+	await expect(page.getByText('Ätare Två äter inte svamp')).toHaveCount(0);
+	await expect(page.getByRole('link', { name: 'Ändra personer och regler' })).toHaveCount(0);
 	await expect(line).toContainText('Ätare Ett och Ätare Två äter');
 	await saved(page);
 	await page.reload();

@@ -400,12 +400,7 @@
 
 	<MenuCard dates={weekDates(week.weekStart)}>
 		{#snippet eaters()}
-			<WhoEats
-				people={data.people}
-				{eaterIds}
-				rules={data.settings.menuRules}
-				ontoggle={toggleEater}
-			/>
+			<WhoEats people={data.people} {eaterIds} ontoggle={toggleEater} />
 		{/snippet}
 		{#if suggesting}
 			<div class="suggesting">
