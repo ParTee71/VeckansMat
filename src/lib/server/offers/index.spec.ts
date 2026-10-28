@@ -180,7 +180,7 @@ describe('searching for stores', () => {
 		expect(await searchStores(db, 'lidl', 'exempelby', siteFetch())).toEqual([]);
 	});
 
-	it('lists every chain in the order Hushållet shows them', async () => {
+	it('lists every chain in the order Inställningar shows them', async () => {
 		expect((await listChains(db)).map((c) => c.chain)).toEqual(['ica', 'willys', 'coop', 'lidl']);
 	});
 });

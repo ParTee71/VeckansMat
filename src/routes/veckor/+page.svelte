@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
+	import AccountButton from '#lib/AccountButton.svelte';
 	import { MEAL_LABELS } from '#lib/recipes.ts';
 	import { WEEKDAYS, weekDates, weekName } from '#lib/weeks.ts';
 	import type { PageProps } from './$types';
@@ -32,10 +33,11 @@
 </svelte:head>
 
 <main>
-	<div class="title">
-		<h1 class="view-title">Veckor</h1>
-		<span>{data.menus.length} veckor</span>
+	<div class="top">
+		<p class="label">{data.menus.length} veckor</p>
+		<AccountButton />
 	</div>
+	<h1 class="view-title">Veckor</h1>
 
 	{#if data.menus.length === 0}
 		<p class="empty">Inga veckor än. När ni har planerat en vecka hamnar den här.</p>
@@ -83,16 +85,25 @@
 		padding: 1rem;
 	}
 
-	.title {
+	/* Like the top of Rätter. */
+	.top {
+		margin: 0 -0.5rem -0.75rem 0.25rem;
 		display: flex;
-		align-items: baseline;
+		align-items: center;
 		justify-content: space-between;
-		margin: 0.75rem 0.25rem 1rem;
-		color: var(--md-sys-color-on-surface-variant);
-		font-size: 0.875rem;
+	}
+
+	.label {
+		margin: 0;
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--md-sys-color-primary);
 	}
 
 	h1 {
+		margin: 0 0.25rem 1rem;
 		color: var(--md-sys-color-on-surface);
 	}
 

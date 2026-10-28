@@ -5,6 +5,7 @@
 	import Initial from '#lib/Initial.svelte';
 	import OffersSheet from '#lib/OffersSheet.svelte';
 	import StorePicker from '#lib/StorePicker.svelte';
+	import ThemePicker from '#lib/ThemePicker.svelte';
 	import { postAction } from '#lib/actions.ts';
 	import { LUNCHBOX_EXTRA_CHOICES, MAX_NEW_DISHES, MAX_REPEAT_WEEKS } from '#lib/household.ts';
 	import {
@@ -130,24 +131,40 @@
 </script>
 
 <svelte:head>
-	<title>Hushållet – Veckans mat</title>
+	<title>Inställningar – Veckans mat</title>
 </svelte:head>
 
 <header>
 	<m3e-icon-button variant="tonal" href="/" aria-label="Tillbaka">
 		<Icon name="back" />
 	</m3e-icon-button>
-	<h1>Hushållet</h1>
+	<h1>Inställningar</h1>
 </header>
 
 <main>
+	{#if data.account}
+		{@const { name, email, picture } = data.account}
+		<section class="account" aria-label="Konto">
+			{#if picture}
+				<img src="/konto/bild?v={encodeURIComponent(picture)}" alt="" />
+			{:else}
+				<span class="letter" aria-hidden="true">{(name || email).charAt(0).toUpperCase()}</span>
+			{/if}
+			{#if name}<strong>{name}</strong>{/if}
+			<span class="supporting">{email}</span>
+			<span class="supporting">Inloggad med Google</span>
+			<!-- A plain link, since Access logs out and the app is left in full. -->
+			<a class="logout" href="/cdn-cgi/access/logout" data-sveltekit-reload>Logga ut</a>
+		</section>
+	{/if}
+
 	<h2>Personer</h2>
 	{#if data.people.length === 0}
 		<p class="note">Inga personer än. Lägg till de som brukar äta, med det de inte äter.</p>
 	{:else}
 		<m3e-list variant="segmented">
 			{#each data.people as person, i (person.id)}
-				<m3e-list-action href="/hushallet/{person.id}">
+				<m3e-list-action href="/installningar/{person.id}">
 					<Initial name={person.name} index={i} />
 					{person.name}
 					<span slot="supporting-text">{person.requirements.split('\n')[0] || 'Inga krav'}</span>
@@ -155,7 +172,7 @@
 			{/each}
 		</m3e-list>
 	{/if}
-	<m3e-button variant="tonal" href="/hushallet/ny" class="add">
+	<m3e-button variant="tonal" href="/installningar/ny" class="add">
 		<span slot="icon" class="slot-icon"><Icon name="add" /></span>Lägg till person
 	</m3e-button>
 
@@ -358,6 +375,9 @@
 			<span slot="icon" class="slot-icon"><Icon name="tag" /></span>Visa veckans erbjudanden
 		</m3e-button>
 	{/if}
+
+	<h2>Färg</h2>
+	<ThemePicker />
 </main>
 
 <OffersSheet open={showingOffers} onclose={() => (showingOffers = false)} />
@@ -371,6 +391,58 @@
 />
 
 <style>
+	.account {
+		padding: 1.25rem 1rem;
+		border-radius: 1.5rem;
+		background: var(--md-sys-color-surface-container);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.25rem;
+		text-align: center;
+	}
+
+	.account img,
+	.letter {
+		width: 4.5rem;
+		height: 4.5rem;
+		margin-bottom: 0.5rem;
+		border-radius: 50%;
+	}
+
+	.account img {
+		object-fit: cover;
+	}
+
+	.letter {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--md-sys-color-primary);
+		color: var(--md-sys-color-on-primary);
+		font-size: 1.75rem;
+		font-weight: 600;
+	}
+
+	.account strong {
+		font-size: 1.125rem;
+	}
+
+	/* As an outlined button. */
+	.logout {
+		margin-top: 0.75rem;
+		height: 2.5rem;
+		padding: 0 1.5rem;
+		border: 1px solid var(--md-sys-color-outline-variant);
+		border-radius: 1.25rem;
+		display: flex;
+		align-items: center;
+		color: var(--md-sys-color-primary);
+		font-size: 0.875rem;
+		font-weight: 500;
+		text-decoration: none;
+	}
+
 	.show-offers {
 		align-self: flex-start;
 	}

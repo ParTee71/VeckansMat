@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import AccountButton from './AccountButton.svelte';
 	import WeekArrows from './WeekArrows.svelte';
 	import { isoWeek } from './weeks.ts';
 
@@ -26,6 +27,7 @@
 	<div class="nav">
 		{@render actions?.()}
 		<WeekArrows {weekStart} {thisWeek} {nextWeek} />
+		<AccountButton />
 	</div>
 </header>
 
@@ -48,5 +50,6 @@
 
 	.nav {
 		display: flex;
+		align-items: center;
 	}
 </style>

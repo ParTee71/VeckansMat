@@ -52,7 +52,7 @@
 		failed = null;
 		try {
 			const response = await fetch(
-				`/hushallet/butiker?kedja=${chain}&q=${encodeURIComponent(text)}`
+				`/installningar/butiker?kedja=${chain}&q=${encodeURIComponent(text)}`
 			);
 			// An error page that is not JSON reads as no answer.
 			const answer = (await response.json().catch(() => null)) as

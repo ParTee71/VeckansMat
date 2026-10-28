@@ -29,7 +29,7 @@ const CHAIN_COLUMNS = `chain, enabled, store_id AS storeId, store_name AS storeN
 
 const toRecord = ({ enabled, ...row }: ChainRow): ChainRecord => ({ ...row, enabled: !!enabled });
 
-/** Every chain, in the order Hushållet lists them. */
+/** Every chain, in the order Inställningar lists them. */
 export async function listChains(db: D1Database): Promise<ChainRecord[]> {
 	const { results } = await db
 		.prepare(

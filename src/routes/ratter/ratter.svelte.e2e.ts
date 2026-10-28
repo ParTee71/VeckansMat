@@ -231,6 +231,6 @@ test('a favourite has a thumb up in Rätter and on its page', async ({ page }) =
 
 	await row('Ostfrallor').click();
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ostfrallor');
-	// Hushållet's tests change how many weeks, so the number is not checked here.
+	// Inställningar's tests change how many weeks, so the number is not checked here.
 	await expect(page.getByText(/^Favorit · får komma efter \d+ veck/)).toBeVisible();
 });

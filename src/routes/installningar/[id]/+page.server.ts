@@ -24,10 +24,10 @@ export const actions: Actions = {
 		if (params.id === NEW) await createPerson(env.DB, person);
 		else if (!(await updatePerson(env.DB, Number(params.id), person)))
 			error(404, 'Personen finns inte');
-		redirect(303, '/hushallet');
+		redirect(303, '/installningar');
 	},
 	delete: async ({ params }) => {
 		await deletePerson(env.DB, Number(params.id));
-		redirect(303, '/hushallet');
+		redirect(303, '/installningar');
 	}
 };

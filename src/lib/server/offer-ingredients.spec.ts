@@ -195,7 +195,7 @@ describe('the offers Claude sees for the week', () => {
 			'Kycklinglår (willys)'
 		]);
 		expect(await listed(false)).not.toContain('Fläskfilé (lidl)');
-		// The planning card names the chains Claude sees offers from, in Hushållet's order.
+		// The planning card names the chains Claude sees offers from, in Inställningar's order.
 		expect(await offerChains(db, '2026-10-27', '2026-10-29', true)).toEqual(['willys', 'lidl']);
 	});
 });

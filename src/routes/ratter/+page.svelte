@@ -2,11 +2,11 @@
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import AccountButton from '#lib/AccountButton.svelte';
 	import FoldCard from '#lib/FoldCard.svelte';
 	import Icon from '#lib/Icon.svelte';
 	import SubmitButton from '#lib/SubmitButton.svelte';
 	import { useFab } from '#lib/fab.svelte.ts';
-	import ThemeSheet from '#lib/ThemeSheet.svelte';
 	import { recipeUrl } from '#lib/links.ts';
 	import { nameKey } from '#lib/names.ts';
 	import { byName, byOften, CATEGORIES, categoryLook, matching } from '#lib/recipes.ts';
@@ -106,13 +106,11 @@
 </svelte:head>
 
 <main class="warm-view">
-	<p class="label">{recipes.length} rätter</p>
-	<div class="title">
-		<h1 class="view-title">Rätter</h1>
-		<m3e-icon-button aria-label="Byt färg">
-			<m3e-bottom-sheet-trigger for="theme"><Icon name="palette" /></m3e-bottom-sheet-trigger>
-		</m3e-icon-button>
+	<div class="top">
+		<p class="label">{recipes.length} rätter</p>
+		<AccountButton />
 	</div>
+	<h1 class="view-title">Rätter</h1>
 
 	<form method="POST" action="?/add" use:enhance={add}>
 		<m3e-search-bar clearable clear-label="Rensa">
@@ -194,8 +192,6 @@
 	<m3e-fab variant="primary" href="/ratter/ny" aria-label="Ny rätt"><Icon name="add" /></m3e-fab>
 {/snippet}
 
-<ThemeSheet id="theme" />
-
 {#key form?.added}
 	{#if form?.added}
 		<m3e-snackbar action="Öppna" duration="6000" open ontoggle={openAdded}>
@@ -214,8 +210,16 @@
 		gap: 0.875rem;
 	}
 
+	/* Like the line of a week at the top of Veckan and Handla. */
+	.top {
+		margin: 0 -0.5rem -0.75rem 0.25rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
 	.label {
-		margin: 0.75rem 0 -0.75rem 0.25rem;
+		margin: 0;
 		font-size: 0.75rem;
 		font-weight: 700;
 		letter-spacing: 0.1em;
@@ -223,11 +227,8 @@
 		color: var(--md-sys-color-primary);
 	}
 
-	.title {
-		margin: 0 0 0 0.25rem;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
+	h1 {
+		margin-left: 0.25rem;
 	}
 
 	h2 {

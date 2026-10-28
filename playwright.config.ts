@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 /** A Worker of its own on `port`, with its own local database of made-up data, so that one group
  * of tests never sees what another writes, and a test run never touches the one `npm run dev` uses.
  * Recipe links in the tests point at the made-up site on port 4174, which also stands in for
- * Claude's API. */
+ * Claude's API and Cloudflare Access. */
 function worker(name: string, port: number, seeds: string[] = []) {
 	const persist = `--persist-to .wrangler/e2e-${name}`;
 	return {
@@ -12,7 +12,7 @@ function worker(name: string, port: number, seeds: string[] = []) {
 			...['test/e2e-seed.sql', ...seeds].map(
 				(seed) => `npx wrangler d1 execute DB --local ${persist} --file ${seed}`
 			),
-			`npx wrangler dev --port ${port} ${persist} --var ALLOW_LOCAL_FETCH:true ANTHROPIC_API_KEY:e2e CLAUDE_BASE_URL:http://localhost:4174/claude OFFER_SITE_URL:http://localhost:4174/butik`
+			`npx wrangler dev --port ${port} ${persist} --var ALLOW_LOCAL_FETCH:true ANTHROPIC_API_KEY:e2e CLAUDE_BASE_URL:http://localhost:4174/claude OFFER_SITE_URL:http://localhost:4174/butik ACCESS_IDENTITY_URL:http://localhost:4174/access/identity`
 		].join(' && '),
 		port
 	};

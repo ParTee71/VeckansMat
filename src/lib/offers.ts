@@ -60,7 +60,7 @@ export interface StoreChoice {
 	place: string;
 }
 
-/** A chain as Hushållet shows it. */
+/** A chain as Inställningar shows it. */
 export interface ChainState {
 	chain: Chain;
 	enabled: boolean;

@@ -15,7 +15,7 @@
 </svelte:head>
 
 <form method="POST" action="?/save" class="form-page" use:enhance>
-	<FormHeader title={data.person?.name ?? 'Ny person'} back="/hushallet" />
+	<FormHeader title={data.person?.name ?? 'Ny person'} back="/installningar" />
 
 	{#if form?.error}
 		<p class="error" role="alert">{form.error}</p>
