@@ -22,7 +22,7 @@
 
 <header class="view-top">
 	<p class="view-label week-label">
-		Vecka {isoWeek(weekStart).week} · {weekStart === nextWeek ? 'nästa vecka' : 'den här veckan'}
+		Vecka {isoWeek(weekStart).week}<br />{weekStart === nextWeek ? 'nästa vecka' : 'den här veckan'}
 	</p>
 	<div class="nav">
 		{@render actions?.()}
@@ -32,6 +32,10 @@
 </header>
 
 <style>
+	.week-label {
+		line-height: 1.15;
+	}
+
 	.nav {
 		display: flex;
 		align-items: center;
