@@ -8,7 +8,7 @@ test('a person is added with what they do not eat, changed and removed', async (
 	await open(page, '/');
 	await page.getByRole('button', { name: /äter$/ }).click();
 	await page.getByRole('link', { name: 'Ändra personer och regler' }).click();
-	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hushållet');
+	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Inställningar');
 	await expect(page.locator('m3e-list-action', { hasText: 'Kim' })).toHaveCount(0);
 
 	await page.locator('m3e-button', { hasText: 'Lägg till person' }).click();
@@ -31,12 +31,12 @@ test('a person is added with what they do not eat, changed and removed', async (
 
 	await page.locator('m3e-list-action', { hasText: 'Kim Test' }).click();
 	await page.getByRole('button', { name: 'Ta bort Kim Test' }).click();
-	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hushållet');
+	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Inställningar');
 	await expect(page.locator('m3e-list-action', { hasText: 'Kim Test' })).toHaveCount(0);
 });
 
 test('the rules for every week are saved as they are changed', async ({ page }) => {
-	await open(page, '/hushallet');
+	await open(page, '/installningar');
 	const rules = page.getByLabel('Skriv som till en person, en regel per rad');
 	// Each change is saved on its own, so the test waits for each save before the next change.
 	const saving = () => page.waitForResponse((r) => r.url().includes('/settings'));
@@ -62,7 +62,7 @@ test('the rules for every week are saved as they are changed', async ({ page }) 
 });
 
 test('how often the same dish may come is saved as it is changed', async ({ page }) => {
-	await open(page, '/hushallet');
+	await open(page, '/installningar');
 	const ordinary = page.getByRole('status', { name: /^Vanliga rätter/ });
 	const favourites = page.getByRole('status', { name: /^Favoriter/ });
 	await expect(ordinary).toHaveText('4');
@@ -129,7 +129,7 @@ test('chains and a store are chosen for the offers, and fetched at once', async 
 	await expect(page.getByText(/: 6 erbjudanden\./)).toBeVisible();
 	await page.getByRole('switch', { name: 'Räkna med medlemspriser' }).click();
 
-	await open(page, '/hushallet');
+	await open(page, '/installningar');
 	await expect(ica.getByRole('switch', { name: 'ICA' })).toHaveAttribute('checked');
 	await expect(ica.getByRole('button', { name: 'Byt butik' })).toBeVisible();
 	await expect(lidl.getByRole('switch', { name: 'Lidl' })).not.toHaveAttribute('checked');

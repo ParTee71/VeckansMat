@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import AccountButton from './AccountButton.svelte';
 	import WeekArrows from './WeekArrows.svelte';
 	import { isoWeek } from './weeks.ts';
 
@@ -19,34 +20,20 @@
 	} = $props();
 </script>
 
-<header>
-	<p class="week-label">
+<header class="view-top">
+	<p class="view-label week-label">
 		Vecka {isoWeek(weekStart).week} · {weekStart === nextWeek ? 'nästa vecka' : 'den här veckan'}
 	</p>
 	<div class="nav">
 		{@render actions?.()}
 		<WeekArrows {weekStart} {thisWeek} {nextWeek} />
+		<AccountButton />
 	</div>
 </header>
 
 <style>
-	header {
-		margin: 0 -0.5rem -0.75rem 0.25rem;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-
-	.week-label {
-		margin: 0;
-		font-size: 0.75rem;
-		font-weight: 700;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: var(--md-sys-color-primary);
-	}
-
 	.nav {
 		display: flex;
+		align-items: center;
 	}
 </style>

@@ -55,7 +55,7 @@
 		{#if rules}
 			<p class="hint">{rules.replace(/\n+/g, ' ')}</p>
 		{/if}
-		<a href={resolve('/hushallet')}>Ändra personer och regler</a>
+		<a href={resolve('/installningar')}>Ändra personer och regler</a>
 	</div>
 </m3e-bottom-sheet>
 

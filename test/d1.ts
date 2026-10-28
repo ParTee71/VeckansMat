@@ -29,6 +29,7 @@ async function clearTestDb(db: D1Database) {
 		db.prepare('DELETE FROM recipe'),
 		db.prepare('DELETE FROM claude_call'),
 		db.prepare('DELETE FROM person'),
+		db.prepare('DELETE FROM account'),
 		db.prepare('DELETE FROM setting'),
 		db.prepare('DELETE FROM offer'),
 		db.prepare(

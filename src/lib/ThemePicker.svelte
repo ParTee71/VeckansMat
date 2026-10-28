@@ -3,14 +3,13 @@
 	import { chooseTheme, theme } from './theme.svelte.ts';
 	import { isThemeId, THEMES, themeOf } from './themes';
 
-	let { id }: { id: string } = $props();
+	// The colour the app is built from, chosen on Inställningar.
 
 	// A colour of one's own, when that is what the phone has chosen.
 	let own = $derived(isThemeId(theme.choice) ? null : theme.choice);
 </script>
 
-<m3e-bottom-sheet {id} modal handle handle-label="Stäng" hideable>
-	<span slot="header">Färg</span>
+<div class="picker">
 	<p>Gäller bara på den här telefonen.</p>
 	<div class="swatches">
 		{#each THEMES as t (t.id)}
@@ -36,12 +35,13 @@
 			/>
 		</label>
 	</div>
-</m3e-bottom-sheet>
+</div>
 
 <style>
-	m3e-bottom-sheet {
-		--m3e-bottom-sheet-container-color: var(--md-sys-color-surface-container-low);
-		--m3e-bottom-sheet-header-font-weight: 700;
+	.picker {
+		padding: 1rem 1rem 0;
+		border-radius: 1rem;
+		background: var(--md-sys-color-surface-container-low);
 	}
 
 	p {

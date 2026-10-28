@@ -43,8 +43,8 @@ test('a dish chosen for an offer shows its price tag, which opens the offers', a
 	await expect(sheet.getByRole('listitem')).toHaveCount(3);
 	await page.keyboard.press('Escape');
 
-	// Hushållet opens the same offers.
-	await open(page, '/hushallet');
+	// Inställningar opens the same offers.
+	await open(page, '/installningar');
 	await page.locator('m3e-button', { hasText: 'Visa veckans erbjudanden' }).click();
 	await expect(sheet.getByRole('listitem')).toHaveCount(3);
 	await expect(sheet.getByRole('heading', { name: 'I veckans meny' })).toHaveCount(0);

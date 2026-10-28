@@ -144,7 +144,7 @@ test('a day is chosen without writing, from the usual dishes or all of them', as
 test('who eats is chosen per week, and shows what they do not eat', async ({ page }) => {
 	const people = ['Ätare Ett', 'Ätare Två'];
 	for (const name of people) {
-		await open(page, '/hushallet/ny');
+		await open(page, '/installningar/ny');
 		await page.getByLabel('Namn').fill(name);
 		await page.getByLabel('Krav').fill(`${name} äter inte svamp`);
 		await page.getByRole('button', { name: 'Spara' }).click();
@@ -170,7 +170,7 @@ test('who eats is chosen per week, and shows what they do not eat', async ({ pag
 
 	// The people are made up for this test, so they are removed again.
 	for (const name of people) {
-		await open(page, '/hushallet');
+		await open(page, '/installningar');
 		await page.locator('m3e-list-action', { hasText: name }).click();
 		await page.getByRole('button', { name: `Ta bort ${name}` }).click();
 		await expect(page.locator('m3e-list-action', { hasText: name })).toHaveCount(0);

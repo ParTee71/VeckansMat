@@ -17,7 +17,7 @@ export interface Offer {
 	validTo: string;
 }
 
-/** A fetch that failed, with a reason in Swedish to show in Hushållet. */
+/** A fetch that failed, with a reason in Swedish to show on Inställningar. */
 export class OfferError extends Error {}
 
 /** Says who is asking, so the chains can see it is one household's app and not a browser. */

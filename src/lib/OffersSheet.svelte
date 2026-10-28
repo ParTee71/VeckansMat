@@ -41,7 +41,7 @@
 		offers = null;
 		failed = false;
 		try {
-			const response = await fetch('/hushallet/erbjudanden');
+			const response = await fetch('/installningar/erbjudanden');
 			if (!response.ok) throw new Error(String(response.status));
 			const answer = (await response.json()) as ShownOffer[];
 			if (asked === latest) offers = answer;
@@ -52,7 +52,7 @@
 
 	let usedKeys = $derived(new Set(used.map((u) => offerKey(u.offer))));
 	let others = $derived((offers ?? []).filter((o) => !usedKeys.has(offerKey(o))));
-	// Each chain with offers, in the order Hushållet lists them, and how many it has.
+	// Each chain with offers, in the order Inställningar lists them, and how many it has.
 	let all = $derived([...used.map((u) => u.offer), ...others]);
 	let counts = $derived(
 		CHAINS.map((c): [Chain, number] => [c.key, all.filter((o) => o.chain === c.key).length]).filter(
@@ -100,8 +100,8 @@
 				<m3e-loading-indicator aria-label="Hämtar erbjudanden"></m3e-loading-indicator>
 			{:else if !total}
 				<p>
-					Inga erbjudanden just nu. Slå på kedjorna ni handlar hos i Hushållet, så hämtas de varje
-					måndag.
+					Inga erbjudanden just nu. Slå på kedjorna ni handlar hos under Inställningar, så hämtas de
+					varje måndag.
 				</p>
 			{:else}
 				{#if counts.length > 1}

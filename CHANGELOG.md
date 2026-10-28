@@ -3,6 +3,10 @@
 Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ändringen
 (se `.claude/skills/release/SKILL.md`).
 
+## 0.8.0
+
+- Uppe till höger i Veckan, Handla, Rätter och Veckor finns en rund ikon med din Google-bild, eller första bokstaven i namnet om bilden saknas. Den öppnar Inställningar, där allt från Hushållet nu finns: personer, regler för varje vecka, hur ofta samma rätt och erbjudanden. Där finns också ditt konto med Logga ut, och färgen, som förut låg under paletten i Rätter. Bilden sparas i appen och hämtas från Google högst en gång i veckan. (#127)
+
 ## 0.7.0
 
 - Man kan svepa åt vänster eller höger för att byta mellan Veckan, Handla, Rätter och Veckor, i menyns ordning. Sidan följer fingret och nästa vy glider in från sidan. I Handla tar ett svep åt vänster på en vara fortfarande bort den. (#105)
