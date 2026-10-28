@@ -8,8 +8,12 @@ export const POST: RequestHandler = async ({ request }) => {
 	const email = request.headers.get('cf-access-authenticated-user-email');
 	if (!email) error(401);
 	const identity: unknown = await request.json().catch(() => null);
+	// Shown in Workers Logs, so a failure is no longer silent.
+	if (identity === null) {
+		console.error('The browser sent no identity from Access');
+		error(400);
+	}
 	if (!(await saveIdentity(env.DB, email, identity, env.ALLOW_LOCAL_FETCH === 'true'))) {
-		// Shown in Workers Logs, so a failure is no longer silent.
 		console.error('An identity that is not the account’s own was not saved');
 		error(400);
 	}

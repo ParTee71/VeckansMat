@@ -14,6 +14,7 @@ describe('the picture', () => {
 	it('comes only from Google, in the size the app needs', () => {
 		expect(pictureUrl(GOOGLE_PICTURE)).toBe('https://lh3.googleusercontent.com/a/exempel=s192-c');
 		expect(pictureUrl('https://exempel.se/bild.png')).toBeNull();
+		expect(pictureUrl('https://drive.googleusercontent.com/fil')).toBeNull();
 		expect(pictureUrl('http://lh3.googleusercontent.com/a/exempel')).toBeNull();
 		expect(pictureUrl('inte en adress')).toBeNull();
 	});
@@ -72,6 +73,7 @@ describe('an identity from Access', () => {
 			[sam, image()],
 			[{ ...sam, picture: GOOGLE_PICTURE }, image(300_000)],
 			[{ ...sam, picture: GOOGLE_PICTURE }, image(3, 'text/html')],
+			[{ ...sam, picture: GOOGLE_PICTURE }, image(3, 'image/svg+xml')],
 			[{ ...sam, picture: 'https://exempel.se/bild.png' }, image()]
 		] as const) {
 			stubGoogle(picture);
@@ -95,6 +97,17 @@ describe('an identity from Access', () => {
 			hasPicture: true
 		});
 		expect((await getPicture(db, 'alex@exempel.se'))?.bytes.byteLength).toBe(5);
+		// So it is fetched again on the next visit.
+		expect((await getAccount(db, 'alex@exempel.se'))?.fetchedAt).toBe('2030-01-01T00:00:00.000Z');
+	});
+
+	it('is fetched again soon when Google does not answer the first time', async () => {
+		stubGoogle(new Response(null, { status: 503 }));
+		const identity = { email: 'sam@exempel.se', name: 'Sam', picture: GOOGLE_PICTURE };
+		expect(await saveIdentity(db, 'sam@exempel.se', identity)).toBe(true);
+		const stored = await getAccount(db, 'sam@exempel.se');
+		expect(stored).toMatchObject({ name: 'Sam', hasPicture: false });
+		expect(isStale(stored!.fetchedAt, new Date())).toBe(true);
 	});
 
 	it('of someone else, or that is not one, is never saved', async () => {

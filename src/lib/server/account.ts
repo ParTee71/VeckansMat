@@ -10,6 +10,8 @@ const REFRESH_DAYS = 7;
 const MAX_PICTURE_BYTES = 200_000;
 /** Google's pictures come in any size; twice the largest the app shows them in. */
 const PICTURE_SIZE = 192;
+/** Pictures only, never an SVG, which could carry a script onto the app's address. */
+const PICTURE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 /** Whether what was fetched at the time is old enough to be fetched again. */
 export function isStale(fetchedAt: string, now: Date): boolean {
@@ -27,7 +29,8 @@ function claim(identity: Record<string, unknown>, key: string): string | null {
 export function pictureUrl(address: string, allowLocal = false): string | null {
 	try {
 		const url = new URL(address);
-		const google = url.protocol === 'https:' && url.hostname.endsWith('.googleusercontent.com');
+		// Google's profile pictures, not other files Google keeps for people.
+		const google = url.protocol === 'https:' && /^lh\d\.googleusercontent\.com$/.test(url.hostname);
 		if (!google && !allowLocal) return null;
 		url.pathname = url.pathname.replace(/=s\d+(-c)?$/, `=s${PICTURE_SIZE}-c`);
 		return url.href;
@@ -42,7 +45,7 @@ async function fetchPicture(url: string): Promise<Picture | null> {
 	const type = response.headers.get('content-type') ?? '';
 	const length = Number(response.headers.get('content-length') ?? 0);
 	if (!response.ok) throw new Error(`The picture answered ${response.status}`);
-	if (!type.startsWith('image/') || length > MAX_PICTURE_BYTES) return null;
+	if (!PICTURE_TYPES.includes(type) || length > MAX_PICTURE_BYTES) return null;
 	const bytes = await response.arrayBuffer();
 	return bytes.byteLength <= MAX_PICTURE_BYTES ? { bytes, type } : null;
 }
