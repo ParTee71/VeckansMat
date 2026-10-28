@@ -5,8 +5,9 @@ import pkg from '../../package.json' with { type: 'json' };
 test('start page shows the week', async ({ page }) => {
 	await page.goto('/');
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText('Veckans meny');
-	await expect(page.locator('.week-label')).toHaveText(
-		/^Vecka \d+ · (den här veckan|nästa vecka)$/
+	// The week number gets a line of its own.
+	expect(await page.locator('.week-label').innerText()).toMatch(
+		/^Vecka \d+\n(den här veckan|nästa vecka)$/i
 	);
 });
 
