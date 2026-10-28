@@ -13,6 +13,8 @@ Evalen går mot det riktiga API:et och kostar under en cent med Haiku. Den körs
 för hand före en PR som ändrar prompten eller modellen, aldrig i CI. Modellen
 är `claude-haiku-5-5`, eller den som står i `RECIPE_MODEL`.
 
+Tak, delkörningar och kostnadslogg: se [`evals/README.md`](../README.md).
+
 ## Bedömning
 
 Varje fall bedöms med regler, inte av en annan modell:

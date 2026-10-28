@@ -65,6 +65,10 @@ Arbetar du i `.svelte`-filer: följ `svelte-core-bestpractices` och kör `svelte
 `npm run verify`, och `npm run test:e2e` om något syns i appen. Kör kommandona i issuets
 testplan. Kan du inte köra något, säg det i PR:en.
 
+Ändras en prompt, ett schema eller en modell: prova med några fall (`-t`) medan du bygger och
+gör **en** full körning av evalen före PR:en, fler bara om ägaren ber om det. Skriv evalens
+kostnad i PR:en, från `evals/costs.jsonl`. Se `evals/README.md`.
+
 ## Steg 6 – Förenkla och granska i rundor
 
 1. `/simplify` – mindre kod som gör samma jobb.

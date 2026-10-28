@@ -1,7 +1,7 @@
 // What every eval does with its results: scores each case by its rules, shows the run next to
 // the last saved one, and saves it, so that a change to a prompt is compared with the run before.
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 /** A case's result: the share of rules that held, the names of those that did not, and its cost. */
 export interface Scored {
@@ -21,15 +21,32 @@ export function score(checks: Record<string, boolean>): Pick<Scored, 'score' | '
 const percent = (n: number | undefined) => (n === undefined ? '–' : `${Math.round(n * 100)} %`);
 
 /**
- * Prints the run beside the last saved one, and saves it in place of that one. The results are in
- * the order of the cases, with a gap for a case that did not finish.
+ * Prints the run beside the last saved one. A run of every case is saved in place of that one; a
+ * run of only some, such as with `vitest -t`, is saved beside it in partial.json, so that trying a
+ * few cases never replaces the run to compare with, and neither does a run where a case failed.
+ * Either way what the run spent gets a line in evals/costs.jsonl. The results are in the order of
+ * the cases, with a gap for a case that did not finish.
  */
 export function report<R extends Scored>(
 	file: URL,
+	{ cases, spentUsd }: { cases: number; spentUsd: number },
 	run: { model: string; prompt: string; results: (R | undefined)[] } & Record<string, unknown>,
 	columns: (result: R) => Record<string, unknown> = () => ({})
 ) {
 	const results = run.results.filter((r) => r !== undefined);
+	const full = results.length === cases;
+	// What the run spent, also on cases that failed before they had a result.
+	appendFileSync(
+		new URL('../../costs.jsonl', file),
+		JSON.stringify({
+			date: new Date().toISOString(),
+			eval: new URL('..', file).pathname.split('/').at(-2),
+			model: run.model,
+			cases: results.length,
+			full,
+			costUsd: Number(spentUsd.toFixed(4))
+		}) + '\n'
+	);
 	if (!results.length) return;
 	const costUsd = results.reduce((sum, r) => sum + r.costUsd, 0);
 	const previous = existsSync(file)
@@ -46,11 +63,12 @@ export function report<R extends Scored>(
 		}))
 	);
 	console.log(
-		`Totalt ${percent(total)} (förut ${percent(previous?.score)}), ${run.model}, $${costUsd.toFixed(4)}`
+		`Totalt ${percent(total)} (förut ${percent(previous?.score)}), ${run.model}, $${spentUsd.toFixed(4)}` +
+			(full ? '' : `, bara ${results.length} av ${cases} fall – sparat i partial.json`)
 	);
 	mkdirSync(new URL('.', file), { recursive: true });
 	writeFileSync(
-		file,
+		full ? file : new URL('partial.json', file),
 		JSON.stringify(
 			{
 				date: new Date().toISOString(),

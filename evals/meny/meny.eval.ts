@@ -208,6 +208,7 @@ CASES.forEach((c, i) => {
 afterAll(() => {
 	report(
 		RESULTS,
+		{ cases: CASES.length, spentUsd: claude.spentUsd() },
 		{
 			model: MODEL,
 			effort: EFFORT ?? null,

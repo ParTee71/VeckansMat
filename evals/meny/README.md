@@ -8,10 +8,12 @@ veckor bakåt, och olika veckor att planera. Fallen är påhittade, aldrig hush�
 
     ANTHROPIC_API_KEY=… npm run eval:meny
 
-Evalen går mot det riktiga API:et och kostar ungefär 30 cent med Sonnet 5.5.
+Evalen går mot det riktiga API:et och kostar ungefär 45 cent med Sonnet 5.5.
 Den körs för hand före en PR som ändrar prompten, materialet eller modellen,
 aldrig i CI. Modellen är `claude-sonnet-5-5`, eller den som står i
 `MENU_MODEL`. `MENU_EFFORT=low` prövar en annan effort än appens.
+
+Tak, delkörningar och kostnadslogg: se [`evals/README.md`](../README.md).
 
 ## Fallen
 

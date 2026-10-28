@@ -1,9 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { open } from '../../test/e2e';
+import { mondayOf, swedishToday } from '../lib/weeks';
+
+// This week, empty, whatever day the tests run; from Wednesday Veckan shows the next by itself.
+const thisWeek = `/?vecka=${mondayOf(swedishToday())}`;
 
 // The made-up offers come from test/e2e-offers.sql, on a Worker of their own.
 test('a dish chosen for an offer shows its price tag, which opens the offers', async ({ page }) => {
-	await open(page, '/');
+	await open(page, thisWeek);
 	await expect(page.getByText('Med erbjudanden från ICA och Willys.')).toBeVisible();
 	await page.locator('m3e-icon-button[href]').click();
 	await expect(
@@ -50,7 +54,7 @@ test('a dish chosen for an offer shows its price tag, which opens the offers', a
 	for (const chain of ['ICA', 'Willys']) {
 		await page.getByRole('region', { name: chain }).getByRole('switch', { name: chain }).click();
 	}
-	await open(page, '/');
+	await open(page, thisWeek);
 	await expect(page.locator('m3e-button', { hasText: 'Föreslå veckan' })).toBeVisible();
 	await expect(page.getByText(/^Med erbjudanden/)).toHaveCount(0);
 });
