@@ -29,17 +29,11 @@ export function identityUrl(token: string): string | null {
 	return null;
 }
 
-/** The first string found under the key, at any depth, since Access keeps Google's own claims
- * apart from its fields. */
-function findString(value: unknown, key: string, depth = 0): string | null {
-	if (typeof value !== 'object' || value === null || depth > 3) return null;
-	const own = (value as Record<string, unknown>)[key];
-	if (typeof own === 'string' && own) return own;
-	for (const inner of Object.values(value)) {
-		const found = findString(inner, key, depth + 1);
-		if (found) return found;
-	}
-	return null;
+/** A claim of the identity: Access's own field, else Google's claim, which it keeps under custom. */
+function claim(identity: Record<string, unknown>, key: string): string | null {
+	const custom = identity.custom as Record<string, unknown> | undefined;
+	const value = identity[key] ?? custom?.[key];
+	return typeof value === 'string' && value ? value : null;
 }
 
 /** The address to fetch the picture from: only Google's, in the size the app needs. */
@@ -55,10 +49,13 @@ export function pictureUrl(address: string, allowLocal = false): string | null {
 	}
 }
 
+/** The picture, or null when there is none to be had: not an image, or too large. */
 async function fetchPicture(url: string): Promise<Picture | null> {
 	const response = await fetch(url);
 	const type = response.headers.get('content-type') ?? '';
-	if (!response.ok || !type.startsWith('image/')) return null;
+	const length = Number(response.headers.get('content-length') ?? 0);
+	if (!response.ok) throw new Error(`The picture answered ${response.status}`);
+	if (!type.startsWith('image/') || length > MAX_PICTURE_BYTES) return null;
 	const bytes = await response.arrayBuffer();
 	return bytes.byteLength <= MAX_PICTURE_BYTES ? { bytes, type } : null;
 }
@@ -70,9 +67,15 @@ interface Options {
 	allowLocal?: boolean;
 }
 
+// When each account was last asked for in this Worker, so the many loads of one visit ask once,
+// and an identity that cannot be read is not asked for on every load.
+const asked = new Map<string, number>();
+const ASK_AGAIN_MS = 10 * 60 * 1000;
+
 /**
  * Fetches the account's name and picture and saves them. When the identity cannot be read,
- * nothing is saved, so the next visit tries again.
+ * nothing is saved, so a later visit tries again. When Google does not answer, the picture saved
+ * before is kept.
  */
 export async function refreshAccount(
 	db: D1Database,
@@ -80,13 +83,23 @@ export async function refreshAccount(
 	token: string,
 	options: Options = {}
 ): Promise<void> {
+	const now = Date.now();
+	if (now - (asked.get(email) ?? -Infinity) < ASK_AGAIN_MS) return;
+	asked.set(email, now);
 	const url = options.identityUrl ?? identityUrl(token);
 	if (!url) return;
 	const response = await fetch(url, { headers: { cookie: `CF_Authorization=${token}` } });
 	if (!response.ok) return;
-	const identity: unknown = await response.json();
-	const address = findString(identity, 'picture');
+	const identity = (await response.json()) as Record<string, unknown>;
+	// Access stands in front of the app, so the two agree; anything else is not trusted.
+	if (claim(identity, 'email')?.toLowerCase() !== email.toLowerCase()) return;
+	const address = claim(identity, 'picture');
 	const source = address && pictureUrl(address, options.allowLocal);
-	const picture = source ? await fetchPicture(source).catch(() => null) : null;
-	await saveAccount(db, email, findString(identity, 'name'), picture, new Date());
+	const picture = source ? await fetchPicture(source).catch(() => undefined) : null;
+	await saveAccount(db, email, claim(identity, 'name'), picture, new Date(now));
+}
+
+/** Forgets when accounts were asked for, as between tests. */
+export function forgetAsked() {
+	asked.clear();
 }

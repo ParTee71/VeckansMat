@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { enhance } from '$app/forms';
+	import Avatar from '#lib/Avatar.svelte';
 	import Icon from '#lib/Icon.svelte';
 	import Initial from '#lib/Initial.svelte';
 	import OffersSheet from '#lib/OffersSheet.svelte';
@@ -143,17 +144,13 @@
 
 <main>
 	{#if data.account}
-		{@const { name, email, picture } = data.account}
+		{@const { name, email } = data.account}
 		<section class="account" aria-label="Konto">
-			{#if picture}
-				<img src="/konto/bild?v={encodeURIComponent(picture)}" alt="" />
-			{:else}
-				<span class="letter" aria-hidden="true">{(name || email).charAt(0).toUpperCase()}</span>
-			{/if}
+			<Avatar large />
 			{#if name}<strong>{name}</strong>{/if}
 			<span class="supporting">{email}</span>
 			<span class="supporting">Inloggad med Google</span>
-			<!-- A plain link, since Access logs out and the app is left in full. -->
+			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- Access logs out, not the app, so the app is left in full -->
 			<a class="logout" href="/cdn-cgi/access/logout" data-sveltekit-reload>Logga ut</a>
 		</section>
 	{/if}
@@ -402,26 +399,8 @@
 		text-align: center;
 	}
 
-	.account img,
-	.letter {
-		width: 4.5rem;
-		height: 4.5rem;
+	.account :global(.large) {
 		margin-bottom: 0.5rem;
-		border-radius: 50%;
-	}
-
-	.account img {
-		object-fit: cover;
-	}
-
-	.letter {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--md-sys-color-primary);
-		color: var(--md-sys-color-on-primary);
-		font-size: 1.75rem;
-		font-weight: 600;
 	}
 
 	.account strong {

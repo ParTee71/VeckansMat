@@ -4,6 +4,7 @@
 	import { isThemeId, THEMES, themeOf } from './themes';
 
 	// The colour the app is built from, chosen on Inställningar.
+
 	// A colour of one's own, when that is what the phone has chosen.
 	let own = $derived(isThemeId(theme.choice) ? null : theme.choice);
 </script>

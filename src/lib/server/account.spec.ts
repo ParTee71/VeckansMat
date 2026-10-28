@@ -1,11 +1,12 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTestDb } from '../../../test/d1';
-import { identityUrl, isStale, pictureUrl, refreshAccount } from './account';
-import { getAccount, getPicture } from './db/account';
+import { forgetAsked, identityUrl, isStale, pictureUrl, refreshAccount } from './account';
+import { getAccount, getPicture, saveAccount } from './db/account';
 
 let db: D1Database;
 useTestDb((test) => (db = test));
 
+beforeEach(forgetAsked);
 afterEach(() => vi.unstubAllGlobals());
 
 /** A token as Access sends it, from a made-up team; only its payload is read. */
@@ -72,7 +73,7 @@ describe('an account', () => {
 	const image = (bytes = 3, type = 'image/png') =>
 		new Response(new Uint8Array(bytes), { headers: { 'content-type': type } });
 
-	it('gets its name and Google picture, wherever Access keeps the claim', async () => {
+	it('gets its name and the Google picture Access keeps under custom', async () => {
 		const asked = stubFetch({
 			email: 'alex@exempel.se',
 			name: 'Alex Exempel',
@@ -93,12 +94,14 @@ describe('an account', () => {
 	});
 
 	it('is kept without a picture that is missing, too large or not an image', async () => {
+		const sam = { email: 'sam@exempel.se', name: 'Sam' };
 		for (const [identity, picture] of [
-			[{ name: 'Sam' }, image()],
-			[{ name: 'Sam', picture: GOOGLE_PICTURE }, image(300_000)],
-			[{ name: 'Sam', picture: GOOGLE_PICTURE }, image(3, 'text/html')],
-			[{ name: 'Sam', picture: 'https://exempel.se/bild.png' }, image()]
+			[sam, image()],
+			[{ ...sam, picture: GOOGLE_PICTURE }, image(300_000)],
+			[{ ...sam, picture: GOOGLE_PICTURE }, image(3, 'text/html')],
+			[{ ...sam, picture: 'https://exempel.se/bild.png' }, image()]
 		] as const) {
+			forgetAsked();
 			stubFetch(identity, picture);
 			await refreshAccount(db, 'sam@exempel.se', ACCESS);
 			expect(await getAccount(db, 'sam@exempel.se')).toMatchObject({
@@ -109,14 +112,42 @@ describe('an account', () => {
 		}
 	});
 
-	it('is not saved when the identity cannot be read, so the next visit tries again', async () => {
+	it('keeps the picture it had when Google does not answer', async () => {
+		const before = { bytes: new Uint8Array(5).buffer, type: 'image/png' };
+		await saveAccount(db, 'alex@exempel.se', 'Alex', before, new Date('2030-01-01'));
+		stubFetch(
+			{ email: 'alex@exempel.se', name: 'Alex Exempel', picture: GOOGLE_PICTURE },
+			new Response(null, { status: 503 })
+		);
+		await refreshAccount(db, 'alex@exempel.se', ACCESS);
+		expect(await getAccount(db, 'alex@exempel.se')).toMatchObject({
+			name: 'Alex Exempel',
+			hasPicture: true
+		});
+		expect((await getPicture(db, 'alex@exempel.se'))?.bytes.byteLength).toBe(5);
+	});
+
+	it('is not saved from an identity of someone else', async () => {
+		stubFetch({ email: 'annan@exempel.se', name: 'Annan' });
+		await refreshAccount(db, 'sam@exempel.se', ACCESS);
+		expect(await getAccount(db, 'sam@exempel.se')).toBeNull();
+	});
+
+	it('is asked for once in a while, also when it cannot be read', async () => {
+		const asked = stubFetch(null);
+		await refreshAccount(db, 'sam@exempel.se', ACCESS);
+		await refreshAccount(db, 'sam@exempel.se', ACCESS);
+		expect(asked).toHaveLength(1);
+	});
+
+	it('is not saved when the identity cannot be read, so a later visit tries again', async () => {
 		stubFetch(null);
 		await refreshAccount(db, 'sam@exempel.se', ACCESS);
 		expect(await getAccount(db, 'sam@exempel.se')).toBeNull();
 	});
 
 	it('is not asked for from anyone but Access', async () => {
-		const asked = stubFetch({ name: 'Sam' });
+		const asked = stubFetch({ email: 'sam@exempel.se', name: 'Sam' });
 		await refreshAccount(db, 'sam@exempel.se', token({ iss: 'https://exempel.se' }));
 		expect(asked).toEqual([]);
 	});

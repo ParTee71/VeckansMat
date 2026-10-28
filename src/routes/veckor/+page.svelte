@@ -33,8 +33,8 @@
 </svelte:head>
 
 <main>
-	<div class="top">
-		<p class="label">{data.menus.length} veckor</p>
+	<div class="view-top">
+		<p class="view-label">{data.menus.length} veckor</p>
 		<AccountButton />
 	</div>
 	<h1 class="view-title">Veckor</h1>
@@ -83,23 +83,6 @@
 		max-width: 40rem;
 		margin: 0 auto;
 		padding: 1rem;
-	}
-
-	/* Like the top of Rätter. */
-	.top {
-		margin: 0 -0.5rem -0.75rem 0.25rem;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-
-	.label {
-		margin: 0;
-		font-size: 0.75rem;
-		font-weight: 700;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: var(--md-sys-color-primary);
 	}
 
 	h1 {

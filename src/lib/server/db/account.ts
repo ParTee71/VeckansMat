@@ -21,14 +21,24 @@ export async function getAccount(db: D1Database, email: string): Promise<StoredA
 	return row && { name: row.name, fetchedAt: row.fetched_at, hasPicture: row.has_picture === 1 };
 }
 
-/** Saves what was fetched for the account, replacing what was there. */
+/** Saves what was fetched for the account. A picture left undefined keeps the one saved. */
 export async function saveAccount(
 	db: D1Database,
 	email: string,
 	name: string | null,
-	picture: Picture | null,
+	picture: Picture | null | undefined,
 	fetchedAt: Date
 ): Promise<void> {
+	if (picture === undefined) {
+		await db
+			.prepare(
+				`INSERT INTO account (email, name, fetched_at) VALUES (?, ?, ?)
+				 ON CONFLICT (email) DO UPDATE SET name = excluded.name, fetched_at = excluded.fetched_at`
+			)
+			.bind(email, name, fetchedAt.toISOString())
+			.run();
+		return;
+	}
 	await db
 		.prepare(
 			`INSERT INTO account (email, name, picture, picture_type, fetched_at) VALUES (?, ?, ?, ?, ?)

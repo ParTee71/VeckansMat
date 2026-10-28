@@ -100,7 +100,7 @@
 				<m3e-loading-indicator aria-label="Hämtar erbjudanden"></m3e-loading-indicator>
 			{:else if !total}
 				<p>
-					Inga erbjudanden just nu. Slå på kedjorna ni handlar hos på Inställningar, så hämtas de
+					Inga erbjudanden just nu. Slå på kedjorna ni handlar hos under Inställningar, så hämtas de
 					varje måndag.
 				</p>
 			{:else}

@@ -106,8 +106,8 @@
 </svelte:head>
 
 <main class="warm-view">
-	<div class="top">
-		<p class="label">{recipes.length} rätter</p>
+	<div class="view-top">
+		<p class="view-label">{recipes.length} rätter</p>
 		<AccountButton />
 	</div>
 	<h1 class="view-title">Rätter</h1>
@@ -208,23 +208,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.875rem;
-	}
-
-	/* Like the line of a week at the top of Veckan and Handla. */
-	.top {
-		margin: 0 -0.5rem -0.75rem 0.25rem;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-
-	.label {
-		margin: 0;
-		font-size: 0.75rem;
-		font-weight: 700;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: var(--md-sys-color-primary);
 	}
 
 	h1 {
