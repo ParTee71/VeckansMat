@@ -28,6 +28,8 @@ Gäller både drift och förhandsadressen.
   Cloudflare. Slutar Google fungera kan engångskoden slås på igen i Zero Trust.
 - Räcker inte detta prövas Google-inloggning i appen i ett eget issue och ett nytt beslut.
 - Appen visar vem som är inloggad (#127): e-posten ur huvudet `Cf-Access-Authenticated-User-Email`,
-  namn och profilbild ur Access identitetsendpoint `get-identity`. Googles `picture` kommer bara
-  med när den är tillagd under OIDC Claims på Google-inloggningen i Zero Trust (gjort
-  2026-10-28). Bilden sparas i D1 och hämtas på nytt högst en gång i veckan.
+  namn och profilbild ur Access identitetsendpoint `get-identity`, som webbläsaren frågar på appens
+  egen adress och skickar vidare (#129; Workern fick inget svar när den frågade själv). Googles
+  `picture` kommer bara med när den är tillagd under OIDC Claims på Google-inloggningen i Zero
+  Trust (gjort 2026-10-28). Bilden sparas i D1 och hämtas på nytt högst en gång i veckan, bara
+  från Google och bara för kontots egen e-post.

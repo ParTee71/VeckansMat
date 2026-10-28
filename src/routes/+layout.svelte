@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { version } from '$app/env';
-	import { beforeNavigate, goto, invalidateAll, preloadData } from '$app/navigation';
+	import { beforeNavigate, goto, invalidate, invalidateAll, preloadData } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page, updated } from '$app/state';
+	import { sendIdentity } from '#lib/account.ts';
 	import '#lib/app.css';
 	import favicon from '#lib/assets/favicon.svg';
 	import { provideFab } from '#lib/fab.svelte.ts';
@@ -31,6 +32,16 @@
 	);
 
 	let current = $derived(themeOf(theme.choice));
+
+	// The name and Google picture are fetched once a week, after the page has loaded, and shown
+	// once saved, without anything else on the page loading again.
+	onMount(() => {
+		if (page.data.account?.refresh) {
+			sendIdentity().then((saved) => {
+				if (saved) invalidate('app:account');
+			});
+		}
+	});
 
 	// The m3e web components touch `customElements`, which only exists in the
 	// browser, so they are registered after hydration instead of during SSR.

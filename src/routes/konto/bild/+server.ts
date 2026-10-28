@@ -10,6 +10,10 @@ export const GET: RequestHandler = async ({ request }) => {
 	const picture = email && (await getPicture(env.DB, email));
 	if (!picture) error(404);
 	return new Response(picture.bytes, {
-		headers: { 'content-type': picture.type, 'cache-control': 'private, max-age=604800' }
+		headers: {
+			'content-type': picture.type,
+			'cache-control': 'private, max-age=604800',
+			'x-content-type-options': 'nosniff'
+		}
 	});
 };

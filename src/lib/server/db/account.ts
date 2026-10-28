@@ -21,7 +21,10 @@ export async function getAccount(db: D1Database, email: string): Promise<StoredA
 	return row && { name: row.name, fetchedAt: row.fetched_at, hasPicture: row.has_picture === 1 };
 }
 
-/** Saves what was fetched for the account. A picture left undefined keeps the one saved. */
+/**
+ * Saves what was fetched for the account. A picture left undefined, as when Google did not answer,
+ * keeps the one saved and when it was fetched, so it is fetched again on the next visit.
+ */
 export async function saveAccount(
 	db: D1Database,
 	email: string,
@@ -33,9 +36,9 @@ export async function saveAccount(
 		await db
 			.prepare(
 				`INSERT INTO account (email, name, fetched_at) VALUES (?, ?, ?)
-				 ON CONFLICT (email) DO UPDATE SET name = excluded.name, fetched_at = excluded.fetched_at`
+				 ON CONFLICT (email) DO UPDATE SET name = excluded.name`
 			)
-			.bind(email, name, fetchedAt.toISOString())
+			.bind(email, name, new Date(0).toISOString())
 			.run();
 		return;
 	}
