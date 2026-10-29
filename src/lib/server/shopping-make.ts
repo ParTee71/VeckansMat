@@ -1,5 +1,6 @@
 // Claude makes the week's shopping list, and guesses the ingredients of dishes that have only a
 // name. See docs/beslut/0015-inkopslista.md and 0017-varans-identitet.md.
+import { portionsFor } from '../cooking';
 import { answerStrings, answerText } from '../names';
 import { SECTIONS, sectionRank } from '../shopping';
 import { askJson, type Ask } from './claude/claude';
@@ -19,9 +20,6 @@ import {
 	type WeekDish
 } from './db/shopping';
 
-/** Who eats when nobody is chosen for the week. */
-const DEFAULT_EATERS = 2;
-
 /** A dish on the week with the portions to cook. */
 type PlannedDish = WeekDish & { portions: number };
 
@@ -35,11 +33,11 @@ export async function shoppingPlan(
 		getSettings(db),
 		weekDishes(db, weekStart)
 	]);
-	const eaters = week.eaters.length || DEFAULT_EATERS;
+	const eaters = week.eaters.length;
+	const extra = settings.lunchboxExtraPortions;
 	const planned = dishes.map((dish) => ({
 		...dish,
-		// A dish good for lunch boxes is cooked with extra portions each time.
-		portions: dish.times * (eaters + (dish.lunchbox ? settings.lunchboxExtraPortions : 0))
+		portions: dish.times * portionsFor({ eaters, lunchbox: dish.lunchbox, extra })
 	}));
 	return { dishes: planned, basis: basisOf(planned) };
 }
