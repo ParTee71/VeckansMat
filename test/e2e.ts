@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 // Links point at the made-up recipe site in test/e2e-recipe-site.mjs, which also stands in for
 // Claude's API.
@@ -53,6 +53,17 @@ export async function swipeAt(page: Page, x: number, y: number, dx: number, dy =
 		if (pause) await page.waitForTimeout(pause);
 		await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: at(step) });
 	}
+	await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+	await touch.detach();
+}
+
+/** Holds a finger on the middle of an element for `ms` milliseconds, as a long press on a phone. */
+export async function hold(page: Page, locator: Locator, ms = 700) {
+	const box = (await locator.boundingBox())!;
+	const touch = await page.context().newCDPSession(page);
+	const at = [{ x: box.x + box.width / 2, y: box.y + box.height / 2, id: 1 }];
+	await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: at });
+	await page.waitForTimeout(ms);
 	await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 	await touch.detach();
 }

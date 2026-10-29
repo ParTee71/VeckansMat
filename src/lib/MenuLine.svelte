@@ -3,10 +3,12 @@
 	import VoteButton from './VoteButton.svelte';
 	import { offerText, type ChosenOffer } from './offers.ts';
 	import { isDish, MEAL_LABELS, type Vote } from './recipes.ts';
+	import { heading } from './swipe.ts';
 
 	// A dinner or a lunch on the menu, which opens for writing when tapped. Claude's dishes have a
 	// button that swaps them, and a new dish on a day that has passed one to vote on it instead.
 	// A dish chosen for an offer shows its price tag instead of why, which opens the offers.
+	// A finger held on a dish opens it for cooking (#137).
 	let {
 		name,
 		lunch = false,
@@ -21,7 +23,8 @@
 		onedit,
 		onoffer,
 		onswap,
-		onvote
+		onvote,
+		oncook
 	}: {
 		/** The meal and the day, as "Middag måndag". */
 		name: string;
@@ -44,12 +47,64 @@
 		/** The offer the dish was chosen for. */
 		offer?: ChosenOffer | null;
 		onoffer?: () => void;
+		/** Given when the line is a dish that can be cooked. */
+		oncook?: () => void;
 	} = $props();
+
+	/** How long a finger is held on a dish before it opens for cooking, in milliseconds. */
+	const HOLD = 500;
+	// Where the finger came down, while it is held.
+	let from = $state<{ x: number; y: number } | null>(null);
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	// A hold ends with a click on the line, which must not open it for writing.
+	let held = false;
+
+	function down(event: PointerEvent) {
+		const cook = oncook;
+		if (!cook || event.button !== 0) return;
+		held = false;
+		from = { x: event.clientX, y: event.clientY };
+		timer = setTimeout(() => {
+			held = true;
+			release();
+			navigator.vibrate?.(20);
+			cook();
+		}, HOLD);
+	}
+
+	function release() {
+		clearTimeout(timer);
+		from = null;
+	}
+
+	// A line that goes while the finger is held cooks nothing.
+	$effect(() => () => clearTimeout(timer));
+
+	// A finger that moves scrolls or swipes instead.
+	function move(event: PointerEvent) {
+		if (from && heading(event.clientX - from.x, event.clientY - from.y)) release();
+	}
+
+	function click() {
+		if (held) held = false;
+		else onedit();
+	}
 </script>
 
-<div class={['menu-line', lunch && 'lunch', swapped && 'swapped']}>
+<div class={['menu-line', lunch && 'lunch', swapped && 'swapped', from && 'holding']}>
 	<div class="main">
-		<button type="button" class="show" aria-label="{name}: {text || 'tom'}" onclick={onedit}>
+		<button
+			type="button"
+			class="show"
+			aria-label="{name}: {text || 'tom'}"
+			onclick={click}
+			onpointerdown={down}
+			onpointermove={move}
+			onpointerup={release}
+			onpointercancel={release}
+			onpointerleave={release}
+			oncontextmenu={(e) => oncook && e.preventDefault()}
+		>
 			{#if lunch}<span class="label">{MEAL_LABELS.lunch}</span>{/if}
 			<span class="text">
 				<span class={['dish ink', !text && 'empty', text && !isDish(text) && 'other']}
@@ -102,6 +157,12 @@
 		background: var(--md-sys-color-primary-container);
 	}
 
+	/* Marked while the finger is held, after a moment so that a tap does not flash. */
+	.holding {
+		background: var(--md-sys-color-primary-container);
+		transition-delay: 120ms;
+	}
+
 	.main {
 		flex-grow: 1;
 		min-width: 0;
@@ -123,6 +184,9 @@
 		align-items: baseline;
 		gap: 0.375rem;
 		cursor: pointer;
+		/* A held finger opens the dish rather than selecting its text or a menu. */
+		user-select: none;
+		-webkit-touch-callout: none;
 	}
 
 	.text {
