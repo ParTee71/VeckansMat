@@ -144,3 +144,12 @@ m3e-form-field {
 m3e-list {
 	--m3e-segmented-list-item-container-color: var(--md-sys-color-surface-container);
 }
+
+/* Read out by a screen reader, but not shown. */
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+}

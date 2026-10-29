@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { tick } from 'svelte';
+	import { onMount, tick } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import type { ActionResult } from '$app/forms';
 	import type { M3eDialogElement } from '@m3e/web/dialog';
 	import type { M3eSnackbarElement } from '@m3e/web/snackbar';
@@ -14,7 +16,7 @@
 	import WeekHeader from '#lib/WeekHeader.svelte';
 	import WhoEats from '#lib/WhoEats.svelte';
 	import { listText, plural } from '#lib/names.ts';
-	import { MEAL_LABELS, usualDishes, type Vote } from '#lib/recipes.ts';
+	import { isDish, MEAL_LABELS, usualDishes, type Vote } from '#lib/recipes.ts';
 	import type { Meal, RowInput, Week } from '#lib/server/db/menus.ts';
 	import type { RecipeSummary } from '#lib/server/db/recipes.ts';
 	import {
@@ -289,6 +291,31 @@
 		});
 	}
 
+	// A finger held on a dish opens it for cooking; the first few times Veckan opens on a phone
+	// with a dish on the week, a snackbar tells so (#137).
+	const cookable = (row?: { recipeId: number | null; text: string } | null) =>
+		row?.recipeId != null && isDish(row.text) ? row.recipeId : null;
+
+	function cook(recipeId: number, weekday: number) {
+		const path = resolve('/ratter/[id]/laga', { id: String(recipeId) });
+		// eslint-disable-next-line svelte/no-navigation-without-resolve -- resolved, with the week and day after it
+		goto(`${path}?vecka=${week.weekStart}&dag=${weekday}`);
+	}
+
+	const COOK_HINTS = 3;
+	let cookHint = $state(false);
+	onMount(() => {
+		if (!matchMedia('(pointer: coarse)').matches || !week.rows.some((r) => cookable(r))) return;
+		try {
+			const shown = Number(localStorage.getItem('laga-tips')) || 0;
+			if (shown >= COOK_HINTS) return;
+			localStorage.setItem('laga-tips', String(shown + 1));
+			cookHint = true;
+		} catch {
+			// Without storage there is no telling how often it was shown, so it is not.
+		}
+	});
+
 	const extraText = (n: number) => `Matlåda · ${plural(n, 'portion', 'portioner')} extra`;
 	// Why Claude chose the dish, and how much extra to cook of a lunch-box dish.
 	const metaText = (row: { reason: string | null; lunchbox: boolean }) =>
@@ -319,6 +346,7 @@
 		{@const current = stored(weekday, meal)}
 		{@const saved = current && text === current.text ? current : null}
 		{@const votable = saved && canVote(saved, week.weekStart, today) ? saved : null}
+		{@const cookId = cookable(saved)}
 		<MenuLine
 			{name}
 			lunch={meal === 'lunch'}
@@ -334,6 +362,7 @@
 			onvote={votable ? (v) => vote(votable.recipeId!, v) : undefined}
 			offer={saved?.offer}
 			onoffer={() => (showingOffers = true)}
+			oncook={cookId === null ? undefined : () => cook(cookId, weekday)}
 		/>
 	{/if}
 {/snippet}
@@ -487,6 +516,16 @@
 	</div>
 </m3e-dialog>
 
+{#if cookHint}
+	<m3e-snackbar
+		duration="5000"
+		open
+		ontoggle={(e: ToggleEvent) => e.newState === 'closed' && (cookHint = false)}
+	>
+		<span class="cook-hint"><Icon name="cook" />Håll kvar fingret för att laga rätten</span>
+	</m3e-snackbar>
+{/if}
+
 {#key swapped}
 	{#if swapped}
 		<m3e-snackbar action="Ångra" duration="6000" open ontoggle={undoSwap}>
@@ -496,6 +535,18 @@
 {/key}
 
 <style>
+	.cook-hint {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+	}
+
+	.cook-hint :global(svg) {
+		width: 1.25rem;
+		height: 1.25rem;
+		flex-shrink: 0;
+	}
+
 	.dialog-header {
 		display: flex;
 		align-items: center;

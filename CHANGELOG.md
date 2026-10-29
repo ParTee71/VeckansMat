@@ -3,6 +3,10 @@
 Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ändringen
 (se `.claude/skills/release/SKILL.md`).
 
+## 0.9.0
+
+- Ny vy, Laga, för att laga maten efter receptet vid spisen: stor text, portionerna räknade som för inköpslistan och möjliga att ändra just den gången (mängderna räknas om), ingredienser att bocka av, steg att markera klara, timers för steg som nämner en tid, och skärmen hålls tänd. Nås med knappen Laga maten på rättens sida, eller genom att hålla kvar fingret på en rätt i Veckan. (#137)
+
 ## 0.8.4
 
 - Arket Vilka äter i Veckan har nu bara valet av vilka som äter veckan. Kraven, reglerna och länken till dem finns under Inställningar. (#135)

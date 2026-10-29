@@ -10,6 +10,11 @@ export const load: LayoutServerLoad = async ({ params }) => {
 		getSettings(env.DB)
 	]);
 	if (!recipe) error(404, 'Rätten finns inte');
-	// How soon a favourite may come again is said on its page, also right after the vote.
-	return { recipe, favouriteWeeks: settings.favouriteRepeatWeeks };
+	// How soon a favourite may come again is said on its page, also right after the vote, and
+	// Laga cooks the extra portions of a dish good for lunch boxes.
+	return {
+		recipe,
+		favouriteWeeks: settings.favouriteRepeatWeeks,
+		lunchboxExtra: settings.lunchboxExtraPortions
+	};
 };

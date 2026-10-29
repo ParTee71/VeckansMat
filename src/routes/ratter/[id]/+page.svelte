@@ -2,6 +2,7 @@
 	import { postAction } from '#lib/actions.ts';
 	import FoldCard from '#lib/FoldCard.svelte';
 	import Icon from '#lib/Icon.svelte';
+	import RecipeInvite from '#lib/RecipeInvite.svelte';
 	import VoteButton from '#lib/VoteButton.svelte';
 	import {
 		BASES,
@@ -105,6 +106,10 @@
 		{/if}
 	</div>
 
+	<m3e-button class="cook" variant="filled" size="medium" href="/ratter/{recipe.id}/laga">
+		<span slot="icon" class="slot-icon"><Icon name="cook" /></span>Laga maten
+	</m3e-button>
+
 	<section class="card opinion">
 		<div class="opinion-row">
 			<h2>Vad tycker ni?</h2>
@@ -121,23 +126,12 @@
 	</section>
 
 	{#if onlyName}
-		<section class="banner invite">
-			<p>
-				{#if recipe.ingredientsGuessed}
-					Claude har gissat ingredienserna till inköpslistan. Hämta receptet eller skriv in det när
-					du vill.
-				{:else}
-					Rätten har bara ett namn. Lägg till ingredienser när du vill, så kommer de med på
-					inköpslistan.
-				{/if}
-			</p>
-			<div class="invite-actions">
-				<m3e-button variant="filled" href="/ratter/ny?till={recipe.id}">
-					<span slot="icon" class="slot-icon"><Icon name="camera" /></span>Hämta receptet
-				</m3e-button>
-				<m3e-button variant="text" href="/ratter/{recipe.id}/redigera">Skriv in själv</m3e-button>
-			</div>
-		</section>
+		<RecipeInvite
+			recipeId={recipe.id}
+			text={recipe.ingredientsGuessed
+				? 'Claude har gissat ingredienserna till inköpslistan. Hämta receptet eller skriv in det när du vill.'
+				: 'Rätten har bara ett namn. Lägg till ingredienser när du vill, så kommer de med på inköpslistan.'}
+		/>
 	{/if}
 
 	{#if recipe.ingredients.length}
@@ -291,6 +285,10 @@
 		align-items: center;
 	}
 
+	.cook {
+		align-self: stretch;
+	}
+
 	.opinion-row {
 		display: flex;
 		align-items: center;
@@ -312,30 +310,6 @@
 		font-size: 0.8125rem;
 		line-height: 1.25rem;
 		color: var(--md-sys-color-on-surface-variant);
-	}
-
-	.invite {
-		padding: 1rem 1rem 0.875rem;
-		border-radius: 1.5rem;
-		font-size: 0.9375rem;
-		line-height: 1.3125rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.invite p {
-		margin: 0;
-	}
-
-	.invite-actions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-	}
-
-	.invite-actions m3e-button[variant='text'] {
-		--m3e-text-button-label-text-color: var(--md-sys-color-on-primary-container);
 	}
 
 	.lines {

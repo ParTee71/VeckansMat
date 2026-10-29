@@ -16,6 +16,13 @@ INSERT INTO recipe_ingredient (recipe_id, position, raw) VALUES
 	(1, 0, '600 g torskfilé'),
 	(1, 1, '2 dl grädde');
 
+-- A dish with only a name, whose ingredients Claude guessed for the shopping list (#137).
+INSERT INTO recipe (id, name, name_key, ingredients_guessed) VALUES
+	(4, 'Pannbiff med lök', 'pannbiff med lök', 1);
+INSERT INTO recipe_ingredient (recipe_id, position, raw) VALUES
+	(4, 0, '500 g nötfärs'),
+	(4, 1, '3 gula lökar');
+
 INSERT INTO menu (id, week_start, source) VALUES
 	(1, '2030-01-14', 'photo'),
 	(2, '2030-01-07', 'photo'),
