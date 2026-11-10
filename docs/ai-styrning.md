@@ -5,6 +5,16 @@ skrivs vad som provats, varför, och hur det gick. Nyast överst. Hur
 styrningen är uppbyggd just nu står i
 [beslut 0008](beslut/0008-claude-code-uppsattning.md).
 
+## 2026-11-10 – Samma modellval i alla projekt
+
+**Vad:** Ägaren satte en gemensam regel för alla sina projekt: Opus 5.5 som standard och
+Fable 5.2 bara när uppgiften kräver det, med medium eller high effort och skälet sagt först.
+Regeln står i CLAUDE.md (Modellval) och i tabellen i `/refine-issue` (#141).
+
+**Varför så:** Fable 5.2 kostar dubbelt per token mot Opus 5.5, och på max effort kan en uppgift
+kosta mycket mer än den behöver. Lärdomen: en dyr modell ska väljas med ett uttalat skäl, inte
+av vana – planera gärna med den dyra och genomför med standardmodellen.
+
 ## 2026-10-27 – Grönt CI är inte samma sak som att PR:en går att merga
 
 **Vad hände:** Två trådar höjde båda versionen från 0.6.0 till 0.7.0 på varsin gren. När den

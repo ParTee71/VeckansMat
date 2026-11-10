@@ -32,6 +32,16 @@ föreslå en ny ADR i stället (`/adr`).
 Engelska i koden: identifierare och kodkommentarer. Svenska i allt annat:
 gränssnitt, `docs/`, commit-meddelanden, issues och PR:er.
 
+## Modellval
+
+- Opus 5.5 (`claude-opus-5-5`) är standard för sessionen och varje agent.
+- Fable 5.2 (`claude-fable-5-2`) är ok när det behövs – svår arkitektur eller design,
+  knepiga integrationer, långa agentuppgifter, buggar Opus inte klarat – men används
+  försiktigt för kostnadens skull: medium eller high effort, aldrig max eller fast mode.
+- Säg varför och vilken effort innan du byter till Fable 5.2. Planera med Fable,
+  genomför med Opus när det går.
+- Fable 5.1 används inte längre.
+
 ## Arbetssätt
 
 - En sak per PR. Tester skrivs i samma PR som koden. Ändras appen höjs versionen
