@@ -39,11 +39,14 @@ test.describe('with a Google picture', () => {
 		await open(page, '/');
 		await expect(account(page).locator('img')).toBeVisible();
 		await expect(account(page)).toHaveAccessibleName('Konto och inställningar, Alex Exempel');
-		expect(
-			await account(page)
-				.locator('img')
-				.evaluate((img: HTMLImageElement) => img.naturalWidth)
-		).toBe(1);
+		// The <img> has a fixed size and is visible before the picture has loaded, so wait for it.
+		await expect
+			.poll(() =>
+				account(page)
+					.locator('img')
+					.evaluate((img: HTMLImageElement) => img.naturalWidth)
+			)
+			.toBe(1);
 
 		for (const path of ['/handla', '/ratter', '/veckor']) {
 			await open(page, path);
