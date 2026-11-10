@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { open, saved } from '../../../test/e2e';
+import { open, reload, saved } from '../../../test/e2e';
 
 // Made-up people only. The tests share one database, so they run in order.
 test.describe.configure({ mode: 'serial' });
@@ -50,7 +50,7 @@ test('the rules for every week are saved as they are changed', async ({ page }) 
 	await page.getByRole('button', { name: '1 extra portion', exact: true }).click();
 	await saved;
 
-	await page.reload();
+	await reload(page);
 	await expect(rules).toHaveValue('Fisk en gång i veckan.\nVegetariskt på måndagar.');
 	await expect(page.getByRole('status', { name: 'Nya rätter per vecka' })).toHaveText('2');
 	// m3e drops aria-pressed from a button that is not a toggle, so the variant shows the choice.
@@ -86,7 +86,7 @@ test('how often the same dish may come is saved as it is changed', async ({ page
 	await expect(favourites).toHaveText('3');
 	await expect(page.getByText('tidigast efter 3 veckor')).toHaveCount(2);
 
-	await page.reload();
+	await reload(page);
 	await expect(ordinary).toHaveText('3');
 	await expect(favourites).toHaveText('3');
 });

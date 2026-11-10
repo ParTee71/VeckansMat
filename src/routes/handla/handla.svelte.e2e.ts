@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { countLoads, open, saved, swipeAt, writeDay } from '../../../test/e2e';
+import { countLoads, open, reload, saved, swipeAt, writeDay } from '../../../test/e2e';
 
 // Has a Worker of its own in playwright.config.ts, since it writes the same weeks as the tests of
 // Veckan. The made-up dishes come from test/e2e-seed.sql.
@@ -44,7 +44,7 @@ test('the week shopping list is made from the dishes and ticked off in the store
 	await expect(basket).toBeVisible();
 	await expect(onion).toBeHidden();
 	await saved(page);
-	await page.reload();
+	await reload(page);
 	await page.getByRole('button', { name: /I korgen/ }).click();
 	await expect(page.getByRole('checkbox', { name: 'Gul lök' })).toBeChecked();
 
@@ -107,7 +107,7 @@ test('any item is swiped away, and undo puts it back with its dishes', async ({ 
 	await page.locator('m3e-snackbar').getByRole('button', { name: 'Ångra' }).click();
 	await expect(item).toBeVisible();
 	await saved(page);
-	await page.reload();
+	await reload(page);
 	await page.getByRole('button', { name: 'Till vilka rätter: Till fiskgratäng' }).click();
 	await expect(page.getByText('Fiskgratäng', { exact: true })).toBeVisible();
 
@@ -115,7 +115,7 @@ test('any item is swiped away, and undo puts it back with its dishes', async ({ 
 	await page.getByRole('button', { name: 'Ta bort Till fiskgratäng' }).click();
 	await expect(item).toHaveCount(0);
 	await saved(page);
-	await page.reload();
+	await reload(page);
 	await expect(page.getByRole('checkbox', { name: 'Till fiskgratäng' })).toHaveCount(0);
 
 	// To the right a row is the page's, and goes back to Veckan (#105).
@@ -130,7 +130,7 @@ test('a folded section stays folded on the phone', async ({ page }) => {
 	await expect(section).toHaveAttribute('aria-expanded', 'true');
 	await section.click();
 	await expect(section).toHaveAttribute('aria-expanded', 'false');
-	await page.reload();
+	await reload(page);
 	await expect(page.getByRole('button', { name: /Skafferi/ })).toHaveAttribute(
 		'aria-expanded',
 		'false'
@@ -156,7 +156,7 @@ test('a list made before the week changed offers to be updated', async ({ page }
 	await expect(changed).toHaveCount(0);
 
 	await saved(page);
-	await page.reload();
+	await reload(page);
 	await page.locator('m3e-button', { hasText: 'Uppdatera listan' }).click();
 	await expect(changed).toHaveCount(0);
 	await expect(page.getByRole('checkbox', { name: 'Till linsgryta i handlaprovet' })).toBeVisible();

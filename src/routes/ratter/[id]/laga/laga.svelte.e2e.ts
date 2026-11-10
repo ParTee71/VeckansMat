@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { open, saved } from '../../../../../test/e2e';
+import { open, reload, saved } from '../../../../../test/e2e';
 
 // Each test adds a made-up dish of its own, so nothing here depends on the other tests.
 test.describe.configure({ mode: 'serial' });
@@ -58,7 +58,7 @@ test('a dish is cooked from its page, with portions, ticks and a timer', async (
 		'true'
 	);
 	await expect(page.getByText('Steg 2 av 2')).toBeVisible();
-	await page.reload();
+	await reload(page);
 	await expect(page.getByText('2 portioner')).toBeVisible();
 	await expect(page.getByText('1 av 4 framme')).toBeVisible();
 	await expect(ingredient(page, '300 g kycklingfilé')).toHaveAttribute('checked');

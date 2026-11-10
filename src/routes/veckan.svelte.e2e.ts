@@ -1,5 +1,5 @@
 import { expect, test, type Locator } from '@playwright/test';
-import { countLoads, hold, open, saved, writeDay } from '../../test/e2e';
+import { countLoads, hold, open, reload, saved, writeDay } from '../../test/e2e';
 import { mondayOf, shownWeek, swedishToday } from '../lib/weeks';
 
 // The made-up dishes come from test/e2e-seed.sql. Veckan shows this week or the next, so the
@@ -40,7 +40,7 @@ test('a week is written as quickly as on a note', async ({ page }) => {
 
 	await saved(page);
 	expect(loads()).toBe(0);
-	await page.reload();
+	await reload(page);
 	await expect(page.getByRole('button', { name: 'Middag måndag: Fiskgratäng' })).toBeVisible();
 	await expect(
 		page.getByRole('button', { name: 'Middag tisdag: Ärtgryta med bacon' })
@@ -128,7 +128,7 @@ test('a day is chosen without writing, from the usual dishes or all of them', as
 
 	await saved(page);
 	expect(loads()).toBe(0);
-	await page.reload();
+	await reload(page);
 	await expect(page.getByRole('button', { name: 'Middag söndag: Ugnsomelett' })).toBeVisible();
 	await open(page, '/ratter');
 	await expect(page.locator('m3e-list-action', { hasText: 'Ugnsomelett' })).toBeVisible();
@@ -165,7 +165,7 @@ test('who eats is chosen per week, and nothing more is set there', async ({ page
 	await expect(page.getByRole('link', { name: 'Ändra personer och regler' })).toHaveCount(0);
 	await expect(line).toContainText('Ätare Ett och Ätare Två äter');
 	await saved(page);
-	await page.reload();
+	await reload(page);
 	await expect(line).toContainText('Ätare Ett och Ätare Två äter');
 	await line.click();
 	for (const chip of chips) await expect(chip).toHaveAttribute('selected');
@@ -287,7 +287,7 @@ test('Claude suggests the week, and a day is swapped with one tap', async ({ pag
 	await expect(page.getByRole('button', { name: 'Middag tisdag: Ärtsoppa' })).toBeVisible();
 	await saved(page);
 	expect(loads()).toBe(0);
-	await page.reload();
+	await reload(page);
 	await expect(page.getByRole('button', { name: 'Middag tisdag: Ärtsoppa' })).toBeVisible();
 	await expect(monday('Blomkålssoppa')).toBeVisible();
 
@@ -337,7 +337,7 @@ test('a new dish is voted on with one button, and Aldrig mer is never suggested'
 	}
 	await saved(page);
 	expect(loads()).toBe(0);
-	await page.reload();
+	await reload(page);
 	await expect(vote('Shakshuka')).toHaveText('Aldrig mer');
 
 	// Rätter marks it, and the dish page shows the same vote and changes it.
@@ -349,7 +349,7 @@ test('a new dish is voted on with one button, and Aldrig mer is never suggested'
 	await vote('Shakshuka').click();
 	await expect(vote('Shakshuka')).toHaveText('Ny favorit');
 	await saved(page);
-	await page.reload();
+	await reload(page);
 	await expect(vote('Shakshuka')).toHaveText('Ny favorit');
 	await vote('Shakshuka').click();
 	await vote('Shakshuka').click();
@@ -373,7 +373,7 @@ test('a finger held on a dish opens it for cooking, and a tap still writes', asy
 	await saved(page);
 
 	// The first times on a phone, the snackbar tells of the held finger.
-	await page.reload();
+	await reload(page);
 	await expect(page.getByText('Håll kvar fingret för att laga rätten')).toBeVisible();
 
 	// A tap opens the day for writing, as before.
@@ -400,7 +400,7 @@ test('a finger held on a dish opens it for cooking, and a tap still writes', asy
 
 	// After three times the snackbar is not shown again.
 	await page.evaluate(() => localStorage.setItem('laga-tips', '3'));
-	await page.reload();
+	await reload(page);
 	await expect(page.getByRole('button', { name: 'Middag onsdag: Fiskgratäng' })).toBeVisible();
 	await expect(page.getByText('Håll kvar fingret för att laga rätten')).toHaveCount(0);
 
