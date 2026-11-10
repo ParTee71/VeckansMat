@@ -1,6 +1,7 @@
 # 0010. Officiella skills först, egna där inget finns
 
-- **Status:** Beslutat
+- **Status:** Beslutat. Punkten om att arbetsflödet kopieras och anpassas är ersatt av 0025 för
+  `refine-issue` och `implement-issue`.
 - **Datum:** 2026-10-23
 
 ## Sammanhang

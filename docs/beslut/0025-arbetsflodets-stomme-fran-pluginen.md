@@ -1,6 +1,7 @@
 # 0025. Arbetsflödets stomme från pluginen
 
-- **Status:** Beslutat
+- **Status:** Beslutat. Ersätter punkten i [0010](0010-skills-och-agenter.md) om att arbetsflödet
+  kopieras och anpassas, för `refine-issue` och `implement-issue`.
 - **Datum:** 2026-11-10
 
 ## Sammanhang
@@ -39,6 +40,10 @@ därifrån styr den här repots planregel sedan [0024](0024-plan-bara-for-storre
   även utanför molnmiljöerna.
 
 ## Följder
+
+- Stommen läses olåst från pluginens standardgren, till skillnad från de officiella kopiorna i
+  0010 som är låsta. Det är avsikten: en lärdom om arbetsflödet ska nå alla repon direkt. En
+  ändring i stommen syns i claude-androids PR, inte som en diff här.
 
 - En lärdom om arbetsflödet som gäller alla repon skrivs i pluginen, inte här. `docs/ai-styrning.md`
   får fortfarande det som bara gäller VeckansMat.

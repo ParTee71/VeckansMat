@@ -14,7 +14,7 @@ med `/adr` i Claude Code.
 | [0007](0007-sprak.md)                              | Engelska i koden, svenska i resten              | Beslutat                                          |
 | [0008](0008-claude-code-uppsattning.md)            | Hur Claude Code styrs i repot                   | Beslutat                                          |
 | [0009](0009-kvalitet-och-ci.md)                    | Kvalitetskontroller och CI                      | Beslutat                                          |
-| [0010](0010-skills-och-agenter.md)                 | Officiella skills först, egna där inget finns   | Beslutat                                          |
+| [0010](0010-skills-och-agenter.md)                 | Officiella skills först, egna där inget finns   | Beslutat, arbetsflödets stomme ersatt av 0025     |
 | [0011](0011-versioner-och-release.md)              | Versioner och release                           | Beslutat, förhandsadressen ersatt av 0012         |
 | [0012](0012-datamodell.md)                         | Datamodell för recept och veckomenyer           | Beslutat                                          |
 | [0013](0013-recept-in.md)                          | Recept in från länkar, foton och text           | Beslutat                                          |

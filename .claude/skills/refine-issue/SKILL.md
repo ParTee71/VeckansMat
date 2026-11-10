@@ -12,6 +12,8 @@ VeckansMat lägger till. När en plan krävs: skill `android:arbetsregler` och [
 0024](../../../docs/beslut/0024-plan-bara-for-storre-andringar.md). Undersöka koden får du,
 ändra den får du inte.
 
+Har du ett nummer: hämta issuet **och kommentarerna**, förfina och skriv om det i sin helhet.
+
 Bugg: fråga efter steg, förväntat, faktiskt, telefon och webbläsare.
 
 ## Undersök koden – VeckansMat
@@ -33,7 +35,8 @@ Mockup: `/mockup`.
 Tester på varje berörd nivå (bugg → regressionstest som faller först), inga personuppgifter i
 repot, svenska texter i gränssnittet, `npm run verify` och `npm run test:e2e` gröna, mockup
 godkänd för ny GUI. Gäller en punkt inte, skriv varför. Testplanen delas i **Vitest** och
-**Playwright**.
+**Playwright**, och dess kommandon är issuets Verifiering. Omfånget skrivs både som **Inom omfång**
+(i Föreslaget upplägg) och **Utanför omfång**.
 
 **Agent · modell · effort** efter uppgiftens komplexitet, Opus 5.5 som standard (CLAUDE.md →
 Modellval, skill `android:ai-model-choice`):

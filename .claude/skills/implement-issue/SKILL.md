@@ -37,12 +37,15 @@ ADR (`/adr`), bygg inte förbi. Mockup: `/mockup`.
   `workers-best-practices` och `wrangler`.
 - m3e-komponenter registreras i `src/lib/m3e.ts`.
 - **Version:** höjningen och raden i `CHANGELOG.md` står i `/release`.
+- **Commit-meddelanden** på svenska, som en rubrik utan prefix (`Beslut 0025: …`, `e2e: …`) –
+  repots stil går före stommens `feat(område):`.
 - Engelska i koden, svenska i gränssnittet. Testdata påhittad. Claude mockas i tester. Ett test
   hoppas aldrig över med `skip` eller `fixme`.
 
 ## Kontrollerna – VeckansMat
 
-`npm run verify`, och `npm run test:e2e` om något syns i appen. Hooken kör `npm run verify` före
+`npm run verify`, och `npm run test:e2e` om något syns i appen. Issuets **Testplan** är dess
+Verifiering när issuet saknar en egen rubrik för det. Hooken kör `npm run verify` före
 push.
 
 Ändras en prompt, ett schema eller en modell: prova med några fall (`-t`) medan du bygger och
@@ -65,6 +68,7 @@ gång efter sista rundan.
 
 ## Konflikter – VeckansMat
 
+- **Ingen rebase och ingen force-push** för att lösa en konflikt – merga in `origin/main`.
 - **Version och `CHANGELOG.md`:** har `main` redan höjt sedan senaste release, flyttas PR:ens rad
   under `main`s rubrik. Ändra versionen med `npm version`, inte för hand i `package-lock.json`.
   Två rubriker med samma version får aldrig finnas.
