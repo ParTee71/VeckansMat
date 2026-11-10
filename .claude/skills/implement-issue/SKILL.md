@@ -1,127 +1,82 @@
 ---
 name: implement-issue
-description: Genomför ett GitHub-issue i VeckansMat till en öppen PR – en större ändring bara med godkänd plan (etiketten plan-godkänd eller ägarens "kör"), en liten med raden Liten ändring, föregående PR mergad, mockup för ny GUI, tester samtidigt som koden, /simplify, agenten granskare och /code-review i rundor, PR och bevakning. Använd när någon säger genomför, implementera, kör #N, fixa buggen, bygg funktionen, eller efter /refine-issue.
+description: Genomför ett GitHub-issue i VeckansMat till en mergad PR – stommen i skill android:arbetsflode plus VeckansMats delar – plan-kontrollen (plan-godkänd, Liten ändring), Svelte och Workers, versionen och CHANGELOG, npm run verify och e2e, evalen, /simplify, agenten granskare, plan-spärren vid merge och konflikter i version och migreringar. Använd när någon säger genomför, implementera, kör #N, fixa buggen, bygg funktionen, eller efter /refine-issue.
 ---
 
 # Genomföra ett issue
 
-Driver ett issue till PR. En större ändring kräver godkänd plan, en liten gör det inte
-([beslut 0024](../../../docs/beslut/0024-plan-bara-for-storre-andringar.md), skill
-`android:arbetsregler`).
+**Stommen står i skill `android:arbetsflode` → Issue till PR** (förra PR:en, förstå, bygg,
+kontroller, granskningsrundor, en push, PR-texten, bevakning, konflikter, merge) – [beslut
+0025](../../../docs/beslut/0025-arbetsflodets-stomme-fran-pluginen.md). Följ den steg för steg;
+den här skillen säger vad som gäller i VeckansMat, under stommens stegnamn. Basgrenen är `main`.
 
 ## Före allt – Godkänd plan
 
-Hämta issuets etiketter (`issue_read`, `get_labels`) innan något annat.
+Hämta issuets etiketter (`issue_read`, `get_labels`) innan något annat. När en plan krävs står i
+skill `android:arbetsregler` och [beslut 0024](../../../docs/beslut/0024-plan-bara-for-storre-andringar.md).
 
-- **Liten ändring** (en avgränsad fix eller ett dokument, inget nytt beteende, ingen
-  datamodell, inget vägval) → ingen plan behövs. Skriv `Liten ändring: <varför>` i PR-texten.
-  Osäker → behandla den som större.
+- **Liten ändring** → `Liten ändring: <varför>` i PR-texten. Osäker → större.
 - **`plan-godkänd` finns, eller ägaren har skrivit "kör" på planen** → fortsätt. Har ägaren
   skrivit "kör", sätt etiketten och kommentera var och när.
-- **Större ändring utan godkänd plan, eller inget issue** → stanna. Kör `/refine-issue`, som slutar med att vänta på
-  ägarens ok. Ingen gren, ingen kod.
-- **Ägaren har uttryckligen sagt att en plan inte behövs** → skriv `Utan plan: <ägarens ord,
-tid>` i PR-texten. Bara ägaren kan ge det undantaget.
+- **Större ändring utan godkänd plan, eller inget issue** → stanna och kör `/refine-issue`.
+- **Ägaren har uttryckligen sagt att en plan inte behövs** → `Utan plan: <ägarens ord, tid>` i
+  PR-texten. Bara ägaren kan ge det undantaget.
 
-Hooken `plan-approved.mjs` och CI-kontrollen **Plan godkänd** stoppar en PR som saknar
-godkänd plan. Gå aldrig runt dem.
+Hooken `plan-approved.mjs` och CI-kontrollen **Plan godkänd** stoppar en PR som saknar något av
+dem. Gå aldrig runt dem.
 
-## Steg 0 – Föregående PR
+## Förstå – VeckansMat
 
-En PR i taget per gren. Fråga GitHub om den senaste PR:en från arbetsgrenen, lita aldrig på ett
-antagande.
+Läs de ADR:er i `docs/beslut/` som rör området. Krockar arbetet med ett beslut: föreslå en ny
+ADR (`/adr`), bygg inte förbi. Mockup: `/mockup`.
 
-- **Mergad** → starta grenen om från `origin/main` och avsluta bevakningen av den gamla.
-- **Öppen** → säg det direkt. Förbered arbetet **ocommittat** tills den är mergad, annars
-  hamnar det i samma PR.
-- **Ingen** → skapa grenen från `origin/main`. Committa aldrig direkt på `main`.
+## Bygg – VeckansMat
 
-## Steg 1 – Förstå
+- `.svelte`-filer: följ `svelte-core-bestpractices` och kör `svelte-autofixer`
+  (`svelte-code-writer`), gärna via agenten `svelte-file-editor`. Workers, D1, R2 och wrangler:
+  `workers-best-practices` och `wrangler`.
+- m3e-komponenter registreras i `src/lib/m3e.ts`.
+- **Version:** höjningen och raden i `CHANGELOG.md` står i `/release`.
+- **Commit-meddelanden** på svenska, som en rubrik utan prefix (`Beslut 0025: …`, `e2e: …`) –
+  repots stil går före stommens `feat(område):`.
+- Engelska i koden, svenska i gränssnittet. Testdata påhittad. Claude mockas i tester. Ett test
+  hoppas aldrig över med `skip` eller `fixme`.
 
-Läs issuet **och kommentarerna**; acceptanskriterier, Design och Agent · modell · effort är
-kontraktet, och senare kommentarer från ägaren går före issuetexten. Läs de ADR:er som rör
-området.
+## Kontrollerna – VeckansMat
 
-## Steg 2 – Mockup
-
-Ny eller tydligt ändrad GUI utan godkänd mockup under **Design** → `/mockup`, och vänta på ok
-innan kod.
-
-## Steg 3 – Planera och delegera
-
-Kort plan: filer, ordning, tester. Starta varje del med den agent, modell och effort som issuet
-anger. Avvik bara uppåt (fel två gånger i rad, större risk än väntat) och motivera det i PR:en.
-Arbetar du i `.svelte`-filer: följ `svelte-core-bestpractices` och kör `svelte-autofixer`
-(`svelte-code-writer`), gärna via agenten `svelte-file-editor`. Workers, D1, R2 och wrangler:
-`workers-best-practices` och `wrangler`.
-
-## Steg 4 – Bygg, med tester samtidigt
-
-- **Bugg:** regressionstest som faller först, sedan minsta ändringen som gör det grönt.
-- **Funktion:** följ befintliga mönster; m3e-komponenter registreras i `src/lib/m3e.ts`.
-- **Version:** ändrar PR:en appen höjs versionen i samma ändring, med raden i `CHANGELOG.md`
-  (`/release`).
-- Engelska i koden, svenska i gränssnittet. Testdata påhittad. Claude mockas i tester.
-- Ett test som ibland faller är en bugg: hitta grundorsaken. Ta aldrig bort, hoppa över
-  (`skip`, `fixme`) eller försvaga ett test för att få grönt.
-
-## Steg 5 – Kör kontrollerna
-
-`npm run verify`, och `npm run test:e2e` om något syns i appen. Kör kommandona i issuets
-testplan. Kan du inte köra något, säg det i PR:en.
+`npm run verify`, och `npm run test:e2e` om något syns i appen. Issuets **Testplan** är dess
+Verifiering när issuet saknar en egen rubrik för det. Hooken kör `npm run verify` före
+push.
 
 Ändras en prompt, ett schema eller en modell: prova med några fall (`-t`) medan du bygger och
 gör **en** full körning av evalen före PR:en, fler bara om ägaren ber om det. Skriv evalens
 kostnad i PR:en, från `evals/costs.jsonl`. Se `evals/README.md`.
 
-## Steg 6 – Förenkla och granska i rundor
+## Granska – VeckansMat
 
-1. `/simplify` – mindre kod som gör samma jobb.
-2. Agenten **`granskare`** på diffen. Varje ❌ åtgärdas; ⚠️ åtgärdas om det är litet, annars
-   nämns det i PR:en.
-3. `/code-review` när diffen rör mer än ett par filer, data, Claude-anrop eller hooks.
-   Verifiera varje fynd och åtgärda de verkliga.
+Före granskarens runda: `/simplify` – mindre kod som gör samma jobb. Granskaren är agenten
+**`granskare`**. `/code-review` körs också när diffen rör Claude-anrop. Kör kontrollerna en sista
+gång efter sista rundan.
 
-Ändras koden efter granskningen granskas bara rättningarna igen. Rundorna slutar när en runda
-inte hittar något ❌. Kör kontrollerna en sista gång.
+## PR och bevakning – VeckansMat
 
-## Steg 7 – Commit, push och PR
+- PR-texten säger också avvikelser från issuet.
+- Rött CI → agenten **`ci-doktor`**.
+- Workflowen **Konflikter** sätter etiketten `konflikt` och tar bort den vid den push som löser
+  konflikten; etiketten betyder samma sak som `mergeable_state` `dirty`.
+- Merga bara när **Plan godkänd** också är grön.
 
-- Svenska commit-meddelanden, små sammanhängande commits, `Closes #N` i den sista.
-- Push en gång, när allt är grönt lokalt. Hooken kör `npm run verify` före push.
-- PR mot `main`: vad och varför, hur det provats (kommandon och utfall), avvikelser från
-  issuet, för GUI mockup-länk och skärmdumpar. `Closes #N`.
-- Prenumerera på PR:en direkt. Rött CI → agenten **`ci-doktor`**, fixa grundorsaken och pusha.
-  Kör aldrig bara om.
-- **Går den att merga?** Efter varje push, vid varje PR-händelse och alltid före merge: hämta
-  PR:en (`pull_request_read`, `get`) och läs `mergeable_state`. `dirty`, eller etiketten
-  `konflikt` → lös konflikten (nästa avsnitt). En PR med konflikt får inget nytt CI-utfall, så
-  grönt CI från förut betyder inte att den går att merga. `unknown` → hämta igen.
-- Merga bara när all CI är grön, `Plan godkänd` inräknad, och `mergeable_state` inte är `dirty`.
+## Konflikter – VeckansMat
 
-## Konflikter
-
-Hämta `origin/main` och merga in den i grenen. Ingen rebase, ingen force-push. Kör `npm run
-verify` och pusha. Workflowen **Konflikter** sätter etiketten `konflikt` och tar bort den när
-konflikten är löst, vid den push som löser den.
-
-- **Version och `CHANGELOG.md`:** ta `main`s version och rubriker som de är och tillämpa
-  versionsregeln i `/release` på nytt. Har `main` redan höjt sedan senaste release, flyttas
-  PR:ens rad under `main`s rubrik och versionen höjs bara om PR:en är allvarligare. Ändra
-  versionen med `npm version`, inte för hand i `package-lock.json`. Två rubriker med samma
-  version får aldrig finnas.
+- **Ingen rebase och ingen force-push** för att lösa en konflikt – merga in `origin/main`.
+- **Version och `CHANGELOG.md`:** har `main` redan höjt sedan senaste release, flyttas PR:ens rad
+  under `main`s rubrik. Ändra versionen med `npm version`, inte för hand i `package-lock.json`.
+  Två rubriker med samma version får aldrig finnas.
 - **Migreringar med samma nummer:** döp om PR:ens migrering till nästa lediga nummer.
-- **Kod:** lös bara när båda sidornas avsikt är tydlig. Annars: stanna och fråga ägaren med
-  filerna och vad som krockar.
-- Lärde du något om hur Claude bör styras, skriv en rad i `docs/ai-styrning.md`.
+- Lärdomar om hur Claude bör styras skrivs i `docs/ai-styrning.md`.
 
-## Anti-mönster
+## Anti-mönster (utöver stommens)
 
-- Issue och PR samtidigt, eller kod innan ägaren godkänt planen.
-- Att själv bedöma att en ändring är för liten för en plan.
-- Nästa issue innan GitHub sagt att föregående PR är mergad.
-- Att vänta på CI på en PR som har konflikt, eller merga utan att ha läst `mergeable_state`.
-- Kod för ny GUI utan godkänd mockup.
-- Bugfix utan regressionstest.
-- Ett rött test borttaget, hoppat eller omkört för att bli grönt.
-- En agent med annan modell eller effort än issuet anger, utan motivering.
+- Issue och PR samtidigt för en större ändring.
+- Merga när **Plan godkänd** är röd.
+- Två rubriker med samma version i `CHANGELOG.md`.
