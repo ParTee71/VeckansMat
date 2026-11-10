@@ -17,6 +17,9 @@ längre `npm ci` (cirka 20 s); push-kontrollen gör det när `node_modules` sakn
 Code varnade. Ett prov med samma mönster på `echo` visade att varken det gamla mönstret eller
 varningens förslag träffade; mönstret med mellanslag och `*` gjorde det. Lärdomen: pröva en
 spärr med ett ofarligt kommando i samma form, i stället för att lita på att den står där.
+Samma sak gällde skillsen i projekttrådarna: de laddades med andra namn än dokumenten sa, och
+det märktes inte förrän claude-android fick en kontroll vid sessionsstarten som säger till
+(#144).
 
 ## 2026-11-10 – Samma modellval i alla projekt
 

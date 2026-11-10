@@ -41,7 +41,15 @@ Prettier (`.prettierignore`), så att de kan bytas mot en ny version rakt av.
 
 ## I projekttrådar
 
-Projekttrådar startar i `/home/user`, ovanför repot, och läser då inte `.claude/`. Miljöns
-setup-skript kör `scripts/repo-plugins.mjs` från `ParTee71/claude-android`, som gör katalogen
-till pluginen `veckansmat`: skillsen heter då `veckansmat:<namn>` och hookarna körs när
-händelsen rör repot.
+Projekttrådar startar i `/home/user`, ovanför repot, och läser då inte `.claude/settings.json`.
+
+- **Skills och agenter** hittar Claude Code själv i `.claude/`. Skillsen heter `<namn>`, eller
+  `VeckansMat:<namn>` när ett annat repo i tråden har en skill med samma namn. Agenter får
+  aldrig prefix; en agent som finns i flera repon ska heta `<repo>-<namn>` (regeln i
+  claude-android). `granskare` och `ci-doktor` är unika i dag.
+- **Hookarna** bär miljöns setup-skript (`scripts/repo-plugins.mjs` i `ParTee71/claude-android`)
+  i pluginen `veckansmat`. De körs bara när händelsen rör repot: `verify-before-push` för en
+  push i VeckansMat, `plan-approved` för en PR mot VeckansMat (claude-android #38), och
+  sessionsstarten en gång.
+- **Behörigheterna** (`deny` och `ask`) läggs i användarinställningarna av samma skript, med
+  sökvägarna förankrade i repot (claude-android #40). `allow` följer inte med.
