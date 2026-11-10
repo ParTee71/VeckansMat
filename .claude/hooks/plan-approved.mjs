@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Blocks a pull request whose issue has no approved plan (docs/beslut/0018).
+// Blocks a pull request whose issue has no approved plan (docs/beslut/0018, 0024).
 // Two entry points share the same check:
 // - PreToolUse hook on the GitHub tool that creates a PR: exit code 2 blocks
 //   the call and hands stderr back to Claude. If GitHub cannot be reached the
@@ -25,10 +25,12 @@ export function linkedIssues(body) {
 export async function planProblem(body, getLabels) {
 	// The owner can waive the plan for a single change; the line keeps their words visible in the PR.
 	if (/^Utan plan: \S/m.test(body ?? '')) return null;
+	// A small change needs no plan (0024); the line makes Claude's judgement visible in the PR.
+	if (/^Liten ändring: \S/m.test(body ?? '')) return null;
 
 	const issues = linkedIssues(body);
 	if (issues.length === 0) {
-		return 'PR-texten länkar inget issue (Closes #N). Varje ändring börjar med ett issue med plan som ägaren godkänt.';
+		return 'PR-texten länkar inget issue (Closes #N). En större ändring kräver ett issue med plan som ägaren godkänt; en liten skriver raden "Liten ändring: <varför>" (beslut 0024).';
 	}
 	const missing = [];
 	for (const issue of issues) {
