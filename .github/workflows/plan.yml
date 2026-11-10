@@ -1,7 +1,7 @@
 name: Plan
 
 # Every PR must link an issue whose plan the owner has approved (label plan-godkänd),
-# see docs/beslut/0018-plan-fore-kod.md. The check reads the labels live, so
+# or say why it is a small change ("Liten ändring: <varför>"), see docs/beslut/0018 and 0024. The check reads the labels live, so
 # re-running it after the label is set is enough.
 on:
   pull_request:

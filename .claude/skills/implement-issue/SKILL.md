@@ -1,19 +1,24 @@
 ---
 name: implement-issue
-description: Genomför ett planerat GitHub-issue i VeckansMat till en öppen PR – bara med godkänd plan (etiketten plan-godkänd), föregående PR mergad, mockup för ny GUI, tester samtidigt som koden, /simplify, agenten granskare och /code-review i rundor, PR och bevakning. Använd när någon säger genomför, implementera, kör #N, fixa buggen, bygg funktionen, eller efter /refine-issue.
+description: Genomför ett GitHub-issue i VeckansMat till en öppen PR – en större ändring bara med godkänd plan (etiketten plan-godkänd eller ägarens "kör"), en liten med raden Liten ändring, föregående PR mergad, mockup för ny GUI, tester samtidigt som koden, /simplify, agenten granskare och /code-review i rundor, PR och bevakning. Använd när någon säger genomför, implementera, kör #N, fixa buggen, bygg funktionen, eller efter /refine-issue.
 ---
 
 # Genomföra ett issue
 
-Driver ett issue från godkänd plan till PR. Inga undantag för små saker
-([beslut 0018](../../../docs/beslut/0018-plan-fore-kod.md)).
+Driver ett issue till PR. En större ändring kräver godkänd plan, en liten gör det inte
+([beslut 0024](../../../docs/beslut/0024-plan-bara-for-storre-andringar.md), skill
+`android:arbetsregler`).
 
 ## Före allt – Godkänd plan
 
 Hämta issuets etiketter (`issue_read`, `get_labels`) innan något annat.
 
-- **`plan-godkänd` finns** → fortsätt.
-- **Saknas, eller inget issue** → stanna. Kör `/refine-issue`, som slutar med att vänta på
+- **Liten ändring** (en avgränsad fix eller ett dokument, inget nytt beteende, ingen
+  datamodell, inget vägval) → ingen plan behövs. Skriv `Liten ändring: <varför>` i PR-texten.
+  Osäker → behandla den som större.
+- **`plan-godkänd` finns, eller ägaren har skrivit "kör" på planen** → fortsätt. Har ägaren
+  skrivit "kör", sätt etiketten och kommentera var och när.
+- **Större ändring utan godkänd plan, eller inget issue** → stanna. Kör `/refine-issue`, som slutar med att vänta på
   ägarens ok. Ingen gren, ingen kod.
 - **Ägaren har uttryckligen sagt att en plan inte behövs** → skriv `Utan plan: <ägarens ord,
 tid>` i PR-texten. Bara ägaren kan ge det undantaget.

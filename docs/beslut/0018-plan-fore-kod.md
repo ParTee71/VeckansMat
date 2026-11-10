@@ -1,6 +1,6 @@
 # 0018. Plan före kod, med spärr
 
-- **Status:** Beslutat
+- **Status:** Beslutat. Kravet på plan för varje ändring är ersatt av 0024 (2026-11-10); spärren finns kvar.
 - **Datum:** 2026-10-25
 
 ## Sammanhang

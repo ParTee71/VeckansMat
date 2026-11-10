@@ -1,13 +1,14 @@
 ---
 name: refine-issue
-description: Gör en idé, en bugg eller ett önskemål till ett planerat GitHub-issue i VeckansMat – avsikt, kodgenomgång, omfång, Definition of Done, mockup för ny GUI och Agent · modell · effort – skapar issuet och stannar tills ägaren godkänt planen. Använd före varje ändring, även små, och när någon säger skapa issue, planera, förfina, skriv upp en bugg, idé, önskemål.
+description: Gör en idé, en bugg eller ett önskemål till ett planerat GitHub-issue i VeckansMat – avsikt, kodgenomgång, omfång, Definition of Done, mockup för ny GUI och Agent · modell · effort – skapar issuet och stannar tills ägaren godkänt planen. Använd före varje större ändring (nytt beteende, flera lager, datamodell, vägval), och när någon säger skapa issue, planera, förfina, skriv upp en bugg, idé, önskemål.
 ---
 
 # Förfina och planera ett issue
 
-Varje bugg, ändring och funktion planeras i ett issue innan den byggs, även små
-([beslut 0018](../../../docs/beslut/0018-plan-fore-kod.md)). Bedöm aldrig själv att något är för
-litet; bara ägaren kan säga att en plan inte behövs. Målet är ett issue som en annan session kan
+Varje större ändring planeras i ett issue innan den byggs
+([beslut 0024](../../../docs/beslut/0024-plan-bara-for-storre-andringar.md), skill
+`android:arbetsregler`). En liten fix eller ett dokument går direkt till PR med raden
+`Liten ändring: <varför>`. Osäker → större. Målet är ett issue som en annan session kan
 genomföra med `/implement-issue` utan fler frågor. Samla frågor, förhör inte. **Skapa eller
 uppdatera inte issuet förrän i steg 7.** Undersöka koden får du, ändra den får du inte.
 
@@ -116,7 +117,7 @@ bara till i slutet.
 Visa issuets länk och de öppna frågorna, och **avsluta turen**. Ingen gren, ingen kod, ingen PR,
 inget "jag börjar under tiden".
 
-När ägaren skrivit ok: uppdatera issuet med svaren på de öppna frågorna, sätt etiketten
+När ägaren skrivit ok ("kör" räcker): uppdatera issuet med svaren på de öppna frågorna, sätt etiketten
 `plan-godkänd` och skriv en kommentar på issuet: var och när ägaren godkände, med ägarens ord.
 Sätt aldrig etiketten utan ett ok från ägaren. Finns redan en PR, kör om kontrollen **Plan
 godkänd** efteråt; den läser etiketten när den körs. Erbjud sedan `/implement-issue`, gärna i en ny

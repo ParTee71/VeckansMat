@@ -43,4 +43,13 @@ describe('planProblem', () => {
 	it('does not count an empty waiver', async () => {
 		expect(await planProblem('Utan plan:', labels({}))).not.toBeNull();
 	});
+
+	it('allows a small change that says why', async () => {
+		expect(await planProblem('Liten ändring: stavfel i en knapptext', labels({}))).toBeNull();
+	});
+
+	it('does not count a small change without a reason', async () => {
+		expect(await planProblem('Liten ändring:', labels({}))).not.toBeNull();
+		expect(await planProblem('Det här är en liten ändring: x', labels({}))).not.toBeNull();
+	});
 });

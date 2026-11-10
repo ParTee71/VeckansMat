@@ -15,9 +15,11 @@ föreslå en ny ADR i stället (`/adr`).
 
 ## Regler som aldrig bryts
 
-- **Plan före kod, alltid.** Varje bugg och ändring, även små, börjar med ett
-  issue med plan (`/refine-issue`). Vänta på ägarens ok (etiketten `plan-godkänd`)
-  före gren, kod och PR. Bara ägaren kan släppa på det. Se `docs/beslut/0018-plan-fore-kod.md`.
+- **Plan före kod bara för större ändringar:** nytt beteende, flera lager, datamodell
+  eller ett vägval → issue med plan (`/refine-issue`) och ägarens ok (`plan-godkänd`
+  eller "kör") före gren, kod och PR. Små fixar och dokument går direkt till PR med
+  raden `Liten ändring: <varför>` och mergas när CI är grön. Osäker → större. Skill
+  `android:arbetsregler` är enda källan; se `docs/beslut/0024-plan-bara-for-storre-andringar.md`.
 - **Repot är publikt.** Inga personuppgifter (namn, allergier, hushållets
   inställningar) eller hemligheter i kod, tester, commits eller issues.
   Testdata är påhittad. Hemligheter bara i Cloudflare/GitHub secrets och

@@ -32,12 +32,12 @@ Prettier (`.prettierignore`), så att de kan bytas mot en ny version rakt av.
 
 ## Hooks
 
-| Hook                     | Händelse              | Gör                                                |
-| ------------------------ | --------------------- | -------------------------------------------------- |
-| `verify-before-push.mjs` | Före `git push`       | Kör `npm run verify`, stoppar pushen om den faller |
-| `format-file.mjs`        | Efter varje skrivning | Prettier på filen                                  |
-| `plan-approved.mjs`      | Före en ny PR         | Stoppar PR:en om issuets plan inte är godkänd      |
-| `session-start.mjs`      | Ny molnsession        | `npm ci` och Playwrights Chromium                  |
+| Hook                     | Händelse              | Gör                                                    |
+| ------------------------ | --------------------- | ------------------------------------------------------ |
+| `verify-before-push.mjs` | Före `git push`       | Kör `npm run verify`, stoppar pushen om den faller     |
+| `format-file.mjs`        | Efter varje skrivning | Prettier på filen                                      |
+| `plan-approved.mjs`      | Före en ny PR         | Stoppar PR:en utan godkänd plan eller `Liten ändring:` |
+| `session-start.mjs`      | Ny molnsession        | `npm ci` och Playwrights Chromium                      |
 
 ## I projekttrådar
 
