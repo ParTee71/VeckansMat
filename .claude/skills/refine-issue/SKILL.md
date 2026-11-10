@@ -93,15 +93,15 @@ Länken går in under **Design**.
 
 Bugg: byt **Föreslaget upplägg** mot **Steg för att återskapa**, **Förväntat**, **Faktiskt**.
 
-**Agent · modell · effort är obligatoriskt.** Modell efter uppgiftens komplexitet, Opus som
-standard:
+**Agent · modell · effort är obligatoriskt.** Modell efter uppgiftens komplexitet, Opus 5.5 som
+standard (CLAUDE.md → Modellval):
 
-| Uppgift                                                   | Modell |
-| --------------------------------------------------------- | ------ |
-| Uppslag, läsning, loggar                                  | Haiku  |
-| Små avgränsade ändringar – en fil, en komponent, ett test | Sonnet |
-| Flera lager, datamodell, migrering, prompter, granskning  | Opus   |
-| Väldigt komplexa issues                                   | Fable  |
+| Uppgift                                                   | Modell                  |
+| --------------------------------------------------------- | ----------------------- |
+| Uppslag, läsning, loggar                                  | Haiku                   |
+| Små avgränsade ändringar – en fil, en komponent, ett test | Sonnet                  |
+| Flera lager, datamodell, migrering, prompter, granskning  | Opus                    |
+| Väldigt komplexa issues – skälet och effort i issuet      | Fable 5.2 · medium/high |
 
 Titel: `<område>: <sammanfattning>`. Gå vidare till steg 7: planen visas och godkänns i
 issuet (steg 8), inte som ett utkast i chatten.
