@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { open } from '../../../test/e2e';
+import { open, reload } from '../../../test/e2e';
 
 // The made-up data comes from test/e2e-seed.sql. Tests that change it use names of their own,
 // that sort after the seeded dishes.
@@ -47,7 +47,7 @@ test('a folded sort stays folded on the phone', async ({ page }) => {
 	await expect(sort).toHaveAttribute('aria-expanded', 'true');
 	await sort.click();
 	await expect(sort).toHaveAttribute('aria-expanded', 'false');
-	await page.reload();
+	await reload(page);
 	await expect(page.getByRole('button', { name: /^Fisk/ })).toHaveAttribute(
 		'aria-expanded',
 		'false'

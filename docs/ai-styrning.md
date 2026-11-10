@@ -344,3 +344,17 @@ får en rad i `evals/costs.jsonl`. Evalerna har en egen nyckel i en egen arbetsy
 **Varför så:** Det dyra var inte en enskild körning utan att det var krångligt att köra bara
 några fall. Då kördes allt, gång på gång. Lärdomen: gör det billiga sättet till det enkla
 sättet, sätt ett tak som stoppar misstag, och mät vad utvecklingen kostar, inte bara appen.
+
+## Instabilt e2e-test efter omladdning (#147, 2026-11-10)
+
+**Vad hände:** veckoförslagets test föll en gång i CI på en PR som inte rörde appen. Jag körde
+om jobbet, och det blev grönt. Ägaren sa ifrån: ett instabilt test ska göras stabilt, inte
+chansas förbi.
+
+**Orsak:** `page.reload()` följdes direkt av ett tryck. Före `html[data-ready]` har appens
+knappar ingen hanterare, så trycket kunde gå förlorat. Felet återskapades genom att fördröja
+`/_app/` med 3 s efter omladdningen.
+
+**Vad som ändrades:** hjälparen `reload(page)` i `test/e2e.ts` sparar, laddar om och väntar på
+`data-ready`, precis som `open`. Alla e2e-test använder den. Regeln för instabila tester står i
+skill `android:arbetsregler`: kör inte om, och fråga ägaren om ett issue som gör testet stabilt.

@@ -16,6 +16,14 @@ export async function open(page: Page, path: string) {
 	await ready(page);
 }
 
+/** Loads the page again, after what was written is saved, once the app's components have loaded.
+ * Before that a tap reaches no handler, so a test that taps at once can miss it. */
+export async function reload(page: Page) {
+	await saved(page);
+	await page.reload();
+	await ready(page);
+}
+
 /** Waits until the app's components have loaded, after a load or reload of the page. */
 async function ready(page: Page) {
 	await expect(page.locator('html[data-ready]')).toHaveCount(1);

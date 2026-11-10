@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { open } from '../../test/e2e';
+import { open, reload } from '../../test/e2e';
 
 // Svelte sets the property of a custom element, so the attribute keeps the server's value.
 const themeColor = (page: Page) =>
@@ -16,7 +16,7 @@ test('a chosen colour stays after a reload, on this phone only', async ({ page, 
 	);
 	await expect.poll(() => themeColor(page)).toBe('#5f7a99');
 
-	await page.reload();
+	await reload(page);
 	await expect.poll(() => themeColor(page)).toBe('#5f7a99');
 
 	const other = await browser.newPage();
@@ -29,6 +29,6 @@ test('a colour of ones own can be chosen', async ({ page }) => {
 	await open(page, '/installningar');
 	await page.getByLabel('Egen färg').fill('#3366cc');
 	await expect.poll(() => themeColor(page)).toBe('#3366cc');
-	await page.reload();
+	await reload(page);
 	await expect.poll(() => themeColor(page)).toBe('#3366cc');
 });
