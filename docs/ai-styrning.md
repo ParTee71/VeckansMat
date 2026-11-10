@@ -5,6 +5,19 @@ skrivs vad som provats, varför, och hur det gick. Nyast överst. Hur
 styrningen är uppbyggd just nu står i
 [beslut 0008](beslut/0008-claude-code-uppsattning.md).
 
+## 2026-11-10 – Ärliga svar, en spärr som aldrig frågade och en kortare start
+
+**Vad:** CLAUDE.md fick regeln Ärliga svar (ägarens beslut, samma rad i alla projekt), och
+granskaren kör nu Opus i stället för trådens modell. Fråga-regeln för skarp d1,
+`Bash(npx wrangler d1 execute:* --remote:*)`, träffade aldrig: `:*` mitt i ett mönster läses
+bokstavligt. Den är nu `Bash(npx wrangler d1 execute * --remote*)`. Sessionsstarten kör inte
+längre `npm ci` (cirka 20 s); push-kontrollen gör det när `node_modules` saknas.
+
+**Varför så:** Felet i regeln syntes först när regeln flyttades till en annan plats och Claude
+Code varnade. Ett prov med samma mönster på `echo` visade att varken det gamla mönstret eller
+varningens förslag träffade; mönstret med mellanslag och `*` gjorde det. Lärdomen: pröva en
+spärr med ett ofarligt kommando i samma form, i stället för att lita på att den står där.
+
 ## 2026-11-10 – Samma modellval i alla projekt
 
 **Vad:** Ägaren satte en gemensam regel för alla sina projekt: Opus 5.5 som standard och

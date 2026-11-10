@@ -12,12 +12,19 @@ const root = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
 const run = (command, args) =>
 	spawnSync(command, args, { cwd: root, stdio: 'ignore' }).status === 0;
 
-if (!existsSync(path.join(root, 'node_modules')) && !run('npm', ['ci'])) {
-	console.log('npm ci failed; run it by hand before testing.');
+// npm ci is the heavy part (about 20 s) and runs only when something needs it: the
+// push check installs dependencies itself (verify-before-push.mjs). In a project
+// thread this hook runs even when the thread never touches the repo (claude-android #46).
+if (!existsSync(path.join(root, 'node_modules'))) {
+	console.log(
+		'VeckansMat: node_modules saknas. Kör npm ci innan du testar; push-kontrollen gör det själv.'
+	);
+	process.exit(0);
 }
 
 // The image's preinstalled Chromium may be older than the Playwright version in
-// package.json, so fetch the matching one, as CI does.
+// package.json, so fetch the matching one, as CI does. When they already match it
+// takes about a second (measured 2026-11-10).
 if (!run('npx', ['playwright', 'install', 'chromium'])) {
 	console.log('playwright install chromium failed; e2e tests will not start.');
 }
