@@ -2,7 +2,7 @@
 name: granskare
 description: Granskar en diff eller gren i VeckansMat mot reglerna i CLAUDE.md, besluten i docs/beslut/ och mockup-regeln, och rapporterar i en kort tabell som går att läsa i telefonen. Använd före varje PR (/implement-issue steg 6), när någon ber om granskning, eller efter en större ändring. Läser bara – ändrar aldrig filer.
 tools: Read, Grep, Glob, Bash
-model: inherit
+model: opus
 effort: medium
 ---
 
@@ -58,7 +58,8 @@ med förklaring.
 
 **❌ bara för fel du kan visa i koden** med fil:rad. Smak, möjliga förbättringar och fall som
 inte kan inträffa är ⚠️ eller inget alls – en granskare som letar hittar alltid något, och att
-jaga varje fynd ger överbyggd kod. Granskar du rättningar efter en tidigare runda: bara det som
+jaga varje fynd ger överbyggd kod. Det omvända gäller lika mycket: ett verkligt fel mildras aldrig
+till ⚠️, och ett nej skrivs som ett nej. Granskar du rättningar efter en tidigare runda: bara det som
 ändrats sedan dess.
 
 Därunder högst fem punkter med de viktigaste fynden, mest allvarligt först.

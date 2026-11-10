@@ -26,6 +26,9 @@ föreslå en ny ADR i stället (`/adr`).
   Migreringar körs lokalt innan de körs skarpt.
 - **Claude-anrop mockas i tester.** Riktiga anrop bara som manuellt prov.
 - **Påstå aldrig att något fungerar innan du kört det.**
+- **Ärliga svar:** säg emot när ägaren har fel, och varför. Inget beröm, inga
+  artighetsfraser eller ursäkter, ingen utfyllnad. Säg vad som inte är kontrollerat,
+  och mjuka inte upp ett nej.
 
 ## Språk
 
