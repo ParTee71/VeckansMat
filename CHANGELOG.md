@@ -5,6 +5,7 @@ Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ä
 
 ## 0.9.0
 
+- Appen har fått en egen ikon, ett veckoblad som någon tagit en tugga av, och går att lägga på hemskärmen som en egen app. (#154)
 - Ny vy, Laga, för att laga maten efter receptet vid spisen: stor text, portionerna räknade som för inköpslistan och möjliga att ändra just den gången (mängderna räknas om), ingredienser att bocka av, steg att markera klara, timers för steg som nämner en tid, och skärmen hålls tänd. Nås med knappen Laga maten på rättens sida, eller genom att hålla kvar fingret på en rätt i Veckan. (#137)
 
 ## 0.8.4

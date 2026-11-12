@@ -16,6 +16,7 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
 		"lint": "prettier --check . && eslint . --max-warnings 0",
 		"format": "prettier --write .",
+		"icons": "node scripts/make-icons.mjs",
 		"test": "vitest --run",
 		"test:e2e": "playwright test",
 		"eval:recept": "vitest run --config evals/vitest.config.ts evals/recept",
