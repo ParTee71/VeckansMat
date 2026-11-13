@@ -126,7 +126,7 @@ describe('ICA', () => {
 describe('Lidl', () => {
 	it("follows only this week's campaign pages with food", () => {
 		expect(lidl.campaignPages(lidlStart)).toEqual([
-			'/c/mandag-soendag/a100',
+			'/c/store/mandag-soendag/a100',
 			'/c/lidl-plus-erbjudanden/a101'
 		]);
 	});

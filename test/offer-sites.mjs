@@ -90,13 +90,16 @@ const attribute = (text) => text.replaceAll('&', '&amp;').replaceAll('"', '&quot
 const lidlLink = (path, sectionName) =>
 	`<a href="${path}" data-unified-click="${encodeURIComponent(JSON.stringify({ sectionName, creativeName: path }))}" data-tabable="true">Kampanj</a>`;
 
-/** lidl.se's start page: this week's campaigns, one without food, and next week's. */
+/**
+ * lidl.se's start page: this week's campaigns, one without food, and next week's. Lidl's pages
+ * moved from /c/<name>/a<id> to /c/store/<name>/a<id>; both forms are here.
+ */
 export const lidlStart = `<html><body>${[
-	lidlLink('/c/mandag-soendag/a100', 'Den här veckan'),
+	lidlLink('/c/store/mandag-soendag/a100', 'Den här veckan'),
 	lidlLink('/c/lidl-plus-erbjudanden/a101', 'Den här veckan'),
-	lidlLink('/c/veckans-blommor/a102', 'Den här veckan'),
-	lidlLink('/c/mandag-soendag/a200', 'Nästa vecka'),
-	lidlLink('/c/mandag-soendag/a100', 'Den här veckan')
+	lidlLink('/c/store/veckans-blommor/a102', 'Den här veckan'),
+	lidlLink('/c/store/mandag-soendag/a200', 'Nästa vecka'),
+	lidlLink('/c/store/mandag-soendag/a100', 'Den här veckan')
 ].join('')}</body></html>`;
 
 const MONDAY = 1792969200; // 2026-10-26 00:00 in Sweden
@@ -115,7 +118,7 @@ const grid = (products) =>
 	`<html><body>${products.map((p) => `<div data-grid-data="${attribute(JSON.stringify(p))}"></div>`).join('')}</body></html>`;
 
 export const lidlCampaigns = {
-	'/c/mandag-soendag/a100': grid([
+	'/c/store/mandag-soendag/a100': grid([
 		lidlProduct(1, 'Laxfilé', 'Mat och nära mat/Fisk & skaldjur', {
 			price: { price: 129, basePrice: { text: '/kg (ca 1,2 kg)' } }
 		}),

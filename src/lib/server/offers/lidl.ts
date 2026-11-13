@@ -32,11 +32,14 @@ export async function fetchOffers(fetcher: typeof fetch): Promise<Offer[]> {
 	return [...offers.values()];
 }
 
-/** The addresses of this week's campaign pages with food, such as "/c/mandag-soendag/a10105406". */
+/**
+ * The addresses of this week's campaign pages with food, such as
+ * "/c/store/mandag-soendag/a10106308". Lidl has used them both with and without "store/".
+ */
 export function campaignPages(html: string): string[] {
 	const pages = new Set<string>();
 	for (const [, path, slugName, click] of html.matchAll(
-		/href="(\/c\/([a-z0-9-]+)\/a\d+)"[^>]*?data-unified-click="([^"]+)"/g
+		/href="(\/c\/(?:[a-z0-9-]+\/)?([a-z0-9-]+)\/a\d+)"[^>]*?data-unified-click="([^"]+)"/g
 	)) {
 		if (NOT_FOOD.includes(slugName)) continue;
 		let section: unknown;

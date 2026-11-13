@@ -3,6 +3,10 @@
 Det hushållet märker, en rad per ändring. Versionen höjs i PR:en som gör ändringen
 (se `.claude/skills/release/SKILL.md`).
 
+## 0.9.1
+
+- Lidls erbjudanden hämtas igen. Lidl hade flyttat sina kampanjsidor, så appen hittade inga. (#157)
+
 ## 0.9.0
 
 - Appen har fått en egen ikon, ett veckoblad som någon tagit en tugga av, och går att lägga på hemskärmen som en egen app. (#154)
