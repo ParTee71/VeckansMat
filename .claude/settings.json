@@ -50,7 +50,8 @@
 						"type": "command",
 						"if": "Bash(git push:*)",
 						"command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/verify-before-push.mjs",
-						"timeout": 300
+						"timeout": 300,
+						"onFailure": "block"
 					}
 				]
 			},
@@ -60,7 +61,8 @@
 					{
 						"type": "command",
 						"command": "NODE_USE_ENV_PROXY=1 node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/plan-approved.mjs",
-						"timeout": 30
+						"timeout": 30,
+						"onFailure": "block"
 					}
 				]
 			}
