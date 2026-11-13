@@ -1,6 +1,6 @@
 ---
 name: implement-issue
-description: Genomför ett GitHub-issue i VeckansMat till en mergad PR – stommen i skill android:arbetsflode plus VeckansMats delar – plan-kontrollen (plan-godkänd, Liten ändring), Svelte och Workers, versionen och CHANGELOG, npm run verify och e2e, evalen, /simplify, agenten granskare, plan-spärren vid merge och konflikter i version och migreringar. Använd när någon säger genomför, implementera, kör #N, fixa buggen, bygg funktionen, eller efter /refine-issue.
+description: 'Genomför ett GitHub-issue i VeckansMat till en mergad PR – stommen i skill android:arbetsflode plus VeckansMats delar – plan-kontrollen (plan-godkänd, Liten ändring), Svelte och Workers, versionen och CHANGELOG, npm run verify och e2e, evalen, /simplify, agenten granskare, plan-spärren vid merge och konflikter i version och migreringar. Använd när någon säger genomför, implementera, kör #N, fixa buggen, bygg funktionen, eller efter /refine-issue.'
 ---
 
 # Genomföra ett issue

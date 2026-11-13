@@ -1,6 +1,6 @@
 ---
 name: ux-granskning
-description: Granskar en vy, mockup eller skärmdump i VeckansMat för användbarhet, visuell hierarki, enhetlighet och svenska UX-texter, och svarar i en kort tabell. Laddas vid granskning, inte när något ska skapas. Trigger-ord: granska vyn, vad tycker du om, designkritik, UX, användbarhet, knapptext, felmeddelandet, tomt tillstånd, ordval, skärmdump, mockupen är klar.
+description: 'Granskar en vy, mockup eller skärmdump i VeckansMat för användbarhet, visuell hierarki, enhetlighet och svenska UX-texter, och svarar i en kort tabell. Laddas vid granskning, inte när något ska skapas. Trigger-ord: granska vyn, vad tycker du om, designkritik, UX, användbarhet, knapptext, felmeddelandet, tomt tillstånd, ordval, skärmdump, mockupen är klar.'
 ---
 
 # UX-granskning

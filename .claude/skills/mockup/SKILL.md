@@ -1,6 +1,6 @@
 ---
 name: mockup
-description: Regeln "mockup före ny GUI" i VeckansMat – ny vy, ny komponent eller tydligt ändrat utseende visas som en mockup (Design-canvas) och godkänns av ägaren innan någon kod skrivs. Ladda alltid innan något som syns byggs eller ändras. Trigger-ord: ny vy, ny sida, ny komponent, mockup, skiss, design, prototyp, hur ska det se ut, layout, ändra utseendet, ny knapp, nytt kort.
+description: 'Regeln "mockup före ny GUI" i VeckansMat – ny vy, ny komponent eller tydligt ändrat utseende visas som en mockup (Design-canvas) och godkänns av ägaren innan någon kod skrivs. Ladda alltid innan något som syns byggs eller ändras. Trigger-ord: ny vy, ny sida, ny komponent, mockup, skiss, design, prototyp, hur ska det se ut, layout, ändra utseendet, ny knapp, nytt kort.'
 ---
 
 # Mockup före ny GUI
