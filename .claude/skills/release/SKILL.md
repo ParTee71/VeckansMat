@@ -1,6 +1,6 @@
 ---
 name: release
-description: Versioner och releaser i VeckansMat – regeln för versionshöjning i funktions-PR:en (semver i package.json och en rad i CHANGELOG.md) och stegen för en release till skarp drift via workflow_dispatch, utan fråga om versionsnumret. Kör en release bara när ägaren uttryckligen ber om det. Trigger-ord: release, släpp, ny version, publicera, driftsätt skarpt, versionshöjning, semver, CHANGELOG.
+description: 'Versioner och releaser i VeckansMat – regeln för versionshöjning i funktions-PR:en (semver i package.json och en rad i CHANGELOG.md) och stegen för en release till skarp drift via workflow_dispatch, utan fråga om versionsnumret. Kör en release bara när ägaren uttryckligen ber om det. Trigger-ord: release, släpp, ny version, publicera, driftsätt skarpt, versionshöjning, semver, CHANGELOG.'
 ---
 
 # Versioner och release
