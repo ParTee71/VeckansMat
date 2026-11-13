@@ -51,5 +51,9 @@ Projekttrådar startar i `/home/user`, ovanför repot, och läser då inte `.cla
   i pluginen `veckansmat`. De körs bara när händelsen rör repot: `verify-before-push` för en
   push i VeckansMat, `plan-approved` för en PR mot VeckansMat (claude-android #38), och
   sessionsstarten en gång.
+- **Spärrarna är stängda:** `verify-before-push` och `plan-approved` har `onFailure: "block"`.
+  Kraschar en av dem eller når sin tidsgräns nekas åtgärden i stället för att gå igenom
+  (claude-android #72). Ett nätfel mot GitHub i `plan-approved` släpper fortfarande igenom
+  med en varning, eftersom CI-kontrollen Plan godkänd avgör.
 - **Behörigheterna** (`deny` och `ask`) läggs i användarinställningarna av samma skript, med
   sökvägarna förankrade i repot (claude-android #40). `allow` följer inte med.

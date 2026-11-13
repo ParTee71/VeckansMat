@@ -40,3 +40,15 @@ describe('skills and agents', () => {
 		}
 	);
 });
+
+describe('.claude/settings.json', () => {
+	const settings = JSON.parse(readFileSync(path.join(claudeDir, 'settings.json'), 'utf8'));
+	const preToolUse: { command: string; onFailure?: string }[] = settings.hooks.PreToolUse.flatMap(
+		(group: { hooks: unknown[] }) => group.hooks
+	);
+
+	// A guard that crashes or times out must deny the action, not let it through (claude-android #72).
+	it.each(['verify-before-push.mjs', 'plan-approved.mjs'])('guard %s fails closed', (hook) => {
+		expect(preToolUse.find((h) => h.command.includes(hook))?.onFailure).toBe('block');
+	});
+});
